@@ -1,0 +1,42 @@
+{
+  "id": "solaredge",
+  "name": "SolarEdge Integration",
+  "version": "1.0.0",
+  "description": "SolarEdge inverter and monitoring platform integration",
+  "author": "WattsOn",
+  "type": "data-collector",
+  
+  "capabilities": {
+    "dataCollection": true,
+    "api": true,
+    "ui": true
+  },
+
+  "collector": {
+    "enabled": false,
+    "interval": 300000,
+    "priority": 2,
+    "description": "Collects data from SolarEdge Monitoring API every 5 minutes"
+  },
+
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/solaredge",
+    "description": "SolarEdge configuration and data endpoints"
+  },
+
+  "settings": {
+    "component": "SolarEdgeSettings",
+    "schema": "settings-schema.js"
+  },
+
+  "dependencies": {
+    "node": ">=18.0.0",
+    "axios": "^1.0.0"
+  },
+
+  "config": {
+    "required": ["api_key", "site_id"],
+    "optional": ["endpoint_url", "poll_interval"]
+  }
+}

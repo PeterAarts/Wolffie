@@ -1,0 +1,53 @@
+{
+  groups: [
+    {
+      sections: [
+        {
+          fields: [
+            { key: 'enabled', component: 'switch' },
+            { key: 'poll_interval', component: 'number' }
+          ]
+        },
+        {
+          component: 'info-panel',  // Collector status
+          data: {
+            endpoint: '/api/homewizard/collector/status',
+            dynamic: true,
+            items: [
+              { label: 'Status', field: 'isRunning', template: { type: 'status-badge' } },
+              { label: 'Devices', field: 'deviceCount' }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      sections: [
+        {
+          component: 'table',  // Device list
+          data: {
+            endpoint: '/api/homewizard/devices',
+            columns: [
+              { field: 'device_name', header: 'Device' },
+              { field: 'power', header: 'Power', template: { type: 'number', suffix: ' W' } },
+              { field: 'enabled', header: 'Enabled', template: { type: 'switch' } }
+            ],
+            globalActions: [
+              { label: 'Discover', endpoint: '/api/homewizard/discover' }
+            ]
+          }
+        },
+        {
+          component: 'card-grid',  // Stats
+          data: {
+            endpoint: '/api/homewizard/devices/stats',
+            cards: [
+              { title: 'Total Devices', field: 'totalDevices', icon: 'pi-box' },
+              { title: 'Total Power', field: 'totalPower', suffix: ' W' }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

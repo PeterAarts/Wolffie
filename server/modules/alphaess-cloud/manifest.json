@@ -1,0 +1,41 @@
+{
+  "id": "alphaess-cloud",
+  "name": "AlphaESS Cloud API",
+  "version": "1.0.0",
+  "description": "AlphaESS Cloud API integration for remote data collection",
+  "author": "Wolffie",
+  "type": "data-collector",
+  
+  "capabilities": {
+    "dataCollection": true,
+    "api": true,
+    "ui": true
+  },
+
+  "collector": {
+    "enabled": true,
+    "interval": 300000,
+    "priority": 1,
+    "description": "Collects data from AlphaESS Cloud API every 5 minutes"
+  },
+
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/alphaess-cloud",
+    "description": "AlphaESS Cloud API endpoints"
+  },
+
+  "settings": {
+    "component": "AlphaESSCloudSettings",
+    "schema": "settings-schema.js"
+  },
+
+  "dependencies": {
+    "node": ">=18.0.0"
+  },
+
+  "config": {
+    "required": ["app_id", "app_secret", "system_sn"],
+    "optional": ["endpoint_url", "poll_interval"]
+  }
+}

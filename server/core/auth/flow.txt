@@ -1,0 +1,54 @@
+1. Login Process
+
+Client                      Server
+  |                           |
+  |-- POST /api/auth/login -->|
+  |   { username, password }  |
+  |                           |
+  |                           |-- Validate credentials
+  |                           |-- Generate access token (15min)
+  |                           |-- Generate refresh token (7 days)
+  |                           |-- Store refresh token in DB
+  |                           |-- Log audit event
+  |                           |
+  |<-- 200 OK ----------------|
+  |   {                       |
+  |     accessToken,          |
+  |     refreshToken,         |
+  |     user: {               |
+  |       id, username, role  |
+  |     }                     |
+  |   }                       |
+  |                           |
+  |-- Store tokens in memory -|
+  |   (NOT in localStorage)   |
+
+2. API Request with Token
+
+Client                      Server
+  |                           |
+  |-- GET /api/data --------->|
+  |   Authorization: Bearer   |
+  |   <access_token>          |
+  |                           |
+  |                           |-- Verify JWT signature
+  |                           |-- Check expiration
+  |                           |-- Extract user & role
+  |                           |-- Check permissions
+  |                           |
+  |<-- 200 OK ----------------|
+  |   { data }                |
+
+3. Token Refresh
+
+Client                      Server
+  |                           |
+  |-- POST /api/auth/refresh->|
+  |   { refreshToken }        |
+  |                           |
+  |                           |-- Validate refresh token
+  |                           |-- Check if revoked
+  |                           |-- Generate new access token
+  |                           |
+  |<-- 200 OK ----------------|
+  |   { accessToken }         |
