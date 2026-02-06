@@ -245,7 +245,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import apiClient from '@/services/api';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import DataTable from 'primevue/datatable';
@@ -271,7 +271,7 @@ const selectedModule = ref(null);
 async function loadModules() {
   loading.value = true;
   try {
-    const { data } = await axios.get('/api/settings/modules');
+    const { data } = await apiClient.get(endpoint);
     modules.value = data.modules || [];
   } catch (error) {
     toast.add({
@@ -288,10 +288,7 @@ async function loadModules() {
 // Toggle module enabled/disabled
 async function toggleModule(module, enabled) {
   try {
-    await axios.put(`/api/settings/modules/${module.module_id}/toggle`, {
-      enabled
-    });
-
+    await apiClient.put(endpoint, payload);
     module.enabled = enabled;
 
     toast.add({
@@ -316,7 +313,7 @@ async function toggleModule(module, enabled) {
 async function discoverModules() {
   discovering.value = true;
   try {
-    await axios.post('/api/system/discover-modules');
+    await apiClient.post('/api/system/discover-modules');
 
     toast.add({
       severity: 'success',
@@ -363,7 +360,7 @@ function removeModule(module) {
     acceptClass: 'p-button-danger',
     accept: async () => {
       try {
-        await axios.delete(`/api/settings/modules/${module.module_id}`);
+        await apiClient.delete(`/api/settings/modules/${module.module_id}`);
 
         toast.add({
           severity: 'success',

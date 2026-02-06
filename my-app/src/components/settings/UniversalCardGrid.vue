@@ -38,7 +38,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import axios from 'axios';
+import apiClient from '@/services/api';
 import ProgressSpinner from 'primevue/progressspinner';
 
 const props = defineProps({
@@ -72,7 +72,7 @@ async function loadData() {
 
   loading.value = true;
   try {
-    const response = await axios.get(props.config.endpoint);
+    const response = await apiClient.get(props.config.endpoint);
     data.value = response.data.data || response.data;
   } catch (error) {
     console.error('Failed to load card data:', error);

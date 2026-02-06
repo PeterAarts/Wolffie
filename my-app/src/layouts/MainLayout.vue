@@ -3,6 +3,7 @@
     <!-- Top Header - Mobile First -->
     <header class="app-header">
       <div class="header-left">
+       <img src="@/assets/woffie.svg" alt="WattsOn Logo" class="logo-icon" />
         <span class="app-title">Wolffie</span>
         <div 
           class="" 
@@ -34,11 +35,9 @@
             </div>
             <div class="user-menu-divider"></div>
             <button @click="handleChangePassword" class="user-menu-item">
-              <i class="pi pi-key"></i>
               <span>Change Password</span>
             </button>
             <button v-if="authStore.isAdmin" @click="handleManageUsers" class="user-menu-item">
-              <i class="pi pi-users"></i>
               <span>Manage Users</span>
             </button>
             <div class="user-menu-divider"></div>
@@ -384,7 +383,6 @@ onUnmounted(() => {
   border: none;
   background: none;
   color: var(--color-text-primary);
-  font-size: var(--font-size-sm);
   cursor: pointer;
   transition: background 0.2s ease;
   text-align: left;
@@ -526,7 +524,6 @@ onUnmounted(() => {
   flex: 1;
   width: 100%;
   overflow-y: auto;
-  background: var(--color-bg-primary);
 }
 
 /* Status Badge */
@@ -619,4 +616,42 @@ onUnmounted(() => {
     flex-direction: row;
   }
 }
+/* Header buttons styling */
+.header-left,
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* NEW: Override PrimeVue button colors to dark gray */
+.header-right :deep(.p-button) {
+  color: #475569 !important;
+}
+
+.header-right :deep(.p-button:hover) {
+  color: #1e293b !important;
+}
+
+/* Logo styling */
+.app-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* NEW: SVG logo styling */
+.logo-icon {
+  width: 2rem;
+  height: 2rem;
+  object-fit: contain;
+}
+.header-right :deep(.p-button:hover) {
+  color: #1e293b !important;
+  background: var(--color-bg-primary) !important;
+}
+
 </style>

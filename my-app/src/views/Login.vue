@@ -3,9 +3,11 @@
     <div class="login-card">
       <!-- Logo/Brand -->
       <div class="login-header">
-        <i class="pi pi-fox" style="font-size: 3rem; color: #6366f1;"></i>
-        <h1>Wolffie</h1>
-        <p>Smart Home Energy Management System for Online & Offline Power Control</p>
+        <img src="@/assets/woffie.svg" alt="Wolffie Logo" class="logo" />
+        <div class="header-text">
+          <h1>Wolffie</h1>
+          <p>Smart Home Energy Management System for Online & Offline Power Control</p>
+        </div>
       </div>
 
       <!-- Error Message -->
@@ -101,12 +103,25 @@ const handleLogin = async () => {
 }
 
 .login-header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
   margin-bottom: 2rem;
 }
 
+.login-header .logo {
+  width: 80px;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.login-header .header-text {
+  flex: 1;
+  text-align: left;
+}
+
 .login-header h1 {
-  margin: 1rem 0 0.5rem;
+  margin: 0 0 0.25rem 0;
   font-size: 2rem;
   font-weight: 700;
   color: #1e293b;
@@ -136,6 +151,20 @@ const handleLogin = async () => {
   color: #475569;
 }
 
+/* Ensure Password component spans full width */
+.form-field :deep(.p-password) {
+  width: 100%;
+}
+
+.form-field :deep(.p-password input) {
+  width: 100%;
+}
+
+/* Ensure InputText spans full width */
+.form-field :deep(.p-inputtext) {
+  width: 100%;
+}
+
 .login-button {
   margin-top: 0.5rem;
   width: 100%;
@@ -157,8 +186,21 @@ const handleLogin = async () => {
     padding: 2rem 1.5rem;
   }
   
+  .login-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .login-header .header-text {
+    text-align: center;
+  }
+  
   .login-header h1 {
     font-size: 1.5rem;
+  }
+
+  .login-header .logo {
+    width: 60px;
   }
 }
 </style>

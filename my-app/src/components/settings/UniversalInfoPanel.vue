@@ -80,7 +80,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import axios from 'axios';
+import apiClient from '@/services/api';
 import Tag from 'primevue/tag';
 import ProgressBar from 'primevue/progressbar';
 import ProgressSpinner from 'primevue/progressspinner';
@@ -115,7 +115,7 @@ async function loadData() {
 
   loading.value = true;
   try {
-    const response = await axios.get(props.config.endpoint);
+    const response = await apiClient.get(props.config.endpoint);
     data.value = response.data.data || response.data;
   } catch (error) {
     console.error('Failed to load info panel data:', error);

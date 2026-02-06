@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { Chart, registerables } from 'chart.js';
 import zoomPlugin from 'chartjs-plugin-zoom';
 import { useRealtimeStore } from '@/stores/realtime';
@@ -26,6 +26,9 @@ import api from '@/services/api';
 
 // Register Chart.js components and zoom plugin
 Chart.register(...registerables, zoomPlugin);
+
+// Define emits
+const emit = defineEmits(['data-loaded']);
 
 const props = defineProps({
   period: {
@@ -64,7 +67,7 @@ const chartData = ref({
     {
       label: 'Battery',
       data: [],
-      type: 'line',  // Bar chart for battery
+      type: 'line',
       backgroundColor: 'rgba(26, 26, 26, 0.7)',
       borderColor: 'var(--color-data-primary)',
       borderWidth: 1,
@@ -73,25 +76,25 @@ const chartData = ref({
       tension: 0.4,
       pointRadius: 0,
       pointHoverRadius: 4,
-      order: 1  // Draw bars first (lower order = background)
+      order: 1
     },
     {
       label: 'Solar',
       data: [],
-      type: 'line',  // Line chart for solar
-      borderColor: '#10b981',  // Green color
+      type: 'line',
+      borderColor: '#10b981',
       backgroundColor: '#10b98166',
       borderWidth: 2,
       tension: 0.4,
       pointRadius: 0,
       pointHoverRadius: 4,
       fill: true,
-      order: 1  // Draw lines on top
+      order: 1
     },
     {
       label: 'Grid',
       data: [],
-      type: 'line',  // Bar chart for grid
+      type: 'line',
       backgroundColor: 'rgba(255, 60, 60, 1)',
       borderColor: 'rgba(255, 60, 60, 0.6)',
       tension: 0.4,
@@ -105,15 +108,15 @@ const chartData = ref({
     {
       label: 'Home',
       data: [],
-      type: 'line',  // Line chart for home
-      borderColor: '#3b82f6',  // Blue color
+      type: 'line',
+      borderColor: '#3b82f6',
       backgroundColor: '#3b82f666',
       borderWidth: 2,
       tension: 0.4,
       pointRadius: 0,
       pointHoverRadius: 4,
       fill: false,
-      order: 1  // Draw lines on top
+      order: 1
     }
   ]
 });
@@ -153,7 +156,8 @@ const fetchData = async () => {
     }
     
     // Use centralized API service (baseURL already includes /api)
-    const data = await api.get(endpoint);
+    const response = await api.get(endpoint);
+    const data = response.data || response;
     
     // Process and populate chart data
     populateChartData(data);
@@ -171,6 +175,7 @@ const populateChartData = (data) => {
   if (!Array.isArray(data) || data.length === 0) {
     chartData.value.labels = [];
     chartData.value.datasets.forEach(ds => ds.data = []);
+    emit('data-loaded', []);
     return;
   }
   
@@ -187,9 +192,7 @@ const populateChartData = (data) => {
     const date = new Date(item.timestamp);
     
     if (isMultiDay) {
-      // For multi-day views, show date + time or just date
       if (props.period === 'last-7-days') {
-        // Week view: "Mon 13, 14:00"
         return date.toLocaleDateString('en-US', { 
           weekday: 'short', 
           day: 'numeric'
@@ -199,13 +202,11 @@ const populateChartData = (data) => {
           hour12: false 
         });
       } else if (props.period === 'last-30-days') {
-        // Month view: "Jan 13"
         return date.toLocaleDateString('en-US', { 
           month: 'short', 
           day: 'numeric'
         });
       } else if (props.period === 'last-365-days') {
-        // Year view: "Jan 2025"
         return date.toLocaleDateString('en-US', { 
           month: 'short', 
           year: 'numeric'
@@ -221,26 +222,19 @@ const populateChartData = (data) => {
     });
   });
   
-  // Populate datasets
-  // Battery: positive = charging, negative = discharging
-  chartData.value.datasets[0].data = sortedData.map(item => 
-    item.battery_power || 0
-  );
+  // Populate datasets - using flat structure
+  chartData.value.datasets[0].data = sortedData.map(item => item.battery_power || 0);
+  chartData.value.datasets[1].data = sortedData.map(item => item.solar || 0);
+  chartData.value.datasets[2].data = sortedData.map(item => item.grid || 0);
+  chartData.value.datasets[3].data = sortedData.map(item => item.home || 0);
   
-  // Solar: always positive
-  chartData.value.datasets[1].data = sortedData.map(item => 
-    item.pv_power || 0
-  );
+  // Emit data for parent component
+  emit('data-loaded', sortedData);
   
-  // Grid: positive = importing, negative = exporting
-  chartData.value.datasets[2].data = sortedData.map(item => 
-    item.grid_power || 0
-  );
-  
-  // Home: always positive (consuming)
-  chartData.value.datasets[3].data = sortedData.map(item => 
-    item.load_power || 0
-  );
+  // Update chart if it exists
+  if (chartInstance) {
+    chartInstance.update();
+  }
 };
 
 // Append new data point from WebSocket
@@ -281,11 +275,12 @@ const initChart = () => {
   const ctx = chartCanvas.value.getContext('2d');
   
   chartInstance = new Chart(ctx, {
-    type: 'bar',  // Base type (will be overridden by dataset types)
+    type: 'bar',
     data: chartData.value,
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      backgroundColor: 'transparent',
       interaction: {
         mode: 'index',
         intersect: false
@@ -311,8 +306,7 @@ const initChart = () => {
           pan: {
             enabled: true,
             mode: 'x'
-          },
-
+          }
         },
         legend: {
           display: true,
@@ -334,8 +328,8 @@ const initChart = () => {
           enabled: true,
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
           titleColor: '#222222',
-          mode: 'index',          // ✅ Shows all datasets at X position
-          intersect: false,       // ✅ Easy hover (don't need exact position)
+          mode: 'index',
+          intersect: false,
           bodyColor: '#1e293b',
           borderColor: 'var(--color-text-secondary)',
           borderWidth: 0.5,
@@ -346,7 +340,7 @@ const initChart = () => {
               const label = context.dataset.label || '';
               const value = context.parsed.y;
               const unit = ' W';
-              return `${label} : ${value >= 0 ? '+' : ''}${value.toFixed(0)}${unit}`;
+              return `${label}: ${value >= 0 ? '+' : ''}${value.toFixed(0)}${unit}`;
             }
           }
         }
@@ -355,22 +349,23 @@ const initChart = () => {
         x: {
           display: true,
           grid: {
-            display: false
+            display: false,
+            color: 'transparent'
           },
           ticks: {
-            color: '#333',
+            color: 'var(--color-text-secondary)',
             font: {
               size: 10,
               family: 'Rubik, sans-serif'
             },
-            maxRotation: 45,  // Allow rotation for long labels
-            minRotation: 0,   // Start flat
+            maxRotation: 45,
+            minRotation: 0,
             autoSkipPadding: 20,
-            maxTicksLimit: 12  // Show more labels for multi-day views
+            maxTicksLimit: 12
           }
         },
         y: {
-          display: true,  // Show Y-axis
+          display: true,
           position: 'left',
           grid: {
             display: true,
@@ -378,16 +373,14 @@ const initChart = () => {
             drawOnChartArea: true,
             drawTicks: false,
             color: function(context) {
-              // Make zero line very prominent
               if (context.tick.value === 0) {
-                return '#1A1A1A';
+                return 'rgba(255, 255, 255, 0.3)';
               }
-              return 'rgba(0, 0, 0, 0.8)';
+              return 'rgba(255, 255, 255, 0.1)';
             },
             lineWidth: function(context) {
-              // Thicker zero line
               if (context.tick.value === 0) {
-                return 3;
+                return 2;
               }
               return 0.5;
             }
@@ -399,9 +392,8 @@ const initChart = () => {
               size: 10,
               family: 'Rubik, sans-serif'
             },
-            maxTicksLimit: 5,  // Show only ~5 ticks (including max/min/zero)
+            maxTicksLimit: 5,
             callback: function(value) {
-              // Format values with K for thousands
               if (value >= 1000) {
                 return (value / 1000).toFixed(1) + 'k';
               } else if (value <= -1000) {
@@ -452,7 +444,6 @@ watch(
   async () => {
     destroyChart();
     await fetchData();
-    // Reinitialize chart with new data
     setTimeout(() => {
       if (chartCanvas.value) {
         initChart();
@@ -468,7 +459,6 @@ watch(
     if (props.period === 'date') {
       destroyChart();
       await fetchData();
-      // Reinitialize chart with new data
       setTimeout(() => {
         if (chartCanvas.value) {
           initChart();
@@ -484,7 +474,6 @@ watch(
   async () => {
     destroyChart();
     await fetchData();
-    // Reinitialize chart with new data
     setTimeout(() => {
       if (chartCanvas.value) {
         initChart();
@@ -497,7 +486,6 @@ watch(
 onMounted(async () => {
   await fetchData();
   
-  // Wait for next tick to ensure canvas is rendered
   setTimeout(() => {
     if (chartCanvas.value) {
       initChart();
@@ -511,14 +499,71 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.energy-flow-graph        {width: 100%;height: v-bind(height);position: relative;}
-.graph-container          {width: 100%;height: 100%;position: relative;}
-.graph-controls           {position: absolute;top: 8px;right: 8px;z-index: 10;}
-.reset-zoom-btn           {background: var(--color-bg-secondary);border: 1px solid var(--color-text-secondary);border-radius: 6px;padding: 6px 12px;font-size: 12px;font-family: 'Rubik', sans-serif;color: var(--color-text-primary);cursor: pointer;transition: all 0.2s ease;display: flex;align-items: center;gap: 4px;}
-.reset-zoom-btn:hover     {background: var(--color-bg-primary);border-color: var(--color-text-primary);box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);}
-.reset-zoom-btn:active    {transform: scale(0.95);}
+.energy-flow-graph {
+  width: 100%;
+  height: v-bind(height);
+  position: relative;
+  background: transparent;
+}
+
+.graph-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  background: transparent;
+}
+
+.graph-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.reset-zoom-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-family: 'Rubik', sans-serif;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reset-zoom-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--color-text-primary);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.reset-zoom-btn:active {
+  transform: scale(0.95);
+}
+
 .loading-state,
-.error-state              {display: flex;align-items: center;justify-content: center;height: 100%;color: var(--color-text-secondary);font-size: 14px;font-family: 'Rubik', sans-serif;}
-.error-state              {color: #ef4444;}
-canvas                    {width: 100% !important;height: calc(100% - 40px) !important;margin-top: 32px;}
+.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  font-family: 'Rubik', sans-serif;
+}
+
+.error-state {
+  color: #ef4444;
+}
+
+canvas {
+  width: 100% !important;
+  height: calc(100% - 40px) !important;
+  margin-top: 32px;
+  background: transparent !important;
+}
 </style>

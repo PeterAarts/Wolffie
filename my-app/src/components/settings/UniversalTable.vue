@@ -187,7 +187,7 @@
 
 <script setup>
 import { ref, computed, onMounted, reactive } from 'vue';
-import axios from 'axios';
+import apiClient from '@/services/api';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import DataTable from 'primevue/datatable';
@@ -237,7 +237,7 @@ const globalFilterFields = computed(() => {
 async function loadData() {
   loading.value = true;
   try {
-    const response = await axios.get(props.config.endpoint);
+    const response = await apiClient.get(props.config.endpoint);
     tableData.value = response.data.data || response.data[Object.keys(response.data)[0]] || response.data;
   } catch (error) {
     toast.add({
@@ -317,7 +317,7 @@ async function openDialog(button, rowData = null) {
 
     // If editing, load current data
     if (rowData && button.endpoint) {
-      const { data } = await axios.get(endpoint);
+      const { data } = await apiClient.get(endpoint);
       Object.assign(dialogData, data);
     } else {
       // Clear dialog data for new entry
@@ -348,7 +348,7 @@ async function openDialog(button, rowData = null) {
 async function saveDialog() {
   dialogLoading.value = true;
   try {
-    await axios({
+    await apiClient({
       method: dialogConfig.value.method,
       url: dialogConfig.value.endpoint,
       data: dialogData
@@ -379,7 +379,7 @@ async function saveDialog() {
 async function performAction(action) {
   actionLoading[action.id] = true;
   try {
-    await axios({
+    await apiClient({
       method: action.method || 'POST',
       url: action.endpoint
     });
@@ -411,7 +411,7 @@ async function performRowAction(button, rowData) {
   try {
     const endpoint = replacePlaceholders(button.endpoint, rowData);
     
-    await axios({
+    await apiClient({
       method: button.method || 'POST',
       url: endpoint
     });
@@ -442,7 +442,7 @@ async function updateField(rowData, field, value, endpoint = null) {
       ? replacePlaceholders(endpoint, rowData)
       : `${props.config.endpoint}/${rowData[dataKey]}`;
 
-    await axios.put(url, {
+    await apiClient.put(url, {
       [field]: value
     });
 

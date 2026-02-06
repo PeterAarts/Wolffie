@@ -211,7 +211,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, nextTick } from 'vue';
-import axios from 'axios';
+import apiClient from '@/services/api';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 
@@ -288,7 +288,7 @@ async function loadSchema() {
       ? '/api/settings/core/schema'
       : `/api/${props.moduleId}/settings/schema`;
 
-    const { data } = await axios.get(endpoint);
+    const { data } = await apiClient.get(endpoint);
     
     schema.value = data.schema || { groups: [], actions: [] };
     moduleInfo.value = data.module || null;
@@ -462,7 +462,7 @@ async function saveSettings() {
       ? '/api/settings/core'
       : `/api/${props.moduleId}/settings`;
 
-    await axios.put(endpoint, {
+    await apiClient.put(endpoint, {
       settings: changedSettings
     });
 
@@ -529,7 +529,7 @@ async function executeGlobalAction(action) {
     actionLoading[action.id] = true;
 
     try {
-      await axios({
+      await apiClient({
         method: action.method || 'POST',
         url: action.endpoint,
         data: action.data || {}

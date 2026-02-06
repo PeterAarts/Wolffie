@@ -12,12 +12,12 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="loading && sockets.length === 0" class="loading-state">
+    <div v-if="deviceStore.loading && deviceStore.devices.length === 0" class="loading-state">
       <ProgressSpinner style="width: 30px; height: 30px" strokeWidth="4" />
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="sockets.length === 0" class="empty-state">
+    <div v-else-if="deviceStore.devices.length === 0" class="empty-state">
       <i class="pi pi-inbox"></i>
       <p>Geen devices</p>
     </div>
@@ -26,16 +26,16 @@
     <div v-else class="sockets-scroll">
       <div 
         v-for="socket in sortedSockets" 
-        :key="socket.id"
+        :key="socket.device_id"
         :class="['socket-row', { 
-          'selected': selectedSocket === socket.id,
+          'selected': selectedSocket === socket.device_id,
           'offline': !socket.online 
         }]"
         @click="selectSocket(socket)"
       >
         <div class="socket-name">
           <i class="pi pi-bolt"></i>
-          {{ socket.name }}
+          <span class="device-name">{{ socket.device_name }}</span>
         </div>
         <div class="socket-power">
           <i v-if="socket.power > 0" class="pi pi-arrow-down power-import"></i>
@@ -50,27 +50,43 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import axios from 'axios';
+import { useDevicesStore } from '@/stores/devices';
 import ProgressSpinner from 'primevue/progressspinner';
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 const emit = defineEmits(['socket-selected']);
 
-// State
-const sockets = ref([]);
-const loading = ref(false);
+// Use devices store
+const deviceStore = useDevicesStore();
+
+// Local state
 const selectedSocket = ref(null);
 const sortAsc = ref(true);
-let refreshInterval = null;
 
 // Computed
 const sortedSockets = computed(() => {
-  const sorted = [...sockets.value];
+  // Filter only HomeWizard devices (Energy Sockets)
+  const sockets = deviceStore.devices.filter(device => 
+    device.source === 'homewizard' && device.device_type === 'HWE-SKT'
+  );
+  
+  // Add online status based on timestamp
+  const socketsWithStatus = sockets.map(socket => {
+    const socketTime = new Date(socket.timestamp);
+    const ageMs = Date.now() - socketTime.getTime();
+    const online = ageMs < 300000; // Online if updated in last 5 minutes
+    
+    return {
+      ...socket,
+      online
+    };
+  });
+
+  // Sort
+  const sorted = [...socketsWithStatus];
   
   if (sortAsc.value) {
     // Sort by name A-Z
-    sorted.sort((a, b) => a.name.localeCompare(b.name));
+    sorted.sort((a, b) => a.device_name.localeCompare(b.device_name));
   } else {
     // Sort by power (highest first)
     sorted.sort((a, b) => b.power - a.power);
@@ -79,86 +95,26 @@ const sortedSockets = computed(() => {
   return sorted;
 });
 
-// Load data on mount
-onMounted(() => {
-  loadData();
-  startAutoRefresh();
-});
-
-// Cleanup
-onUnmounted(() => {
-  stopAutoRefresh();
-});
-
-// Load data
-async function loadData() {
-  loading.value = true;
-  try {
-    // Get all HomeWizard settings
-    const settingsResponse = await axios.get(`${API_BASE}/homewizard/settings`);
-    const allDevices = settingsResponse.data.data || [];
-
-    // Get current data
-    const dataResponse = await axios.get(`${API_BASE}/homewizard/data`);
-    const deviceData = dataResponse.data.data || [];
-
-    // Create data map
-    const dataMap = {};
-    deviceData.forEach(item => {
-      dataMap[item.meterId] = item;
-    });
-
-    // Collect all enabled devices (sockets + P1 meters)
-    const socketsTemp = [];
-
-    allDevices.forEach(device => {
-      if (!device.enabled) return;
-
-      const data = dataMap[device.id];
-      const online = data?.success || false;
-      const realtimeData = data?.data?.realtime || {};
-
-      socketsTemp.push({
-        id: device.id,
-        name: device.name || device.serial || device.ip_address,
-        online: online,
-        power: realtimeData.grid?.power || 0,
-        type: device.product_type
-      });
-    });
-
-    sockets.value = socketsTemp;
-
-  } catch (error) {
-    console.error('Failed to load socket data:', error);
-  } finally {
-    loading.value = false;
-  }
-}
-
-// Toggle sort
+// Methods
 function toggleSort() {
   sortAsc.value = !sortAsc.value;
 }
 
-// Select socket
 function selectSocket(socket) {
-  selectedSocket.value = socket.id;
+  selectedSocket.value = socket.device_id;
   emit('socket-selected', socket);
 }
 
-// Auto-refresh
-function startAutoRefresh() {
-  if (refreshInterval) return;
-  refreshInterval = setInterval(loadData, 10000); // Every 10 seconds
-}
+// Lifecycle
+onMounted(() => {
+  // Initialize devices store (starts auto-refresh)
+  deviceStore.initialize();
+});
 
-function stopAutoRefresh() {
-  if (refreshInterval) {
-    clearInterval(refreshInterval);
-    refreshInterval = null;
-  }
-}
+onUnmounted(() => {
+  // Cleanup when component unmounts
+  deviceStore.cleanup();
+});
 </script>
 
 <style scoped>
@@ -288,6 +244,12 @@ function stopAutoRefresh() {
   color: var(--color-text-secondary, #94a3b8);
   font-size: 0.875rem;
   flex-shrink: 0;
+}
+
+.device-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Socket Power */
