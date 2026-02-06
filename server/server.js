@@ -13,6 +13,8 @@ import setupRoutes from './core/system/routes/setup.js';
 import settingsRoutes from './core/system/routes/settings.js';
 import configRoutes from './core/system/routes/config.js';
 import dataRoutes from './core/system/routes/data.js';
+import historyRoutes from './core/system/routes/history.js';
+
 
 
 const app = express();
@@ -42,12 +44,11 @@ app.use('/api/auth', authRoutes);
 // Apply authentication to all /api/* routes (except /api/auth which is above)
 app.use('/api', authenticateToken);
 
-app.use('/api/setup', setupRoutes);           // Backward compatible
-app.use('/api/settings', settingsRoutes);     // Backward compatible
-app.use('/api/system/config', configRoutes);  // New endpoint
-
-  app.use('/api/system', dataRoutes);
-  app.use('/api/history', dataRoutes);
+app.use('/api/setup', setupRoutes);          
+app.use('/api/settings', settingsRoutes);     
+app.use('/api/system/config', configRoutes);  
+app.use('/api/history', historyRoutes);
+app.use('/api/system', dataRoutes);
 
 // Core routes (non-modular) - these will require authentication
 // TODO: Create systemRoutes when needed

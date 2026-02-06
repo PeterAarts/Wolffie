@@ -53,7 +53,7 @@ class CollectorManager {
     }
 
     if (typeof module.collect !== 'function') {
-      console.warn(`⚠️  CollectorManager: ${manifest?.id || 'unknown'} has dataCollection capability but no collect() method — skipped`);
+      console.warn(` - ⚠️  CollectorManager: ${manifest?.id || 'unknown'} has dataCollection capability but no collect() method — skipped`);
       return;
     }
 
@@ -73,7 +73,7 @@ class CollectorManager {
       paused:            false
     });
 
-    console.log(`  📦 Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
+    console.log(` -  Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
   }
 
   /**
@@ -87,7 +87,7 @@ class CollectorManager {
       return;
     }
 
-    console.log('\n📋 CollectorManager: starting collectors...');
+    console.log('\n - 📋 CollectorManager: starting collectors...');
     this.isRunning = true;
 
     for (const [id, entry] of this.schedules) {
@@ -99,7 +99,7 @@ class CollectorManager {
       // Resolve final interval from device_settings if available
       entry.interval = await this._resolveInterval(id, entry.interval);
 
-      console.log(`  🚀 Starting: ${entry.name} (interval: ${entry.interval / 1000}s)`);
+      console.log(` -  🚀 Starting: ${entry.name} (interval: ${entry.interval / 1000}s)`);
 
       // Immediate first collection
       await this._runCollector(id);
@@ -108,14 +108,14 @@ class CollectorManager {
       this._armNext(id);
     }
 
-    console.log('✅ CollectorManager: all collectors started\n');
+    //console.log(' - ✅ CollectorManager: all collectors started\n');
   }
 
   /**
    * Stop all collectors and clear all pending timers.
    */
   async stop() {
-    console.log('🛑 CollectorManager: stopping all collectors...');
+    console.log(' - 🛑 CollectorManager: stopping all collectors...');
 
     for (const [id, entry] of this.schedules) {
       if (entry.timer) {
@@ -125,7 +125,7 @@ class CollectorManager {
     }
 
     this.isRunning = false;
-    console.log('✅ CollectorManager: all collectors stopped');
+    console.log(' - ✅ CollectorManager: all collectors stopped');
   }
 
   /**
@@ -177,7 +177,7 @@ class CollectorManager {
     // Re-resolve interval
     entry.interval = await this._resolveInterval(moduleId, entry.interval);
 
-    console.log(`🔄 CollectorManager: restarting ${entry.name} (interval: ${entry.interval / 1000}s)`);
+    console.log(` - 🔄 CollectorManager: restarting ${entry.name} (interval: ${entry.interval / 1000}s)`);
 
     // Immediate collect + re-arm
     await this._runCollector(moduleId);
@@ -231,14 +231,14 @@ class CollectorManager {
         this._checkPause(entry);
       }
 
-      console.log(`  ⏱️  ${entry.name}: ${success ? '✅' : '⚠️'} (${elapsed}ms)`);
+      console.log(`   └ ${entry.name}: ${success ? '✅' : '⚠️'} (${elapsed}ms)`);
 
     } catch (error) {
       // collect() threw — hard failure
       entry.lastRun = new Date();
       entry.consecutiveErrors++;
       entry.lastError = error.message;
-      console.error(`  ❌ ${entry.name}: ${error.message}`);
+      console.error(` -   ❌ ${entry.name}: ${error.message}`);
       this._checkPause(entry);
     }
   }
@@ -253,7 +253,7 @@ class CollectorManager {
         clearTimeout(entry.timer);
         entry.timer = null;
       }
-      console.warn(`  ⏸️  ${entry.name}: paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Use restart('${entry.id}') to resume.`);
+      console.warn(` -  ⏸️  ${entry.name}: paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Use restart('${entry.id}') to resume.`);
     }
   }
 
@@ -290,7 +290,7 @@ class CollectorManager {
     } catch (error) {
       // device_settings table might not exist yet or query failed —
       // fall through to manifest default silently
-      console.log(`    ℹ️  ${moduleId}: device_settings lookup failed (${error.message}), using manifest default`);
+      console.log(` -    ℹ️  ${moduleId}: device_settings lookup failed (${error.message}), using manifest default`);
     }
 
     console.log(`    📎 ${moduleId}: using manifest default interval (${manifestDefault}ms)`);

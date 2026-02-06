@@ -1,33 +1,29 @@
-// src/config/database.js
-import mysql from 'mysql2/promise';
+// Core database wrapper for auth services
+import mysql from 'mysql2/promise';  // ← Change this line!
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const poolConfig = {
+// Create connection pool (already promise-based)
+const pool = mysql.createPool({
   host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
   user: process.env.DB_USER || 'root',
   password: process.env.DB_PASSWORD || '',
   database: process.env.DB_NAME || 'alpha_ess',
   waitForConnections: true,
   connectionLimit: 10,
-  queueLimit: 0,
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 0
-};
+  queueLimit: 0
+});
 
-const pool = mysql.createPool(poolConfig);
-
-// Test connection
-pool.getConnection()
-  .then(connection => {
-    console.log('   ├ Database connected successfully');
-    connection.release();
+// Test connection on startup
+pool.query('SELECT 1')
+  .then(() => {
+    console.log('✅ Database connected successfully');
   })
   .catch(err => {
-    console.error('✗ Database connection failed:', err.message);
-    process.exit(1);
+    console.error('❌ Database connection failed:', err.message);
   });
 
-export default pool;
+export default {
+  pool
+};

@@ -3,7 +3,7 @@
   "name": "HomeWizard Energy",
   "version": "1.0.0",
   "description": "HomeWizard P1 Meter and Energy Socket integration",
-  "author": "WattsOn",
+  "author": "wolffie",
   "type": "data-collector",
   
   "capabilities": {

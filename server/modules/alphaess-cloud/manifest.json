@@ -14,9 +14,9 @@
 
   "collector": {
     "enabled": true,
-    "interval": 300000,
+    "interval": 120000,
     "priority": 1,
-    "description": "Collects data from AlphaESS Cloud API every 5 minutes"
+    "description": "Collects data from AlphaESS Cloud API every 2 minutes"
   },
 
   "routes": {

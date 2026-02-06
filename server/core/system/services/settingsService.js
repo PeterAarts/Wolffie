@@ -1,6 +1,6 @@
 // src/services/settingsService.js - FIXED FOR YOUR DATABASE
 import crypto from 'crypto';
-import db from '../../database.js';  // FIXED: Use your db config
+import db from '../../../config/database.js';  // FIXED: Use your db config
 
 // Encryption key for sensitive settings (use a strong key from env)
 const ENCRYPTION_KEY = process.env.SETTINGS_ENCRYPTION_KEY || 'change-this-to-a-secure-32-char-key!!';
@@ -220,7 +220,7 @@ class SettingsService {
       // Clear cache
       this.cache.delete(`${category}.${key}`);
 
-      console.log(`✅ Setting updated: ${category}.${key} by ${changedBy}`);
+      console.log(`âœ… Setting updated: ${category}.${key} by ${changedBy}`);
 
       return true;
     } catch (error) {
@@ -288,9 +288,9 @@ class SettingsService {
 
   /**
    * Initialize settings from .env (migration helper)
-   
+   */
   async initializeFromEnv() {
-    console.log('🔄 Initializing settings from .env...');
+    console.log('ðŸ”„ Initializing settings from .env...');
 
     const updates = [];
 
@@ -326,8 +326,8 @@ class SettingsService {
 
     await Promise.all(updates);
 
-    console.log(`✅ Initialized ${updates.length} settings from .env`);
-  } */
+    console.log(`âœ… Initialized ${updates.length} settings from .env`);
+  }
 
   /**
    * Clear cache

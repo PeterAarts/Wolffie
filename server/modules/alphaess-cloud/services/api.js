@@ -2,6 +2,7 @@
 import axios from 'axios';
 import crypto from 'crypto';
 import settingsService from '../../../core/system/services/settingsService.js';
+import { url } from 'inspector';
 
 /**
  * AlphaESS Cloud API Client
@@ -10,7 +11,7 @@ import settingsService from '../../../core/system/services/settingsService.js';
  * Authentication uses:
  * - appId: Your application ID
  * - appSecret: Your application secret
- * - timestamp: Current Unix timestamp (seconds)
+ * - timeStamp: Current Unix timestamp (seconds)
  * - sign: SHA512 hash signature
  */
 class AlphaESSCloudAPI {
@@ -53,8 +54,16 @@ class AlphaESSCloudAPI {
       console.warn(`⚠️ Timestamp drift: ${diff} seconds. Server clock may be wrong!`);
     }
     
-    const signString = `${appId}${appSecret}${timestamp}`;
-    return crypto.createHash('sha512').update(signString).digest('hex');
+    const signSource = `${appId}${appSecret}${timestamp}`;
+    const sign = crypto.createHash('sha512').update(signSource).digest('hex');
+    
+    /*console.log('  🔐 Signature generated:', {
+      appId: appId.substring(0, 10) + '...',
+      timestamp,
+      signLength: sign.length
+    });*/
+    
+    return sign;
   }
 
   /**
@@ -71,9 +80,8 @@ class AlphaESSCloudAPI {
     }
 
     const { appId, appSecret, endpointUrl } = await this.getCredentials();
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const sign = this.generateSignature(appId, appSecret, timestamp);
-    const time = new Date().toISOString();
+    const timeStamp = Math.floor(Date.now() / 1000).toString();
+    const sign = this.generateSignature(appId, appSecret, timeStamp);
 
     try {
       const config = {
@@ -82,23 +90,40 @@ class AlphaESSCloudAPI {
         headers: {
           'Content-Type': 'application/json',
           'appId': appId,
-          'timeStamp': timestamp,
+          'timeStamp': timeStamp,
           'sign': sign
         },
-        params: params,  // Only endpoint-specific params here
         timeout: 10000
       };
 
-      console.log('  - Cloud-API =>', time, 'Request', config.url);
+      // Add params based on method
+      if (method === 'GET' && Object.keys(params).length > 0) {
+        config.params = params;
+      } else if (method === 'POST' && Object.keys(params).length > 0) {
+        config.data = params;
+      }
+
+      /*console.log('  📡 Cloud-API Request:', {
+        url: config.url,
+        method: config.method,
+        headers: {
+          appId: config.headers.appId.substring(0, 10) + '...',
+          timeStamp: config.headers.timeStamp,
+          sign: config.headers.sign.substring(0, 20) + '...'
+        },
+        params: Object.keys(params).length > 0 ? params : 'none'
+      });*/
 
       this.lastRequestTime = Date.now();
       this.requestCount++;
 
       const response = await axios(config);
       
+      console.log('   ├ API ', config.url, ' / ', response.status, ' / ', !!response.data.data);
+
       // AlphaESS API returns code in response body
       if (response.data.code !== 200) {
-        throw new Error(response.data.msg || 'API request failed');
+        throw new Error(response.data.msg || `API request failed with code ${response.data.code}`);
       }
 
       this.lastError = null;
@@ -108,9 +133,16 @@ class AlphaESSCloudAPI {
       this.lastError = {
         message: error.message,
         timestamp: Date.now(),
-        endpoint
+        endpoint,
+        response: error.response?.data
       };
-      console.error(`AlphaESS API Error [${endpoint}]:`, error.message);
+      
+      console.error('  ❌ AlphaESS API Error:', {
+        endpoint,
+        error: error.message,
+        response: error.response?.data
+      });
+      
       throw error;
     }
   }
@@ -149,7 +181,7 @@ class AlphaESSCloudAPI {
 
   /**
    * Get one day power data (15-minute intervals)
-   * Endpoint: /getOneDateEnergy
+   * Endpoint: /getOneDatePowerBySn
    * 
    * @param {string} queryDate - Format: YYYY-MM-DD
    */
@@ -161,7 +193,7 @@ class AlphaESSCloudAPI {
       throw new Error('System serial number not configured');
     }
 
-    const response = await this.makeRequest('/getOneDateEnergy', {
+    const response = await this.makeRequest('/getOneDatePowerBySn', {
       sysSn: sn,
       queryDate: queryDate
     });
@@ -170,7 +202,7 @@ class AlphaESSCloudAPI {
 
   /**
    * Get one day energy statistics (daily totals)
-   * Endpoint: /getOneDayEnergy
+   * Endpoint: /getOneDateEnergy
    * 
    * Returns:
    * - epvTotal: Total PV generation (kWh)
@@ -189,7 +221,7 @@ class AlphaESSCloudAPI {
       throw new Error('System serial number not configured');
     }
 
-    const response = await this.makeRequest('/getOneDayEnergy', {
+    const response = await this.makeRequest('/getOneDateEnergy', {
       sysSn: sn,
       queryDate: queryDate
     });
@@ -327,10 +359,21 @@ class AlphaESSCloudAPI {
    */
   async testConnection() {
     try {
-      await this.getLastPowerData();
-      return { success: true, message: 'Connection successful' };
+      console.log(' - Testing AlphaESS Cloud API connection...');
+      const systems = await this.getSystemList();
+      console.log(' - ✅ Connection successful, systems:', systems);
+      return { 
+        success: true, 
+        message: 'Connection successful',
+        systems: systems
+      };
     } catch (error) {
-      return { success: false, message: error.message };
+      console.error(' - ❌ Connection test failed:', error.message);
+      return { 
+        success: false, 
+        message: error.message,
+        details: this.lastError
+      };
     }
   }
 

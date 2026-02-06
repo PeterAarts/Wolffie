@@ -1,7 +1,9 @@
+// modules/homewizard/routes/index.js
 import express from 'express';
 import settingsSchema from '../config/settings-schema.js';
 import settingsService from '../../../core/services/settingsService.js';
-import deviceService from '../services/deviceService.js';
+import deviceService from '../services/deviceService.js';  // Fixed: was deviceServices.js
+import collector from '../services/collector.js';
 
 const router = express.Router();
 
@@ -151,19 +153,22 @@ router.post('/discover', async (req, res) => {
  */
 router.get('/collector/status', async (req, res) => {
   try {
-    const status = await collectorService.getStatus();
+    const status = collector.getStatus();
     
     res.json({
-      isRunning: status.running,
+      isRunning: status.deviceCount > 0,
       deviceCount: status.deviceCount,
       lastCollectionTime: status.lastCollection,
-      collectionsToday: status.collectionsToday
+      collectionsToday: 0 // TODO: Track this if needed
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
+/**
+ * Merge schema with current settings values
+ */
 function mergeSchemaWithValues(schema, currentSettings) {
   // Deep clone schema
   const merged = JSON.parse(JSON.stringify(schema));
