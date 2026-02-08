@@ -27,7 +27,7 @@ class HomeWizardCollector {
         return true; // Not an error — just nothing to do
       }
 
-      console.log(`📡 Collecting from ${this.devices.length} HomeWizard device(s)...`);
+      console.log(` - [${new Date().toISOString()}] Collecting from ${this.devices.length} HomeWizard device(s)...`);
 
       const results = await Promise.allSettled(
         this.devices.map(device => this.collectFromDevice(device))

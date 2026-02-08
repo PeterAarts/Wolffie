@@ -7,6 +7,7 @@ class AggregatorService {
   constructor() {
     this.isRunning = false;
     this.aggregationInterval = null;
+    this.lastComparisonDate = null; // Houdt de datum van de laatste run bij
   }
 
   /**
@@ -53,6 +54,15 @@ class AggregatorService {
       await this.aggregateHours();
       await this.aggregateDaily();
       await this.aggregateMonthly();
+
+      // OPTIMALISATIE: Voer vergelijking slechts 1x per dag uit (bijv. na 01:00 uur)
+      const today = new Date().toISOString().split('T')[0];
+      const hour = new Date().getHours();
+
+      if (this.lastComparisonDate !== today && hour >= 1) {
+        await this.compareForecastWithActual();
+        this.lastComparisonDate = today; // Markeer als uitgevoerd voor vandaag
+      }
     } catch (error) {
       console.error('❌ Aggregation error:', error.message);
     }
@@ -259,6 +269,38 @@ class AggregatorService {
 
     } catch (error) {
       console.error('❌ Monthly aggregation failed:', error.message);
+    }
+  }
+  async compareForecastWithActual() {
+    // Pak de data van gisteren
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dateStr = yesterday.toISOString().split('T')[0];
+
+    try {
+      // 1. Haal werkelijke opbrengst uit energy_daily
+      const [daily] = await db.pool.query(
+        'SELECT pv_generation_kwh FROM energy_daily WHERE date = ?', [dateStr]
+      );
+
+      if (daily[0]) {
+        const actual = daily[0].pv_generation_kwh;
+        
+        // 2. Update de forecast tabel met de werkelijkheid
+        await db.pool.query(`
+          UPDATE solar_forecasts 
+          SET actual_kwh = ?, 
+              accuracy_pct = (actual_kwh / expected_kwh) * 100 
+          WHERE date = ?
+        `, [actual, dateStr]);
+
+        // 3. Update 'Confidence Score' in Gebruikersprofiel
+        // Als de forecast structureel te hoog is, kan de StrategyManager 
+        // besluiten om de buffer veiliger (hoger) in te stellen.
+        await this.updateProfileConfidence(dateStr);
+      }
+    } catch (error) {
+      console.error('❌ Forecast vergelijking mislukt:', error.message);
     }
   }
 }

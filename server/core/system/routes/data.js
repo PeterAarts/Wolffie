@@ -228,7 +228,7 @@ router.get('/devices', async (req, res) => {
       ORDER BY dm.power DESC
     `);
 
-    console.log(`✔ Found ${devices.length} devices with measurements`);
+    console.log(`   - Found ${devices.length} devices with measurements`);
 
     // Parse extra_metrics JSON for each device
     const devicesWithParsedMetrics = devices.map(device => {

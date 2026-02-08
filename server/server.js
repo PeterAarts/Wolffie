@@ -14,7 +14,7 @@ import settingsRoutes from './core/system/routes/settings.js';
 import configRoutes from './core/system/routes/config.js';
 import dataRoutes from './core/system/routes/data.js';
 import historyRoutes from './core/system/routes/history.js';
-
+import strategyManager from './core/strategyManager.js';
 
 
 const app = express();
@@ -102,6 +102,9 @@ app.listen(PORT, async () => {
   
   // Initialize modules
   await initializeModules();
+
+  // Start de strategie engine elke 5 minuten
+  setInterval(() => { strategyManager.run();  }, 5 * 60 * 1000);
 });
 
 // Graceful shutdown

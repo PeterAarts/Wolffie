@@ -1,88 +1,250 @@
 // server/core/system/routes/settings.js
 import express from 'express';
 import settingsService from '../services/settingsService.js';
+import moduleLoader from '../../moduleLoader.js'; // Zorg voor het juiste pad naar je loader
 import { authorize } from '../../auth/middleware/authorize.js';
+import userService from '../../auth/services/userService.js';
 
 const router = express.Router();
 
 /**
- * GET /api/settings/category/:category
- * Get all settings in a category
+ * GET /api/settings/modules
+ * Geeft een lijst van alle ontdekte modules inclusief hun status
  */
-router.get('/category/:category', async (req, res) => {
+router.get('/modules', authorize('admin'), async (req, res) => {
+  const modules = moduleLoader.getAllModules().map(m => ({
+    module_id: m.manifest.id, // De frontend verwacht 'module_id'
+    module_name: m.manifest.name,
+    enabled: m.manifest.enabled !== false,
+    has_schema: !!m.manifest.settingsSchema // Controleer of dit klopt met je Loader
+  }));
+  res.json({ success: true, modules });
+});
+/**
+ * GET /api/settings/module/:moduleId
+ * Haalt het JSON-schema en de huidige database-waarden op.
+ * Speciale handling voor 'core' om systeem-brede instellingen te groeperen.
+ */
+router.get('/module/:moduleId', authorize('admin'), async (req, res) => {
   try {
-    const { category } = req.params;
-    const settings = await settingsService.getCategory(category);
-    
+    const { moduleId } = req.params;
+    let schema = null;
+    let values = {};
+
+    // Reguliere module handling via moduleLoader
+    const module = moduleLoader.getModule(moduleId);
+    if (!module) {
+      return res.status(404).json({ success: false, error: 'Module niet gevonden' });
+    }
+    schema = module.manifest.settingsSchema || null;
+    values = await settingsService.getCategory(moduleId);
+
+
     res.json({ 
       success: true,
-      ...settings 
+      schema,
+      values
     });
   } catch (error) {
-    console.error(`Error getting category ${req.params.category}:`, error);
-    res.status(500).json({ 
-      success: false,
-      error: error.message 
-    });
+    console.error(`Error fetching settings for ${req.params.moduleId}:`, error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
 /**
- * POST /api/settings/modbus
- * Update ModBus settings
+ * POST /api/settings/module/:moduleId
+ * Slaat instellingen op. Bij 'core' moeten we de velden terugsturen naar hun originele categorie.
  */
-router.post('/modbus', authorize('admin'), async (req, res) => {
+router.post('/module/:moduleId', authorize('admin'), async (req, res) => {
   try {
-    const { ip_address, port, slave_id, enabled } = req.body;
-    
-    const updates = {};
-    if (ip_address !== undefined) updates.ip_address = ip_address;
-    if (port !== undefined) updates.port = port;
-    if (slave_id !== undefined) updates.slave_id = slave_id;
-    if (enabled !== undefined) updates.enabled = enabled;
+    const { moduleId } = req.params;
+    const settings = req.body;
 
-    await settingsService.setCategory('modbus', updates, req.user.username, 'Updated via API');
+     await settingsService.setCategory(moduleId, settings, req.user.username, 'Module update');
+
     
-    res.json({ 
-      success: true,
-      message: 'ModBus settings updated' 
-    });
+    res.json({ success: true, message: 'Instellingen succesvol bijgewerkt' });
   } catch (error) {
-    console.error('Error updating ModBus settings:', error);
-    res.status(500).json({ 
-      success: false,
-      error: error.message 
-    });
+    res.status(400).json({ success: false, error: error.message });
   }
 });
 
 /**
- * POST /api/settings/cloud-api
- * Update Cloud API settings
+ * ==========================================
+ * SYSTEM (CORE) SETTINGS
+ * ==========================================
  */
-router.post('/cloud-api', authorize('admin'), async (req, res) => {
+/**
+ * GET /api/settings/core
+ * Haalt alle systeem-brede categorieën op en bouwt een volledig schema.
+ */
+router.get('/core', authorize('admin'), async (req, res) => {
   try {
-    const { app_id, app_secret, system_sn, endpoint_url, enabled } = req.body;
-    
-    const updates = {};
-    if (app_id !== undefined) updates.app_id = app_id;
-    if (app_secret !== undefined) updates.app_secret = app_secret;
-    if (system_sn !== undefined) updates.system_sn = system_sn;
-    if (endpoint_url !== undefined) updates.endpoint_url = endpoint_url;
-    if (enabled !== undefined) updates.enabled = enabled;
+    const coreCategories = ['system', 'data_collection', 'retention', 'notifications'];
+    let values = {};
 
-    await settingsService.setCategory('cloud_api', updates, req.user.username, 'Updated via API');
-    
-    res.json({ 
+    for (const cat of coreCategories) {
+      const catValues = await settingsService.getCategory(cat);
+      values = { ...values, ...catValues };
+    }
+
+    res.json({
       success: true,
-      message: 'Cloud API settings updated' 
+      schema: {
+        groups: [
+          {
+            title: 'Systeem & Locatie',
+            sections: [{
+              fields: [
+                { key: 'system_name', component: 'text', label: 'Systeem Naam', column: 2, editable: true, },
+                { key: 'location', component: 'text', label: 'Locatie', column: 2 , editable: true,},
+                { key: 'timezone', component: 'text', label: 'Tijdzone', column: 2 , editable: true,}
+              ]
+            }]
+          },
+          {
+            title: 'Data Collectie',
+            sections: [{
+              fields: [
+                { key: 'primary_source', component: 'dropdown', label: 'Primaire Bron', column: 2, editable: true, options: [
+                  { label: 'Cloud API', value: 'cloud' },
+                  { label: 'ModBus TCP', value: 'modbus' }
+                ]},
+                { key: 'enable_failover', component: 'switch', label: 'Automatische Failover', column: 2, editable: true, },
+                { key: 'cache_timeout', component: 'number', label: 'Cache Timeout (ms)', column: 2, editable: true, suffix: 'ms' },
+                { key: 'failover_threshold', component: 'number', label: 'Failover Drempel', column: 2, editable: true, }
+              ]
+            }]
+          },
+          {
+            title: 'Notificaties',
+            sections: [{
+              fields: [
+                { key: 'email_enabled', component: 'switch', label: 'E-mail Notificaties', column: 2 , editable: true,},
+                { key: 'email_address', component: 'text', label: 'Ontvanger E-mail', column: 2, placeholder: 'voorbeeld@domein.nl', editable: true, }
+              ]
+            }]
+          },
+          {
+            title: 'Data Retentie (Dagen)',
+            sections: [{
+              fields: [
+                { key: 'snapshots_days', component: 'number', label: 'Snapshots', column: 3, editable: true,},
+                { key: 'minutes_days', component: 'number', label: 'Minuut Data', column: 3, editable: true, },
+                { key: 'hours_days', component: 'number', label: 'Uur Data', column: 3, editable: true, }
+              ]
+            }]
+          }
+        ]
+      },
+      values
     });
   } catch (error) {
-    console.error('Error updating Cloud API settings:', error);
-    res.status(500).json({ 
-      success: false,
-      error: error.message 
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/settings/core
+ */
+router.post('/core', authorize('admin'), async (req, res) => {
+  try {
+    const updates = req.body;
+    const categoryMapping = {
+      system_name: 'system', location: 'system', timezone: 'system',
+      primary_source: 'data_collection', enable_failover: 'data_collection', 
+      cache_timeout: 'data_collection', failover_threshold: 'data_collection',
+      email_enabled: 'notifications', email_address: 'notifications',
+      snapshots_days: 'retention', minutes_days: 'retention', hours_days: 'retention'
+    };
+
+    for (const [key, value] of Object.entries(updates)) {
+      const category = categoryMapping[key];
+      if (category) {
+        await settingsService.set(category, key, value, req.user.username, 'Core Systeem Update');
+      }
+    }
+    res.json({ success: true, message: 'Systeeminstellingen succesvol bijgewerkt' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/settings/users
+ */
+router.get('/users', authorize('admin'), async (req, res) => {
+  try {
+    res.json({
+      success: true,
+      schema: {
+        groups: [
+          {
+            title: 'Gebruikersbeheer',
+            sections: [{
+              component: 'table',
+              title: 'Huidige Gebruikers',
+              data: {
+                endpoint: '/settings/users/list',
+                columns: [
+                  { field: 'username', header: 'Gebruikersnaam' },
+                  { field: 'email', header: 'E-mail' },
+                  { field: 'role', header: 'Rol' }
+                ],
+                rowActions: [
+                  { label: 'Verwijderen', icon: 'pi-trash', action: 'delete', severity: 'danger' }
+                ]
+              }
+            }]
+          },
+          {
+            title: 'Nieuwe Gebruiker Toevoegen',
+            sections: [{
+              fields: [
+                { key: 'new_username', component: 'text', label: 'Gebruikersnaam', column: 2, editable: true, },
+                { key: 'new_password', component: 'password', label: 'Wachtwoord', column: 2, editable: true, },
+                { key: 'new_email', component: 'text', label: 'E-mailadres', column: 2 , editable: true, placeholder: ''},
+                { key: 'new_role', component: 'dropdown', label: 'Rol', column: 2, editable: true,
+                  options: [{label: 'Admin', value: 'admin'}, {label: 'User', value: 'user'}] }
+              ]
+            }]
+          }
+        ],
+        globalActions: [
+          { label: 'Gebruiker Aanmaken', icon: 'pi-user-plus', endpoint: '/settings/users/create', method: 'POST' }
+        ]
+      },
+      values: {}
     });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * Hulproutes voor Gebruikers
+ */
+router.get('/users/list', authorize('admin'), async (req, res) => {
+  try {
+    const users = await userService.getAllUsers();
+    res.json({ success: true, data: users });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/users/create', authorize('admin'), async (req, res) => {
+  try {
+    const { new_username, new_password, new_email, new_role } = req.body;
+    await userService.createUser({
+      username: new_username,
+      password: new_password,
+      email: new_email,
+      role: new_role
+    });
+    res.json({ success: true, message: 'Gebruiker succesvol aangemaakt' });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
   }
 });
 

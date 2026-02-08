@@ -99,7 +99,7 @@ class CollectorManager {
       // Resolve final interval from device_settings if available
       entry.interval = await this._resolveInterval(id, entry.interval);
 
-      console.log(` -  🚀 Starting: ${entry.name} (interval: ${entry.interval / 1000}s)`);
+      console.log(` -  Starting: ${entry.name} (interval: ${entry.interval / 1000}s)`);
 
       // Immediate first collection
       await this._runCollector(id);
@@ -231,7 +231,7 @@ class CollectorManager {
         this._checkPause(entry);
       }
 
-      console.log(`   └ ${entry.name}: ${success ? '✅' : '⚠️'} (${elapsed}ms)`);
+      //console.log(`   └ ${entry.name}: ${success ? '✅' : '⚠️'} (${elapsed}ms)`);
 
     } catch (error) {
       // collect() threw — hard failure
