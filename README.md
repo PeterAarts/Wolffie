@@ -1,10 +1,13 @@
-# Wolffie — Energy Monitoring & Management System
+# Wolffie— Energy Monitoring & Management System
 
 ## Project Overview
 
-Wolffie is a comprehensive, self-hosted energy monitoring and management platform designed for residential solar and battery systems. It collects, stores, and visualizes real-time and historical energy data from multiple sources — including AlphaESS solar/battery inverters, HomeWizard smart devices, and SolarEdge systems — through a modern web interface. The system is built for extensibility, allowing new energy sources to be integrated as modular plug-ins without changing the core application.
+Wolffie is a comprehensive, self-hosted energy monitoring and management platform designed for residential solar and battery systems. 
+It is created to enable management of your battery inverter and solar converter in 1 system and not to depend on public/external API's from vendors.
+It collects, stores, and visualizes real-time and historical energy data from multiple sources — including AlphaESS solar/battery inverters, HomeWizard smart devices, and SolarEdge systems — through a modern web interface. 
+The system is built for extensibility, allowing new energy sources to be integrated as modular plug-ins without changing the core application.
 
-
+![](wolffie_app.png)
 ---
 
 ## Architecture
@@ -103,214 +106,28 @@ Key behaviors:
 
 ---
 
-## Modular Backend Architecture
+## Modular Design
 
-The backend follows a clear separation between **core infrastructure** and **pluggable modules**. The `core/` directory contains shared services that every module depends on, while the `modules/` directory holds self-contained energy source integrations that are discovered and loaded at runtime.
-
-### Project Structure Overview
+Each energy source is implemented as a self-contained module following a standardized structure:
 
 ```
-project-root/
-├── server.js                          # Application entry point
-├── .env                               # Environment configuration
-├── config/
-│   ├── app.js                         # Express/CORS settings
-│   ├── database.js                    # MariaDB connection pool
-│   └── modbus.js                      # ModBus defaults & intervals
-│
-├── core/                              # Shared infrastructure
-│   ├── collectorManager.js            # Module discovery & orchestration
-│   ├── moduleLoader.js                # Dynamic module loading
-│   ├── routeManager.js                # Auto-registers module routes
-│   ├── strategyManager.js             # Energy strategy engine
-│   ├── database.js                    # Shared DB service (pool, helpers)
-│   │
-│   ├── auth/                          # Authentication & authorization
-│   │   ├── middleware/
-│   │   │   ├── authenticate.js        # JWT verification
-│   │   │   ├── authorize.js           # Role-based access control
-│   │   │   ├── rateLimiter.js         # Request throttling
-│   │   │   └── session.js             # Session management
-│   │   ├── models/
-│   │   │   ├── session.js
-│   │   │   └── user.js
-│   │   ├── routes/
-│   │   │   └── auth.js                # Login/logout/refresh endpoints
-│   │   └── services/
-│   │       ├── authService.js
-│   │       ├── tokenService.js
-│   │       └── userService.js
-│   │
-│   ├── strategies/                    # Energy management strategies
-│   │   └── SmartEcoStrategy.js        # Eco-optimized charge/discharge
-│   │
-│   └── system/                        # System-wide services & routes
-│       ├── controllers/
-│       │   └── historyController.js
-│       ├── routes/
-│       │   ├── config.js              # System configuration API
-│       │   ├── data.js                # Generic data endpoints
-│       │   ├── history.js             # Historical data queries
-│       │   ├── settings.js            # Settings CRUD + testing
-│       │   ├── setup.js               # Setup wizard API
-│       │   └── system.js              # Architecture & component API
-│       └── services/
-│           ├── aggregatorService.js    # Multi-tier data aggregation
-│           ├── profilingService.js     # Performance profiling
-│           ├── settingsService.js      # DB-driven settings with cache
-│           └── systemconfigservice.js  # System component management
-│
-├── modules/                           # Pluggable energy source modules
-│   ├── alphaess-cloud/
-│   ├── alphaess-modbus-tcp/
-│   ├── alphaess-modbus-rs485/
-│   ├── homewizard/
-│   ├── solar-forecast/
-│   ├── solaredge/
-│   └── wheather/
-│
-├── diagnostics/                       # Standalone diagnostic scripts
-│   ├── test-daily-totals.js
-│   └── verify-aggregation.js
-│
-└── tests/                             # Integration test scripts
-    ├── modbus-diagnostic.js
-    ├── test-modbus-rs485.js
-    └── test-modbus.js
+modules/
+  alphaess/
+    manifest.json        # Module metadata and capabilities
+    services/
+      api.js             # External API communication
+      collector.js       # Data collection logic
+    routes/              # Express API endpoints
+    config-schema.json   # Configuration definition
+  homewizard/
+    ...
+  solar-forecast/
+    ...
+  electricity-pricing/
+    ...
 ```
 
-### Module Anatomy
-
-Every module lives in its own directory under `modules/` and follows a standardized structure. This convention ensures the core `collectorManager` and `moduleLoader` can discover, initialize, and orchestrate modules without any hardcoded references.
-
-```
-modules/[module-name]/
-├── manifest.json                # Module identity & capabilities
-├── index.js                     # Entry point (initialize, getStatus)
-├── test.js                      # Self-contained test suite
-│
-├── config/
-│   └── settings_schema.json     # Defines configurable settings for the UI
-│
-├── services/
-│   ├── api.js                   # External API communication (if applicable)
-│   ├── collector.js             # Data collection logic
-│   └── deviceService.js         # Device discovery/management (if applicable)
-│
-└── routes/
-    └── index.js                 # Express routes exposed under /api/modules/[name]
-```
-
-Each file has a specific responsibility:
-
-**`manifest.json`** — Declarative module metadata that the loader reads at discovery time. Contains the module name, version, description, author, supported capabilities (e.g. `realtime`, `historical`, `control`), required settings, and default collection interval. The collector manager uses this to determine how to schedule and handle the module.
-
-**`index.js`** — The module's entry point. Exports an object with standardized lifecycle methods: `initialize()` loads settings from the database and sets up the module, `getStatus()` returns the current health and configuration state, and optionally `shutdown()` for cleanup. The module loader calls these during application startup and shutdown.
-
-**`services/api.js`** — Encapsulates all external communication (HTTP requests to cloud APIs, local device APIs, or protocol-level communication). This strict separation ensures that API keys, endpoints, authentication logic, and error handling are isolated from the collection logic. The api.js file typically exposes methods like `healthCheck()`, `fetchData()`, and `getAPIInfo()`.
-
-**`services/collector.js`** — Implements the `collect()` method that the collector manager invokes on schedule. It calls the api service to fetch data, normalizes the response into the standard WattsOn data format, and stores results in the database. Also exposes `getStatus()` with last run time, error state, and record counts.
-
-**`services/deviceService.js`** — Used by modules that manage physical devices (like HomeWizard). Handles device discovery on the local network, device registration, and per-device state tracking.
-
-**`config/settings_schema.json`** — A JSON schema that defines which settings the module needs (API keys, endpoints, polling intervals, enabled/disabled flags). The Settings UI reads this schema to dynamically render configuration forms without custom frontend code per module.
-
-**`routes/index.js`** — Express router that the route manager auto-mounts under `/api/modules/[module-name]`. Provides module-specific API endpoints for the frontend (e.g. device lists, manual data fetch, connection testing).
-
-**`test.js`** — A standalone test suite that validates the full module stack: API connectivity, database tables, settings loading, module initialization, data collection, and data querying. Each test outputs colored console results and a pass/fail summary.
-
-### Current Modules
-
-| Module | Type | Protocol | Status | Description |
-|---|---|---|---|---|
-| `alphaess-cloud` | Cloud API | HTTPS | Active | AlphaESS Open API for real-time and historical inverter data |
-| `alphaess-modbus-tcp` | Local | ModBus TCP | Active | Direct inverter communication over LAN (port 502) |
-| `alphaess-modbus-rs485` | Local | RS485 Serial | Planned | Direct serial connection via USB-RS485 cable |
-| `homewizard` | Local | HTTP (LAN) | In Progress | HomeWizard P1 meter and smart socket monitoring |
-| `solar-forecast` | Cloud API | HTTPS | Active | Solar production forecasting via Forecast.Solar |
-| `solaredge` | Cloud API | HTTPS | Planned | SolarEdge inverter integration |
-| `wheather` | Cloud API | HTTPS | Planned | Weather data for forecast enrichment |
-
-### Core Infrastructure
-
-The core services that power module orchestration:
-
-**`collectorManager.js`** — The central orchestrator. At startup it scans the `modules/` directory, reads each `manifest.json`, validates the module structure, and calls `initialize()` on each enabled module. It then schedules `collect()` calls at the intervals defined in the manifest or overridden in database settings. It handles errors per-module so a failing module never blocks others.
-
-**`moduleLoader.js`** — Handles the dynamic `import()` of module entry points, validates that required exports exist, and maintains a registry of loaded modules with their status.
-
-**`routeManager.js`** — Iterates over loaded modules, checks for a `routes/` directory, and auto-mounts each module's Express router under the appropriate API path. This means adding a new module's routes requires zero changes to the core route configuration.
-
-**`strategyManager.js`** — Manages energy management strategies (like `SmartEcoStrategy`) that can consume data from multiple modules to make automated charge/discharge decisions.
-
-### Module Lifecycle
-
-```
-Application Start
-    │
-    ▼
-collectorManager.discoverModules()
-    │  Scans modules/ directory
-    │  Reads manifest.json from each
-    │
-    ▼
-moduleLoader.load(module)
-    │  Dynamic import of index.js
-    │  Validates exports
-    │
-    ▼
-module.initialize()
-    │  Loads settings from database (via settingsService)
-    │  Validates required configuration
-    │  Sets up API client / device connections
-    │
-    ▼
-routeManager.mountRoutes(module)
-    │  Auto-registers /api/modules/[name]/*
-    │
-    ▼
-collectorManager.scheduleCollection(module)
-    │  Starts periodic collect() calls
-    │  Per-module error isolation
-    │
-    ▼
-Running ─── collect() → api.fetchData() → normalize → db.store()
-    │
-    ▼
-Application Shutdown
-    │
-    ▼
-module.shutdown()
-    │  Close connections, cleanup
-```
-
-### Adding a New Module
-
-To integrate a new energy source, a developer creates a new directory under `modules/` with the standard file structure and the core infrastructure handles the rest:
-
-1. Create `modules/new-source/manifest.json` with module metadata
-2. Implement `services/api.js` for external communication
-3. Implement `services/collector.js` with a `collect()` method that normalizes data
-4. Create `index.js` with `initialize()` and `getStatus()`
-5. Optionally add `routes/index.js` for module-specific API endpoints
-6. Optionally add `config/settings_schema.json` for dynamic settings UI
-7. Create `test.js` following the module test template for validation
-
-No changes to the core application, route configuration, or frontend components are required — the module loader discovers and integrates the new source automatically.
-
-### Module Test Framework
-
-Each module includes a `test.js` that validates its complete stack independently. Tests run in sequence and cover:
-
-1. **API Information** — Verify API client metadata and endpoints
-2. **API Health Check** — Test connectivity to external services
-3. **Database Connection** — Verify table existence and record counts
-4. **Settings Loading** — Load and validate module settings from the database
-5. **Module Initialization** — Run the full `initialize()` lifecycle
-6. **Full Collection** — Execute a real `collect()` cycle and verify data storage
-7. **Data Query** — Retrieve and display collected data
-
-Tests produce colored terminal output with a pass/fail summary, making it easy to validate a module in isolation before integrating it into the running system. A shell script can chain all module tests for full-system validation.
+The **Collector Manager** discovers and loads modules at startup, orchestrating collection intervals and error handling uniformly across all sources.
 
 ---
 
@@ -354,6 +171,8 @@ Tests produce colored terminal output with a pass/fail summary, making it easy t
 ### Working
 
 - AlphaESS Cloud API integration with real-time and historical data
+- AlphaESS Modbus TCP local-connection
+- AlphaESS RS485 serial communication (USB-RS485 cable)
 - Live dashboard with WebSocket-powered updates
 - Dynamic system diagram rendered from database architecture
 - Historical data visualization with smart granularity
@@ -361,16 +180,14 @@ Tests produce colored terminal output with a pass/fail summary, making it easy t
 - JWT authentication with role-based access
 - Settings management with database persistence and live reload
 - Solar forecast and electricity pricing modules
-- RS485 serial communication (USB-RS485 cable)
-- HomeWizard Energy module (manual insertion)
-- Day-ahead API for creating a strategy
+- HomeWizard Energy module (energy-socket devices manually added, based on api v1)
 - SolarEdge integration
 - Universal UI component system (dynamic rendering from backend schemas)
 
 ### In Progress
 
 - HomeWizard Energy module (device discovery, P1 meter, smart sockets)
-- create a strategy module for planning when to charge, decharge combined with average usage in the morning/evening
+- A strategy module that determines when or if to charge from grid (low-prices) based on morning usage. Combined with the expected Solar production for next day.(hence solar-forecast)
 
 ### Planned
 
@@ -381,4 +198,4 @@ Tests produce colored terminal output with a pass/fail summary, making it easy t
 
 ---
 
-*WattsOn — Making energy visible.*
+*Wolffie — Manage your energy offline.*
