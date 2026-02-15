@@ -1,8 +1,9 @@
-# WattsOn — Energy Monitoring & Management System
+# Wolffie — Energy Monitoring & Management System
 
 ## Project Overview
 
-WattsOn is a comprehensive, self-hosted energy monitoring and management platform designed for residential solar and battery systems. It collects, stores, and visualizes real-time and historical energy data from multiple sources — including AlphaESS solar/battery inverters, HomeWizard smart devices, and SolarEdge systems — through a modern web interface. The system is built for extensibility, allowing new energy sources to be integrated as modular plug-ins without changing the core application.
+Wolffie is a comprehensive, self-hosted energy monitoring and management platform designed for residential solar and battery systems. It collects, stores, and visualizes real-time and historical energy data from multiple sources — including AlphaESS solar/battery inverters, HomeWizard smart devices, and SolarEdge systems — through a modern web interface. The system is built for extensibility, allowing new energy sources to be integrated as modular plug-ins without changing the core application.
+
 
 ---
 
