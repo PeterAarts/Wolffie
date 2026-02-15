@@ -14,28 +14,32 @@
       
       <div v-if="schema.groups" class="groups-container">
         <div v-for="(group, gIdx) in schema.groups" :key="gIdx" class="settings-group mb-5">
-          <h3 class="group-title mb-4">{{ group.title }}</h3>
+          <h3 class="text-md  mb-4">{{ group.title }}</h3>
           
-          <div v-for="(section, sIdx) in group.sections" :key="sIdx" class="settings-section mb-4">
-            <div v-if="section.fields" class="grid">
-              <div 
-                v-for="field in section.fields" 
-                :key="field.key" 
-                class="col-12" 
-                :class="getFieldColumnClass(field)"
-              >
-                <UniversalField 
-                  :field="field" 
-                  v-model="values[field.key]" 
-                  @update:modelValue="handleValueChange"
-                />
+          <div v-for="(section, sIdx) in group.sections" :key="sIdx" class="settings-section  ">
+              <div v-if="section.title" class="section-header ">
+                <h4 class="text-md font-semibold m-0">{{ section.title }}</h4>
+                <p v-if="section.description" class="text-gray-400 text-sm mt-1 mb-0">{{ section.description }}</p>
               </div>
-            </div>
+              <div v-if="section.fields" class="grid grid-cols-4 border bg-gray-50 p-4 gap-4 fields-container">
+                <div 
+                  v-for="field in section.fields" 
+                  :key="field.key" 
+                  :class="getFieldColumnClass(field)"
+                >
+                  <UniversalField 
+                    :field="field" 
+                    v-model="values[field.key]" 
+                    @update:modelValue="handleValueChange"
+                  />
+                </div>
+              </div>
 
-            <UniversalTable v-else-if="section.component === 'table'" :config="section" :moduleId="moduleId" />
-            <UniversalInfoPanel v-else-if="section.component === 'info-panel'" :config="section" :moduleId="moduleId" />
-            <UniversalCardGrid v-else-if="section.component === 'card-grid'" :config="section" :moduleId="moduleId" />
-          </div>
+              <UniversalTable v-else-if="section.component === 'table'" :config="section" :moduleId="moduleId" />
+              <UniversalInfoPanel v-else-if="section.component === 'info-panel'" :config="section" :moduleId="moduleId" />
+              <UniversalCardGrid v-else-if="section.component === 'card-grid'" :config="section" :moduleId="moduleId" />
+            </div>
+  
         </div>
       </div>
 
@@ -71,12 +75,9 @@
       </div>
     </div>
 
-    <div class="save-bar" :class="{ 'save-bar-visible': hasChanges }">
+    <div class="" :class="{ 'save-bar-visible': hasChanges }">
       <div class="save-bar-content">
-        <div class="save-bar-info">
-          <i class="pi pi-exclamation-triangle mr-2"></i>
-          <span>Niet-opgeslagen wijzigingen</span>
-        </div>
+        <div class="save-bar-info"></div>
         <div class="save-bar-actions">
           <Button label="Annuleren" class="p-button-text p-button-plain mr-3" @click="resetChanges" />
           <Button label="Opslaan" icon="pi pi-check" :loading="saving" @click="saveSettings" />
@@ -89,7 +90,8 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import apiClient from '@/services/api'; //
-import { useToast } from 'primevue/usetoast';
+import { useToastStore } from '@/stores/toast';
+const toast = useToastStore();
 
 // Imports
 import UniversalField from './Universalfield.vue';
@@ -108,14 +110,12 @@ const loading = ref(true);
 const saving = ref(false);
 const hasChanges = ref(false);
 const error = ref(null);
-const toast = useToast();
 
 // Hulpmiddelen
 function getFieldColumnClass(field) {
-  const colVal = field.column || field.ui?.column;
-  if (colVal === 1) return 'md:col-12';
-  if (colVal === 2) return 'md:col-6';
-  return 'md:col-4'; // Standaard 3 kolommen
+
+  const cols = field.cols || 12; 
+  return `col-12 md:col-${cols}`;
 }
 
 function mapAlphaField(key, config) {
@@ -198,21 +198,17 @@ onMounted(loadSchema);
 
 <style scoped>
 /* Hier komen jouw originele 400+ regels CSS, inclusief .save-bar, .loading-container, etc. */
-.universal-settings-panel { padding: 1rem; }
+.universal-settings-panel { padding: 0rem; }
 .group-title { border-bottom: 2px solid #eee; padding-bottom: 0.5rem; font-weight: 600; }
 .save-bar {
   position: sticky;
   bottom: 0;
   background: white;
-  border-top: 2px solid #f59e0b;
   padding: 1rem 1.5rem;
-  box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.1);
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
   z-index: 100;
 }
 .save-bar-visible { transform: translateY(0); }
-.save-bar-content { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }
+.save-bar-content { display: flex; align-items: center; justify-content: space-between; max-width: 1900px; margin: 0 auto; }
 
 .universal-settings-panel {
   position: relative;
@@ -297,38 +293,13 @@ onMounted(loadSchema);
 }
 
 /* Sections */
-.settings-section {
-  margin-bottom: 2rem;
-}
-
-.section-with-border {
-  padding-bottom: 2rem;
-  border-bottom: 1px solid #e5e7eb;
-}
-
-.section-with-border:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.section-header {
-  margin-bottom: 1.5rem;
-}
-
-.section-title {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
-  color: #374151;
-  font-weight: 600;
-}
-
-.section-description {
-  margin: 0;
-  color: #6b7280;
-  font-size: 0.95rem;
-  line-height: 1.5;
-}
-
+.settings-section           {margin-bottom: 2rem;}
+.section-with-border        {padding-bottom: 2rem;border-bottom: 1px solid #e5e7eb;}
+.section-with-border:last-child 
+                            {border-bottom: none;padding-bottom: 0;}
+.section-header             {margin-bottom: .5rem;}
+.section-title              {margin: 0 0 0.5rem 0;font-size: 1.1rem;color: #374151;font-weight: 500;}
+.section-description        {margin: 0;color: #6b7280;font-size: 0.95rem;line-height: 1.5;}
 /* Fields Container */
 .fields-container {
   display: grid;
@@ -337,114 +308,37 @@ onMounted(loadSchema);
 }
 
 @media (min-width: 768px) {
-  .fields-container {
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  }
+  .fields-container     {grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));}
 }
 
 /* Global Actions */
-.global-actions {
-  margin-top: 2rem;
-}
-
-.global-actions h4 {
-  margin: 1rem 0;
-  color: #374151;
-}
-
-.actions-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
+.global-actions         {margin-top: 2rem;}
+.global-actions h4      {margin: 1rem 0;color: #374151;}
+.actions-grid           {display: flex;flex-wrap: wrap;gap: 0.75rem;}
 
 /* Save Bar (Sticky) */
-.save-bar {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  border-top: 2px solid #f59e0b;
-  padding: 1rem 1.5rem;
-  box-shadow: 0 -4px 6px -1px rgb(0 0 0 / 0.1);
-  transform: translateY(100%);
-  transition: transform 0.3s ease;
-  z-index: 100;
-}
-
-.save-bar-visible {
-  transform: translateY(0);
-}
-
-.save-bar-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.save-bar-info {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  color: #92400e;
-  font-weight: 600;
-}
-
-.save-bar-info i {
-  font-size: 1.25rem;
-}
-
-.save-bar-actions {
-  display: flex;
-  gap: 0.75rem;
-}
-
+.save-bar               {position: sticky;bottom: 0;left: 0;right: 0;padding: 1rem 1.5rem;transform: translateY(100%);transition: transform 0.3s ease;z-index: 100;}
+.save-bar-visible       {transform: translateY(0);}
+.save-bar-content       {display: flex;align-items: center;justify-content: space-between;max-width: 1200px;margin: 0 auto;}
+.save-bar-info          {display: flex;align-items: center;gap: 0.75rem;color: #92400e;font-weight: 600;}
+.save-bar-info i        {font-size: 1.25rem;}
+.save-bar-actions       {display: flex;gap: 0.75rem;}
 /* Nested Tabs */
-.nested-tabs {
-  margin-top: 1rem;
-}
-
+.nested-tabs            {margin-top: 1rem;}
 /* HTML Content */
-.html-content {
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
+.html-content           {padding: 1rem;background: #f9fafb;border-radius: 8px;border: 1px solid #e5e7eb;}
 .html-content :deep(h1),
 .html-content :deep(h2),
-.html-content :deep(h3) {
-  margin-top: 0;
-}
-.group-title { border-bottom: 2px solid #eee; padding-bottom: 0.5rem; font-weight: 600; }
-.save-bar {
-  position: sticky; bottom: 0; background: white; border-top: 2px solid #f59e0b;
-  padding: 1rem 1.5rem; transform: translateY(100%); transition: transform 0.3s ease; z-index: 100;
-}
-.save-bar-visible { transform: translateY(0); }
-.save-bar-content { display: flex; align-items: center; justify-content: space-between; max-width: 1200px; margin: 0 auto; }
+.html-content :deep(h3) {margin-top: 0;}
+.group-title            {border-bottom: 1px solid #eee; padding-bottom: 0.5rem; font-weight: 600; }
 /* Responsive */
 @media (max-width: 768px) {
-  .module-header {
-    flex-direction: column;
-    text-align: center;
-  }
-
-  .save-bar-content {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-  }
-
-  .save-bar-actions {
-    flex-direction: column;
-  }
+  .module-header    {flex-direction: column;text-align: center;}
+  .save-bar-content {flex-direction: column;gap: 1rem;align-items: stretch;}
+  .save-bar-actions {flex-direction: column;}
 }
-.grid                 {grid-template-columns: auto auto auto;}
+.grid                   {display:flex ;grid-template-columns: auto auto auto auto;}
 .p-tabview-tablist-item-active 
-                      {background-color: #f59e0b !important; color: white !important;border-color:#92400e;border-width: 3px;}
+                        {background-color: #f59e0b !important; color: white !important;border-color:#92400e;border-width: 3px;}
+.field-label            {font-weight: 400;color: #585858;font-size: 0.9rem;}
 </style>

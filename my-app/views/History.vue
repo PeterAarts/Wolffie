@@ -2,15 +2,13 @@
   <div class="history-page">
     <!-- Header with controls -->
     <div class="history-header">
-      <h1>Energy History</h1>
-      
       <div class="controls">
         <!-- Period selector -->
         <div class="period-selector">
           <button 
             v-for="period in periods" 
             :key="period.value"
-            :class="['period-btn', { active: selectedPeriod === period.value }]"
+            :class="['period-btn text-sm font-bold text-gray-500', { active: selectedPeriod === period.value }]"
             @click="selectPeriod(period.value)"
           >
             {{ period.label }}
@@ -29,13 +27,14 @@
       </div>
     </div>
 
-    <!-- Main chart - No background card -->
+    <!-- Main chart -->
     <div class="chart-wrapper">
       <EnergyFlowGraph 
         :period="selectedPeriod"
         :date="selectedDate"
         :granularity="granularity"
         :height="chartHeight"
+        :showStats="true"
         @data-loaded="updateStats"
       />
     </div>
@@ -43,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed } from 'vue';
 import EnergyFlowGraph from '@/components/common/EnergyFlowGraph.vue';
 
 // Period options
@@ -58,6 +57,7 @@ const periods = [
 // State
 const selectedPeriod = ref('today');
 const selectedDate = ref(getTodayDate());
+const historyStats = ref(null);
 
 // Computed
 const granularity = computed(() => {
@@ -67,7 +67,7 @@ const granularity = computed(() => {
 
 const maxDate = computed(() => getTodayDate());
 
-const chartHeight = computed(() => '600px');
+const chartHeight = computed(() => '400px');
 
 // Methods
 function selectPeriod(period) {
@@ -79,41 +79,35 @@ function selectPeriod(period) {
 
 function loadData() {
   // Data loading is handled by EnergyFlowGraph component
-  // We just need to trigger the update through reactive props
+  // The reactive props will trigger the update
 }
 
-function updateStats(data) {
-  // Stats are now displayed in the chart itself
-  // This function can be used for additional processing if needed
-  console.log('Data loaded:', data.length, 'points');
+function updateStats(stats) {
+  // Store stats from the API response
+  historyStats.value = stats;
+  console.log('History stats updated:', stats);
 }
 
 function getTodayDate() {
   return new Date().toISOString().split('T')[0];
 }
 
-onMounted(() => {
-  loadData();
-});
+function formatEnergy(value) {
+  if (value === null || value === undefined) return '0.0 kWh';
+  return `${value.toFixed(1)} kWh`;
+}
 </script>
 
 <style scoped>
 .history-page {
   padding: 24px;
   margin: 0 auto;
-  background: #fff;
+  max-width: 2400px;
+  background-color: #fff;
 }
 
 .history-header {
-  margin-bottom: 32px;
-}
-
-.history-header h1 {
-  font-family: 'Rubik', sans-serif;
-  font-size: 32px;
-  font-weight: 600;
-  color: var(--color-text-primary);
-  margin: 0 0 24px 0;
+  margin-bottom: 24px;
 }
 
 .controls {
@@ -126,48 +120,52 @@ onMounted(() => {
 .period-selector {
   display: flex;
   gap: 8px;
-  background: var(--color-bg-secondary);
+  background: var(--color-bg-secondary, #ffffff);
   padding: 4px;
   border-radius: 8px;
 }
 
 .period-btn {
-  padding: 8px 16px;
+  padding: 10px 20px;
   border: none;
   background: transparent;
-  color: var(--color-text-secondary);
+  font-family: 'Rubik', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.period-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--color-text-primary, #111827);
+}
+
+.period-btn.active {
+  background: var(--color-text-primary, #111827);
+  color: var(--color-bg-primary, #ffffff);
+  font-weight: 600;
+}
+
+.date-picker input {
+  padding: 10px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
   font-family: 'Rubik', sans-serif;
   font-size: 14px;
-  font-weight: 500;
-  border-radius: 6px;
+  background: var(--color-bg-secondary, #f8f9fa);
+  color: var(--color-text-primary, #111827);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.period-btn:hover {
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-}
-
-.period-btn.active {
-  background: var(--color-text-primary);
-  color: var(--color-bg-primary);
-}
-
-.date-picker input {
-  padding: 8px 16px;
-  border: 1px solid var(--color-text-secondary);
-  border-radius: 6px;
-  font-family: 'Rubik', sans-serif;
-  font-size: 14px;
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  cursor: pointer;
+.date-picker input:hover {
+  border-color: rgba(0, 0, 0, 0.2);
 }
 
 .date-picker input:focus {
   outline: none;
-  border-color: var(--color-text-primary);
+  border-color: var(--color-text-primary, #111827);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
 }
 
 /* Chart Wrapper - No background */
@@ -183,10 +181,6 @@ onMounted(() => {
     padding: 16px;
   }
 
-  .history-header h1 {
-    font-size: 24px;
-  }
-
   .controls {
     flex-direction: column;
     align-items: stretch;
@@ -194,6 +188,28 @@ onMounted(() => {
 
   .period-selector {
     flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .period-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .history-page {
+    padding: 12px;
+  }
+
+  .period-selector {
+    padding: 3px;
+    gap: 4px;
+  }
+
+  .period-btn {
+    padding: 6px 12px;
+    font-size: 12px;
   }
 }
 </style>

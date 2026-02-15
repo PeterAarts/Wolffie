@@ -17,44 +17,16 @@ import Login from '../views/Login.vue';  // ← You need to add this file
 import CollectorFlow from '../views/CollectorFlow.vue';
 
 const routes = [
-  { path: '/login',name: 'Login',component: Login,meta: { requiresAuth: false,hideForAuth: true }},
-  { path: '/collector-flow', name: 'CollectorFlow', component: CollectorFlow },
-  { path: '/setupWizard',name: 'SetupWizard',component: SetupWizard,meta: { requiresAuth: true }},
-  {
-    path: '/',
-    component: MainLayout,
-    meta: { requiresAuth: true },
+  { path: '/login',           name: 'Login',          component: Login,meta: { requiresAuth: false,hideForAuth: true }},
+  { path: '/setupwizard',     name: 'SetupWizard',    component: SetupWizard,meta: { requiresAuth: true }},
+  { path: '/',component: MainLayout,meta: { requiresAuth: true },
     children: [
-      {
-        path: '',
-        name: 'Dashboard',
-        component: Dashboard
-      },
-      {
-        path: 'analytics',
-        name: 'Analytics',
-        component: Analytics
-      },
-      {
-        path: 'history',
-        name: 'History',
-        component: History
-      },
-      {
-        path: 'control',
-        name: 'Control',
-        component: Control
-      },
-      {
-        path: 'settings',
-        name: 'Settings',
-        component: Settings
-      },
-      {
-        path: 'events',
-        name: 'Events',
-        component: Events
-      }
+      { path: '',         name: 'Dashboard',  component: Dashboard},
+      { path: 'analytics',name: 'Analytics',  component: Analytics},
+      { path: 'history',  name: 'History',    component: History},
+      { path: 'control',  name: 'Control',    component: Control},
+      { path: 'settings', name: 'Settings',   component: Settings},
+      { path: 'events',   name: 'Events',     component: Events}
     ]
   }
 ];
@@ -68,24 +40,31 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore();
 
-  // Check if route requires authentication
   if (to.meta.requiresAuth) {
+    // Check auth status from backend session
     if (!authStore.isAuthenticated) {
-      // Not authenticated, redirect to login
-      console.log('🔒 Route requires auth, redirecting to login');
-      next({ name: 'Login', query: { redirect: to.fullPath } });
+      try {
+        // This endpoint checks session cookie (sent automatically!)
+        const { data } = await api.get('/auth/status');
+        
+        if (data.authenticated) {
+          // Session valid! Get new JWT
+          const refreshData = await api.post('/auth/refresh');
+          authStore.setAuth(refreshData.data);
+          next();
+          return;
+        }
+      } catch (error) {
+        // No valid session
+      }
+    }
+    
+    if (!authStore.isAuthenticated) {
+      next({ name: 'Login' });
       return;
     }
   }
-
-  // If authenticated and trying to access login page
-  if (to.meta.hideForAuth && authStore.isAuthenticated) {
-    console.log('✅ Already authenticated, redirecting to dashboard');
-    next({ name: 'Dashboard' });
-    return;
-  }
-
-  // Allow navigation
+  
   next();
 });
 

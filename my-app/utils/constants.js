@@ -9,10 +9,10 @@ export const REFRESH_INTERVALS = {
 
 export const CHART_COLORS = {
   SOLAR: '#f59e0b',
-  BATTERY: '#10b981',
-  GRID: '#f97316',
+  BATTERY: '#53da65',
+  GRID: '#f04730',
   LOAD: '#3b82f6',
-  CONSUMPTION: '#6366f1',
+  CONSUMPTION: '#451ef7',
 };
 
 export const BATTERY_STATES = {

@@ -11,5 +11,7 @@
 </template>
 
 <script setup>
-import UniversalSettingsPanel from 'UniversalSettingsPanel.vue';
+import UniversalSettingsPanel from './UniversalSettingsPanel.vue';
+
+
 </script>

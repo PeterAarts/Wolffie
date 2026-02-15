@@ -81,9 +81,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import apiClient from '@/services/api';
-import Tag from 'primevue/tag';
-import ProgressBar from 'primevue/progressbar';
-import ProgressSpinner from 'primevue/progressspinner';
+
 
 const props = defineProps({
   config: {

@@ -51,7 +51,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useDevicesStore } from '@/stores/devices';
-import ProgressSpinner from 'primevue/progressspinner';
+
 
 const emit = defineEmits(['socket-selected']);
 
@@ -122,7 +122,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--color-bg-primary, #ffffff);
 }
 
 /* Header */
@@ -132,7 +131,6 @@ onUnmounted(() => {
   align-items: center;
   padding: 0.875rem 1.25rem;
   border-bottom: 1px solid var(--color-border, #e5e7eb);
-  background: var(--color-bg-primary, #ffffff);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -208,7 +206,6 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--color-border, #e5e7eb);
   cursor: pointer;
   transition: all 0.2s ease;
-  background: var(--color-bg-primary, #ffffff);
 }
 
 .socket-row:hover {

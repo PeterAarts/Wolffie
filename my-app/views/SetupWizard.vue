@@ -360,15 +360,8 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'primevue/usetoast';
+
 import axios from 'axios';
-import InputText from 'primevue/inputtext';
-import InputNumber from 'primevue/inputnumber';
-import Password from 'primevue/password';
-import Button from 'primevue/button';
-import Dropdown from 'primevue/dropdown';
-import Badge from 'primevue/badge';
-import Toast from 'primevue/toast';
 
 const router = useRouter();
 const toast = useToast();

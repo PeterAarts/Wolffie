@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import Card from 'primevue/card';
+
 </script>
 
 <style scoped>

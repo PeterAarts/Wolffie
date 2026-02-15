@@ -1,16 +1,37 @@
 <template>
-  <div class="energy-flow-graph">
-    <div v-if="loading" class="loading-state">
-      <span>Loading graph data...</span>
+  <div class="energy-flow-graph-container">
+    <!-- Stats Overview Cards (optional) -->
+    <div v-if="showStats && !loading && !error && stats" class="stats-overview">
+      <div class="stat-card solar">
+        <span class="label">Zon</span>
+        <span class="value">{{ stats.pv_generation.toFixed(1) }} <small>kWh</small></span>
+      </div>
+      <div class="stat-card home">
+        <span class="label">Home</span>
+        <span class="value">{{ stats.load_consumption.toFixed(1) }} <small>kWh</small></span>
+      </div>
+      <div class="stat-card grid">
+        <span class="label">Grid</span>
+        <span class="value">
+          {{ stats.grid_import.toFixed(1) }} <small>In</small> / {{ stats.grid_export.toFixed(1) }} <small>Uit</small>
+        </span>
+      </div>
+      <div class="stat-card battery">
+        <span class="label">Batterij</span>
+        <span class="value">
+          {{ stats.battery_charge.toFixed(1) }} <small>L</small> / {{ stats.battery_discharge.toFixed(1) }} <small>O</small>
+        </span>
+      </div>
     </div>
-    <div v-else-if="error" class="error-state">
-      <span>{{ error }}</span>
-    </div>
-    <div v-else class="graph-container">
-      <div class="graph-controls">
-        <button @click="resetZoom" class="reset-zoom-btn" title="Reset zoom">
-          <span>🔍</span> Reset Zoom
-        </button>
+
+    <!-- Chart Area -->
+    <div class="energy-flow-graph">
+      <div v-if="loading" class="loading-state">
+        <span>Data laden...</span>
+      </div>
+      <div v-else-if="error" class="error-state">
+        <span>{{ error }}</span>
+        <button @click="loadData" class="retry-btn">Opnieuw proberen</button>
       </div>
       <canvas ref="chartCanvas"></canvas>
     </div>
@@ -18,552 +39,410 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue';
-import { Chart, registerables } from 'chart.js';
-import zoomPlugin from 'chartjs-plugin-zoom';
-import { useRealtimeStore } from '@/stores/realtime';
-import api from '@/services/api';
-
-// Register Chart.js components and zoom plugin
-Chart.register(...registerables, zoomPlugin);
-
-// Define emits
-const emit = defineEmits(['data-loaded']);
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import Chart from 'chart.js/auto';
+import { historyService } from '@/services/history';
 
 const props = defineProps({
-  period: {
-    type: String,
-    default: 'today'
-  },
-  date: {
-    type: String,
-    default: null
-  },
-  autoUpdate: {
-    type: Boolean,
-    default: false
-  },
-  height: {
-    type: String,
-    default: '280px'
-  },
-  granularity: {
-    type: Number,
-    default: 15,
-    validator: (value) => value >= 1 && value <= 60
-  }
+  period: { type: String, default: 'today' },
+  date: { type: String, default: () => new Date().toISOString().split('T')[0] },
+  granularity: { type: Number, default: 15 },
+  height: { type: String, default: '200px' },
+  showStats: { type: Boolean, default: false }
 });
 
-const realtimeStore = useRealtimeStore();
+const emit = defineEmits(['data-loaded']);
+
 const chartCanvas = ref(null);
-const loading = ref(true);
+const chartInstance = ref(null);
+const loading = ref(false);
 const error = ref(null);
-let chartInstance = null;
+const chartData = ref([]);
+const stats = ref(null);
 
-// Chart data structure
-const chartData = ref({
-  labels: [],
-  datasets: [
-    {
-      label: 'Battery',
-      data: [],
-      type: 'line',
-      backgroundColor: 'rgba(26, 26, 26, 0.7)',
-      borderColor: 'var(--color-data-primary)',
-      borderWidth: 1,
-      barThickness: 'flex',
-      maxBarThickness: 8,
-      tension: 0.4,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      order: 1
-    },
-    {
-      label: 'Solar',
-      data: [],
-      type: 'line',
-      borderColor: '#10b981',
-      backgroundColor: '#10b98166',
-      borderWidth: 2,
-      tension: 0.4,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      fill: true,
-      order: 1
-    },
-    {
-      label: 'Grid',
-      data: [],
-      type: 'line',
-      backgroundColor: 'rgba(255, 60, 60, 1)',
-      borderColor: 'rgba(255, 60, 60, 0.6)',
-      tension: 0.4,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      borderWidth: 1,
-      barThickness: 'flex',
-      maxBarThickness: 8,
-      order: 1
-    },
-    {
-      label: 'Home',
-      data: [],
-      type: 'line',
-      borderColor: '#3b82f6',
-      backgroundColor: '#3b82f666',
-      borderWidth: 2,
-      tension: 0.4,
-      pointRadius: 0,
-      pointHoverRadius: 4,
-      fill: false,
-      order: 1
-    }
-  ]
-});
+// Helper to calculate date range for multi-day periods
+const getRangeDates = (period) => {
+  const end = new Date().toISOString().split('T')[0];
+  let days = 7;
+  
+  if (period === 'last-7-days') days = 7;
+  else if (period === 'last-30-days') days = 30;
+  else if (period === 'last-365-days') days = 365;
+  
+  const start = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  return { start, end };
+};
 
-// Fetch historical data based on period
-const fetchData = async () => {
+const loadData = async () => {
   loading.value = true;
   error.value = null;
   
   try {
-    let endpoint;
+    let response;
     
-    switch (props.period) {
-      case 'today':
-        endpoint = `/history/today?granularity=${props.granularity}`;
-        break;
-      case 'date':
-        if (!props.date) {
-          throw new Error('Date parameter required for date period');
-        }
-        endpoint = `/history/date/${props.date}?granularity=${props.granularity}`;
-        break;
-      case 'last-24-hours':
-        endpoint = `/history/last-24-hours?granularity=${props.granularity}`;
-        break;
-      case 'last-7-days':
-        endpoint = `/history/last-7-days?granularity=${props.granularity}`;
-        break;
-      case 'last-30-days':
-        endpoint = `/history/last-30-days?granularity=${props.granularity}`;
-        break;
-      case 'last-365-days':
-        endpoint = `/history/last-365-days?granularity=${props.granularity}`;
-        break;
-      default:
-        throw new Error(`Unknown period: ${props.period}`);
+    // Determine API call based on period
+    if (props.period === 'today') {
+      response = await historyService.getToday(props.granularity);
+    } else if (props.period === 'date') {
+      response = await historyService.getDateData(props.date, props.granularity);
+    } else {
+      // Use range endpoint for multi-day periods
+      const { start, end } = getRangeDates(props.period);
+      response = await historyService.getRange(start, end);
     }
+
+    // New API structure: { stats, data }
+    const { stats: apiStats, data: apiData } = response.data;
     
-    // Use centralized API service (baseURL already includes /api)
-    const response = await api.get(endpoint);
-    const data = response.data || response;
+    // Store stats for display
+    stats.value = apiStats;
+    chartData.value = apiData;
     
-    // Process and populate chart data
-    populateChartData(data);
-    
-    loading.value = false;
+    // Emit stats to parent component
+    emit('data-loaded', apiStats);
+
+    await nextTick();
+    renderChart();
   } catch (err) {
-    console.error('Error fetching graph data:', err);
-    error.value = `Failed to load data: ${err.message}`;
+    console.error('Error loading history data:', err);
+    error.value = 'Kon historische data niet ophalen';
+  } finally {
     loading.value = false;
   }
 };
 
-// Populate chart with historical data
-const populateChartData = (data) => {
-  if (!Array.isArray(data) || data.length === 0) {
-    chartData.value.labels = [];
-    chartData.value.datasets.forEach(ds => ds.data = []);
-    emit('data-loaded', []);
-    return;
-  }
-  
-  // Sort by timestamp
-  const sortedData = [...data].sort((a, b) => 
-    new Date(a.timestamp) - new Date(b.timestamp)
-  );
-  
-  // Determine if we need to show dates (multi-day view)
-  const isMultiDay = props.period !== 'today' && props.period !== 'last-24-hours';
-  
-  // Extract labels with appropriate format
-  chartData.value.labels = sortedData.map(item => {
-    const date = new Date(item.timestamp);
-    
-    if (isMultiDay) {
-      if (props.period === 'last-7-days') {
-        return date.toLocaleDateString('en-US', { 
-          weekday: 'short', 
-          day: 'numeric'
-        }) + ', ' + date.toLocaleTimeString('en-US', { 
-          hour: '2-digit', 
-          minute: '2-digit',
-          hour12: false 
-        });
-      } else if (props.period === 'last-30-days') {
-        return date.toLocaleDateString('en-US', { 
-          month: 'short', 
-          day: 'numeric'
-        });
-      } else if (props.period === 'last-365-days') {
-        return date.toLocaleDateString('en-US', { 
-          month: 'short', 
-          year: 'numeric'
-        });
-      }
-    }
-    
-    // Single day view: just time "14:00"
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false 
-    });
-  });
-  
-  // Populate datasets - using flat structure
-  chartData.value.datasets[0].data = sortedData.map(item => item.battery_power || 0);
-  chartData.value.datasets[1].data = sortedData.map(item => item.solar || 0);
-  chartData.value.datasets[2].data = sortedData.map(item => item.grid || 0);
-  chartData.value.datasets[3].data = sortedData.map(item => item.home || 0);
-  
-  // Emit data for parent component
-  emit('data-loaded', sortedData);
-  
-  // Update chart if it exists
-  if (chartInstance) {
-    chartInstance.update();
-  }
-};
+const renderChart = () => {
+  if (!chartCanvas.value || chartData.value.length === 0) return;
+  if (chartInstance.value) chartInstance.value.destroy();
 
-// Append new data point from WebSocket
-const appendDataPoint = (powerUpdate) => {
-  if (!chartInstance || !powerUpdate) return;
-  
-  const now = new Date();
-  const timeLabel = now.toLocaleTimeString('en-US', { 
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: false 
-  });
-  
-  // Add new label
-  chartData.value.labels.push(timeLabel);
-  
-  // Add new data points
-  chartData.value.datasets[0].data.push(powerUpdate.battery_power || 0);
-  chartData.value.datasets[1].data.push(powerUpdate.pv_power || 0);
-  chartData.value.datasets[2].data.push(powerUpdate.grid_power || 0);
-  chartData.value.datasets[3].data.push(powerUpdate.load_power || 0);
-  
-  // Keep only data from start of day (max ~1440 points for 24h)
-  const maxPoints = 1440;
-  if (chartData.value.labels.length > maxPoints) {
-    chartData.value.labels.shift();
-    chartData.value.datasets.forEach(ds => ds.data.shift());
-  }
-  
-  // Update chart with animation
-  chartInstance.update('active');
-};
-
-// Initialize chart
-const initChart = () => {
-  if (!chartCanvas.value) return;
-  
   const ctx = chartCanvas.value.getContext('2d');
   
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: chartData.value,
+  // Check if this is range data (has 'date' field) or intraday data (has 'timestamp' field)
+  const isRangeData = chartData.value[0]?.date !== undefined && chartData.value[0]?.timestamp === undefined;
+  
+  // Calculate min/max for power data to align zero lines
+  const powerValues = isRangeData ? [] : chartData.value.flatMap(d => [
+    d.solar || 0,
+    d.home || 0,
+    d.grid || 0,
+    d.battery_power || 0
+  ]);
+  const minPower = isRangeData ? 0 : Math.min(...powerValues, 0);
+  const maxPower = isRangeData ? 100 : Math.max(...powerValues, 0);
+  
+  // Calculate range for y-axis (power)
+  const powerRange = Math.max(Math.abs(minPower), Math.abs(maxPower));
+  const yMin = minPower < 0 ? -powerRange : 0;
+  const yMax = powerRange+25; // Add some padding above max for better visualization
+  
+  // Calculate proportional range for y1-axis (SoC %)
+  // SoC is 0-100%, we need to scale it to match the zero line
+  const socScale = yMax / 100; // How much of the chart height is 100%
+  const y1Max = 100;
+  const y1Min = yMin / (yMax / 100); // Proportional negative space
+  
+  // Format labels: time for single-day view, date for multi-day view
+  const labels = chartData.value.map(d => {
+    const dt = new Date(d.timestamp || d.date);
+    return props.period === 'today' || props.period === 'date' 
+      ? dt.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
+      : dt.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit' });
+  });
+
+  chartInstance.value = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: isRangeData ? [
+        {
+          label: 'Solar (kWh)',
+          data: chartData.value.map(d => d.solar || 0),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 3,
+          borderWidth: 2,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Home (kWh)',
+          data: chartData.value.map(d => d.home || 0),
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: false,
+          tension: 0.4,
+          pointRadius: 3,
+          borderWidth: 2,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Grid Import (kWh)',
+          data: chartData.value.map(d => d.grid_import || 0),
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: false,
+          tension: 0.4,
+          pointRadius: 3,
+          borderWidth: 2,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Grid Export (kWh)',
+          data: chartData.value.map(d => d.grid_export || 0),
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(245, 158, 11, 0.1)',
+          fill: false,
+          tension: 0.4,
+          pointRadius: 3,
+          borderWidth: 2,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Battery Charge (kWh)',
+          data: chartData.value.map(d => d.battery_charge || 0),
+          borderColor: '#8b5cf6',
+          backgroundColor: 'rgba(139, 92, 246, 0.1)',
+          fill: false,
+          tension: 0.4,
+          pointRadius: 3,
+          borderWidth: 2,
+          yAxisID: 'y'
+        },
+        {
+          label: 'Battery Discharge (kWh)',
+          data: chartData.value.map(d => d.battery_discharge || 0),
+          borderColor: '#a78bfa',
+          backgroundColor: 'rgba(167, 139, 250, 0.1)',
+          fill: false,
+          tension: 0.4,
+          pointRadius: 3,
+          borderWidth: 2,
+          yAxisID: 'y'
+        }
+      ] : [
+        {
+          label: 'Solar(W)',
+          data: chartData.value.map(d => d.solar || 0),
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          fill: true,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointRadius: 0,
+          borderWidth: 2,
+          pointHoverRadius: 4
+        },
+        {
+          label: 'Home  (W)',
+          data: chartData.value.map(d => d.home || 0),
+          borderColor: '#3b82f6',
+          backgroundColor: 'rgba(59, 130, 246, 0.1)',
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointRadius: 0,
+          borderWidth: 2,
+          pointHoverRadius: 4
+        },
+        {
+          label: 'Grid (W)',
+          data: chartData.value.map(d => d.grid || 0),
+          borderColor: '#ef4444',
+          backgroundColor: 'rgba(239, 68, 68, 0.1)',
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointRadius: 0,
+          borderWidth: 2,
+          pointHoverRadius: 4
+        },
+        {
+          label: 'Battery (W)',
+          data: chartData.value.map(d => d.battery_power || 0),
+          borderColor: '#f59e0b',
+          backgroundColor: 'rgba(139, 92, 246, 0.1)',
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointRadius: 0,
+          borderWidth: 2,
+          pointHoverRadius: 4
+        },
+        {
+          label: 'Battery SoC (%)',
+          data: chartData.value.map(d => d.battery_soc || 0),
+          borderColor: '#6B7280',
+          backgroundColor: '#F2F3FA',
+          fill: true,
+          yAxisID: 'y1',
+          borderDash: [0, 0],
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: 2,
+          pointHoverRadius: 4
+        }
+      ]
+    },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      backgroundColor: 'transparent',
       interaction: {
         mode: 'index',
         intersect: false
       },
-      plugins: {
-        zoom: {
-          zoom: {
-            wheel: {
-              enabled: false,
-              speed: 0.1
-            },
-            pinch: {
-              enabled: false
-            },
-            mode: 'x',
-            drag: {
-              enabled: true,
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              borderColor: 'rgba(59, 130, 246, 0.5)',
-              borderWidth: 1
-            }
-          },
-          pan: {
-            enabled: true,
-            mode: 'x'
-          }
+              layout: {
+            padding: 0
         },
-        legend: {
-          display: true,
-          position: 'top',
-          align: 'start',
-          labels: {
-            boxWidth: 12,
-            boxHeight: 12,
-            padding: 25,
-            font: {
-              size: 12,
-              family: 'Rubik, sans-serif'
-            },
-            color: 'var(--color-text-secondary)',
-            usePointStyle: false
-          }
+      plugins: {
+        legend: { 
+          position: 'bottom',
+          labels: {usePointStyle: true,padding: 15,font: {size: 11,}}
         },
         tooltip: {
-          enabled: true,
-          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-          titleColor: '#222222',
-          mode: 'index',
-          intersect: false,
-          bodyColor: '#1e293b',
-          borderColor: 'var(--color-text-secondary)',
-          borderWidth: 0.5,
-          padding: 10,
-          displayColors: true,
+          backgroundColor: 'rgba(255,255, 255, 1)',
+          bodyColor: '#111827',
+          padding: 12,
+          titleColor: '#111827',
+          boxPadding: 10,
+          titleFont: {size: 13,weight: 'bold',},
+          bodyFont: {size: 12,color: '#111827'},
           callbacks: {
-            label: (context) => {
-              const label = context.dataset.label || '';
-              const value = context.parsed.y;
-              const unit = ' W';
-              return `${label}: ${value >= 0 ? '+' : ''}${value.toFixed(0)}${unit}`;
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.parsed.y !== null) {
+                if (context.datasetIndex === 4) {
+                  // Battery SoC - show percentage
+                  label += context.parsed.y.toFixed(1) + '%';
+                } else {
+                  // Power values - show watts
+                  label += context.parsed.y.toFixed(0) + ' W';
+                }
+              }
+              return label;
             }
           }
         }
       },
       scales: {
-        x: {
-          display: true,
-          grid: {
-            display: false,
-            color: 'transparent'
+        y: {
+          type: 'linear',
+          display: true,  // Changed from false to true
+          position: 'left',
+          padding: { top: 40, bottom: 10 },
+          min: yMin,
+          max: yMax,
+          title: { 
+            display: false  // Hide the "Vermogen (W)" title for cleaner look
           },
           ticks: {
-            color: 'var(--color-text-secondary)',
-            font: {
-              size: 10,
-              family: 'Rubik, sans-serif'
+            font: { size: 11 },
+            color: '#6b7280',
+            // Only show the "0" label
+            callback: function(value) {
+              return value === 0 ? '0' : '';
+            }
+          },
+          grid: {
+            color: (context) => {
+              // Make zero line more prominent, hide other grid lines
+              return context.tick.value === 0 ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0)';
             },
-            maxRotation: 45,
-            minRotation: 0,
-            autoSkipPadding: 20,
-            maxTicksLimit: 12
+            lineWidth: (context) => {
+              return context.tick.value === 0 ? 2 : 0;
+            },
+            drawTicks: false
+          },
+          border: {
+            display: false
           }
         },
-        y: {
+        y1: {
+          type: 'linear',
+          display: false,
+          padding: {top: 40, bottom: 10},
+          position: 'right',
+          min: y1Min,
+          max: y1Max, // Add some padding above 100% for better visualization
+          grid: { drawOnChartArea: true }
+        },
+        x: {
           display: true,
-          position: 'left',
-          grid: {
-            display: true,
-            drawBorder: false,
-            drawOnChartArea: true,
-            drawTicks: false,
-            color: function(context) {
-              if (context.tick.value === 0) {
-                return 'rgba(255, 255, 255, 0.3)';
-              }
-              return 'rgba(255, 255, 255, 0.1)';
-            },
-            lineWidth: function(context) {
-              if (context.tick.value === 0) {
-                return 2;
-              }
-              return 0.5;
-            }
-          },
           ticks: {
-            display: true,
-            color: 'var(--color-text-secondary)',
-            font: {
-              size: 10,
-              family: 'Rubik, sans-serif'
-            },
-            maxTicksLimit: 5,
-            callback: function(value) {
-              if (value >= 1000) {
-                return (value / 1000).toFixed(1) + 'k';
-              } else if (value <= -1000) {
-                return (value / 1000).toFixed(1) + 'k';
+            font: { size: 10 },
+            maxRotation: 0,
+            minRotation: 0,
+            autoSkip: true,
+            autoSkipPadding: 50,
+            callback: function(value, index, ticks) {
+              const label = this.getLabelForValue(value);
+              // For time-based labels (HH:MM format)
+              if (label && label.includes(':')) {
+                const [hours, minutes] = label.split(':');
+                // Only show labels at even hours (00:00, 02:00, 04:00, etc.)
+                if (parseInt(hours) % 2 === 0 && minutes === '00') {
+                  return hours + ':00';
+                }
+                return '';
               }
-              return value;
-            }
+              // For date-based labels, show every other label
+              if (index % 2 === 0) {
+                return label;
+              }
+              return '';
+            },
+            color: '#9ca3af',
+            padding: 8
+          },
+          grid: {
+            color: 'rgba(0, 0, 0, 0.05)',
+            drawTicks: false,
+            tickLength: 0
+          },
+          border: {
+            display: false
           }
         }
-      },
-      animation: {
-        duration: 500,
-        easing: 'easeInOutQuart'
       }
     }
   });
 };
 
-// Reset zoom to original view
-const resetZoom = () => {
-  if (chartInstance) {
-    chartInstance.resetZoom();
-  }
-};
+watch(() => [props.period, props.date, props.granularity], loadData);
 
-// Destroy chart instance
-const destroyChart = () => {
-  if (chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
-  }
-};
-
-// Watch for power updates from realtime store
-watch(
-  () => realtimeStore.powerUpdate,
-  (newPowerUpdate) => {
-    if (props.autoUpdate && newPowerUpdate) {
-      appendDataPoint(newPowerUpdate);
-    }
-  },
-  { deep: true }
-);
-
-// Watch for period changes
-watch(
-  () => props.period,
-  async () => {
-    destroyChart();
-    await fetchData();
-    setTimeout(() => {
-      if (chartCanvas.value) {
-        initChart();
-      }
-    }, 100);
-  }
-);
-
-// Watch for date changes
-watch(
-  () => props.date,
-  async () => {
-    if (props.period === 'date') {
-      destroyChart();
-      await fetchData();
-      setTimeout(() => {
-        if (chartCanvas.value) {
-          initChart();
-        }
-      }, 100);
-    }
-  }
-);
-
-// Watch for granularity changes
-watch(
-  () => props.granularity,
-  async () => {
-    destroyChart();
-    await fetchData();
-    setTimeout(() => {
-      if (chartCanvas.value) {
-        initChart();
-      }
-    }, 100);
-  }
-);
-
-// Lifecycle hooks
-onMounted(async () => {
-  await fetchData();
-  
-  setTimeout(() => {
-    if (chartCanvas.value) {
-      initChart();
-    }
-  }, 100);
-});
+onMounted(loadData);
 
 onUnmounted(() => {
-  destroyChart();
+  if (chartInstance.value) chartInstance.value.destroy();
 });
 </script>
 
 <style scoped>
-.energy-flow-graph {
-  width: 100%;
-  height: v-bind(height);
-  position: relative;
-  background: transparent;
-}
+.energy-flow-graph-container    {display: flex;flex-direction: column;width: 100%;}
+.stats-overview                 {display: grid;grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));gap: 16px;}
+.stat-card                      {background-color: var(--color-bg-primary, #f8f9fa);padding: 20px;display: flex;flex-direction: column;gap: 8px;border-radius:0; border-width:0px;}
+.stat-card .label               {font-size: 11px;text-transform: uppercase;color: var(--color-text-secondary, #6b7280);font-weight: 600;letter-spacing: 0.5px;}
+.stat-card .value               {font-size: 20px;font-weight: 700;font-family: 'Rubik', sans-serif;color: var(--color-text-primary, #111827);line-height: 1.2;}
+.stat-card .value small         {font-size: 12px;font-weight: 500;opacity: 0.7;margin-left: 4px;}
+.stat-card.solar .value         {color: #10b981; }
+.stat-card.home .value          {color: #3b82f6; }
+.stat-card.grid .value          {color: #ef4444; }
+.stat-card.battery .value       {color: #f59e0b; }
+.energy-flow-graph              {width: 100%;position: relative;height: v-bind(height);}
+.loading-state, .error-state    {display: flex;flex-direction: column;align-items: center;justify-content: center;height: 100%;gap: 12px;font-family: 'Rubik', sans-serif;}
+.loading-state span             {color: var(--color-text-secondary, #6b7280);font-size: 14px;}
+.error-state span               {color: #ef4444;font-size: 14px;text-align: center;}
+.retry-btn                      {padding: 10px 20px;background: var(--color-text-primary, #111827);color: var(--color-bg-primary, #ffffff);border: none;border-radius: 8px;cursor: pointer;font-family: 'Rubik', sans-serif;font-size: 14px;font-weight: 500;transition: all 0.2s ease;}
+.retry-btn:hover                {opacity: 0.9;transform: translateY(-1px);}
+.retry-btn:active               {transform: translateY(0);}
 
-.graph-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  background: transparent;
-}
-
-.graph-controls {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 10;
-}
-
-.reset-zoom-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
-  font-family: 'Rubik', sans-serif;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.reset-zoom-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  border-color: var(--color-text-primary);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-}
-
-.reset-zoom-btn:active {
-  transform: scale(0.95);
-}
-
-.loading-state,
-.error-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: var(--color-text-secondary);
-  font-size: 14px;
-  font-family: 'Rubik', sans-serif;
-}
-
-.error-state {
-  color: #ef4444;
-}
-
-canvas {
-  width: 100% !important;
-  height: calc(100% - 40px) !important;
-  margin-top: 32px;
-  background: transparent !important;
+@media (max-width: 768px) {
+  .stats-overview       {grid-template-columns: repeat(2, 1fr);}
+  .energy-flow-graph    {padding: 12px;}
+  .stat-card            {padding: 16px;}
+  .stat-card .value     {font-size: 18px;}
 }
 </style>

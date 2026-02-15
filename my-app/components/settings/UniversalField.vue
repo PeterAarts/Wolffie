@@ -1,259 +1,131 @@
-<!-- src/components/settings/UniversalField.vue -->
 <template>
-  <div v-if="field.visible !== false" class="universal-field">
-    <label v-if="field.label && !['checkbox', 'switch'].includes(field.component)" 
-           :for="field.key" 
-           class="field-label">
+  <div v-if="field.visible !== false" class="flex flex-col gap-1.5 w-full">
+    <label 
+      v-if="field.label && !['checkbox', 'switch'].includes(field.component)" 
+      :for="field.key" 
+      class="text-xs  text-gray-500  tracking-wider ml-1"
+    >
       {{ field.label }}
-      <span v-if="field.required" class="required-indicator">*</span>
+      <span v-if="field.required" class="text-red-500 ml-1">*</span>
     </label>
 
-    <!-- TEXT INPUT -->
-    <InputText
-      v-if="field.component === 'text'"
-      :id="field.key"
-      :modelValue="modelValue"
-      @update:modelValue="emit('update:modelValue', $event)"
-      :placeholder="field.placeholder"
-      :disabled="field.editable === false || disabled"
-      :required="field.required"
-      class="w-full"
-    />
+    <div class="relative group">
+      <template v-if="['text', 'password', 'email', 'number', 'url'].includes(field.component)">
+        <div class="relative flex items-center">
+          <div v-if="field.icon" class="absolute left-4 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+            <i :class="['fa-duotone', field.icon]"></i>
+          </div>
 
-    <!-- NUMBER INPUT -->
-    <InputNumber
-      v-else-if="field.component === 'number'"
-      :id="field.key"
-      :modelValue="modelValue"
-      @update:modelValue="emit('update:modelValue', $event)"
-      :placeholder="field.placeholder"
-      :disabled="field.editable === false || disabled"
-      :required="field.required"
-      :min="field.validation?.min"
-      :max="field.validation?.max"
-      :step="field.validation?.step"
-      :suffix="field.suffix"
-      :prefix="field.prefix"
-      :minFractionDigits="field.decimals || 0"
-      :maxFractionDigits="field.decimals || 2"
-      class="w-full"
-    />
+          <input
+            :id="field.key"
+            :type="field.component"
+            :value="modelValue"
+            @input="emit('update:modelValue', $event.target.value)"
+            :placeholder="field.placeholder"
+            :disabled="field.editable === false || disabled"
+            :required="field.required"
+            :min="field.validation?.min"
+            :max="field.validation?.max"
+            :step="field.validation?.step"
+            class="w-full bg-white border border-gray-200  p-2  text-gray-900 shadow-sm transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-gray-50 disabled:text-gray-400"
+            :class="[field.icon ? 'pl-11' : 'pl-4', validationError ? 'border-red-500 ring-red-500/10' : '']"
+          />
+        </div>
+      </template>
 
-    <!-- PASSWORD INPUT -->
-    <Password
-      v-else-if="field.component === 'password'"
-      :id="field.key"
-      :modelValue="modelValue"
-      @update:modelValue="emit('update:modelValue', $event)"
-      :placeholder="field.placeholder"
-      :disabled="field.editable === false || disabled"
-      :feedback="field.showStrength !== false"
-      :toggleMask="true"
-      class="w-full"
-    />
-
-    <!-- TEXTAREA -->
-    <Textarea
-      v-else-if="field.component === 'textarea'"
-      :id="field.key"
-      :modelValue="modelValue"
-      @update:modelValue="emit('update:modelValue', $event)"
-      :placeholder="field.placeholder"
-      :disabled="field.editable === false || disabled"
-      :rows="field.rows || 3"
-      :autoResize="field.autoResize !== false"
-      class="w-full"
-    />
-
-    <!-- SELECT / DROPDOWN -->
-    <Dropdown
-      v-else-if="field.component === 'select' || field.component === 'dropdown'"
-      :id="field.key"
-      :modelValue="modelValue"
-      @update:modelValue="emit('update:modelValue', $event)"
-      :options="field.options"
-      :optionLabel="field.optionLabel || 'label'"
-      :optionValue="field.optionValue || 'value'"
-      :placeholder="field.placeholder || 'Select...'"
-      :disabled="field.editable === false || disabled"
-      :showClear="!field.required"
-      class="w-full"
-    />
-
-    <!-- CHECKBOX -->
-    <div v-else-if="field.component === 'checkbox'" class="flex align-items-center gap-2">
-      <Checkbox
+      <textarea
+        v-else-if="field.component === 'textarea'"
         :id="field.key"
-        :modelValue="modelValue"
-        @update:modelValue="emit('update:modelValue', $event)"
+        :value="modelValue"
+        @input="emit('update:modelValue', $event.target.value)"
+        :placeholder="field.placeholder"
         :disabled="field.editable === false || disabled"
-        :binary="true"
-      />
-      <label :for="field.key" class="cursor-pointer">
-        {{ field.label }}
-        <span v-if="field.required" class="required-indicator">*</span>
-      </label>
-    </div>
+        rows="4"
+        class="w-full bg-white border border-gray-200  p-2 text-gray-900 shadow-sm transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-gray-50"
+      ></textarea>
 
-    <!-- SWITCH / TOGGLE -->
-    <div v-else-if="field.component === 'switch'" class="flex align-items-center gap-2">
-      <InputSwitch
+      <select
+        v-else-if="field.component === 'select' || field.component === 'dropdown'"
         :id="field.key"
-        :modelValue="modelValue"
-        @update:modelValue="emit('update:modelValue', $event)"
+        :value="modelValue"
+        @change="emit('update:modelValue', $event.target.value)"
         :disabled="field.editable === false || disabled"
-      />
-      <label :for="field.key" class="cursor-pointer">
-        {{ field.label }}
-        <span v-if="field.required" class="required-indicator">*</span>
-      </label>
-    </div>
+        class="w-full bg-white border border-gray-200  p-2 text-gray-900 shadow-sm appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+      >
+        <option v-if="field.placeholder" value="" disabled selected>{{ field.placeholder }}</option>
+        <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
+          {{ opt.label }}
+        </option>
+      </select>
 
-    <!-- COLOR PICKER -->
-    <ColorPicker
-      v-else-if="field.component === 'color'"
-      :id="field.key"
-      :modelValue="modelValue"
-      @update:modelValue="emit('update:modelValue', $event)"
-      :disabled="field.editable === false || disabled"
-    />
+      <div 
+        v-else-if="field.component === 'switch'" 
+        @click="!disabled && emit('update:modelValue', !modelValue)"
+        class="flex items-center justify-between p-4 bg-gray-50  border border-gray-100 cursor-pointer group hover:border-blue-200 transition-colors"
+        :class="{'opacity-50 cursor-not-allowed': disabled}"
+      >
+        <div class="flex flex-col">
+          <span class="text-sm font-bold text-gray-700">{{ field.label }}</span>
+          <span v-if="field.description" class="text-xs text-gray-500">{{ field.description }}</span>
+        </div>
+        <button
+          type="button"
+          class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ring-offset-2"
+          :class="modelValue ? 'bg-blue-600' : 'bg-gray-200'"
+        >
+          <span
+            aria-hidden="true"
+            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"
+            :class="modelValue ? 'translate-x-5' : 'translate-x-0'"
+          />
+        </button>
+      </div>
 
-    <!-- EMAIL INPUT -->
-    <InputText
-      v-else-if="field.component === 'email'"
-      :id="field.key"
-      :modelValue="modelValue"
-      @update:modelValue="emit('update:modelValue', $event)"
-      type="email"
-      :placeholder="field.placeholder"
-      :disabled="field.editable === false || disabled"
-      :required="field.required"
-      class="w-full"
-    />
+      <div v-else-if="field.component === 'color'" class="flex items-center gap-3 p-2 bg-white border border-gray-200  shadow-sm">
+        <input 
+          type="color" 
+          :value="modelValue" 
+          @input="emit('update:modelValue', $event.target.value)"
+          class="h-10 w-20 rounded cursor-pointer border-none bg-transparent"
+        />
+        <span class="text-sm font-mono text-gray-600 uppercase">{{ modelValue }}</span>
+      </div>
 
-    <!-- URL INPUT -->
-    <InputText
-      v-else-if="field.component === 'url'"
-      :id="field.key"
-      :modelValue="modelValue"
-      @update:modelValue="emit('update:modelValue', $event)"
-      type="url"
-      :placeholder="field.placeholder"
-      :disabled="field.editable === false || disabled"
-      :required="field.required"
-      class="w-full"
-    />
+      <div v-if="field.description && field.component !== 'switch'" class="mt-1.5 px-1">
+        <p class="text-xs text-gray-400 italic">
+          <i class="fa-duotone fa-circle-info mr-1"></i>
+          {{ field.description }}
+        </p>
+      </div>
 
-    <!-- MULTI-SELECT -->
-    <MultiSelect
-      v-else-if="field.component === 'multiselect'"
-      :id="field.key"
-      :modelValue="modelValue"
-      @update:modelValue="emit('update:modelValue', $event)"
-      :options="field.options"
-      :optionLabel="field.optionLabel || 'label'"
-      :optionValue="field.optionValue || 'value'"
-      :placeholder="field.placeholder || 'Select...'"
-      :disabled="field.editable === false || disabled"
-      :maxSelectedLabels="field.maxSelectedLabels || 3"
-      class="w-full"
-    />
-
-    <!-- SLIDER -->
-    <div v-else-if="field.component === 'slider'" class="flex flex-column gap-2">
-      <Slider
-        :id="field.key"
-        :modelValue="modelValue"
-        @update:modelValue="emit('update:modelValue', $event)"
-        :min="field.validation?.min || 0"
-        :max="field.validation?.max || 100"
-        :step="field.validation?.step || 1"
-        :disabled="field.editable === false || disabled"
-      />
-      <div class="flex justify-content-between text-sm text-600">
-        <span>{{ field.validation?.min || 0 }}</span>
-        <span class="font-bold">{{ modelValue }}</span>
-        <span>{{ field.validation?.max || 100 }}</span>
+      <div v-if="validationError" class="mt-1 px-1 flex items-center gap-1.5 text-red-600">
+        <i class="fa-duotone fa-triangle-exclamation text-[10px]"></i>
+        <small class="text-[11px] font-bold tracking-wide uppercase">{{ validationError }}</small>
       </div>
     </div>
-
-    <!-- HELP TEXT -->
-    <small v-if="field.helpText" class="help-text">
-      {{ field.helpText }}
-    </small>
-
-    <!-- VALIDATION ERROR -->
-    <small v-if="validationError" class="error-text">
-      {{ validationError }}
-    </small>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
-import InputText from 'primevue/inputtext';
-import InputNumber from 'primevue/inputnumber';
-import Password from 'primevue/password';
-import Textarea from 'primevue/textarea';
-import Dropdown from 'primevue/dropdown';
-import MultiSelect from 'primevue/multiselect';
-import Checkbox from 'primevue/checkbox';
-import InputSwitch from 'primevue/inputswitch';
-import ColorPicker from 'primevue/colorpicker';
-import Slider from 'primevue/slider';
 
 const props = defineProps({
-  field: {
-    type: Object,
-    required: true
-  },
-  modelValue: {
-    type: [String, Number, Boolean, Array, Object],
-    default: null
-  },
-  disabled: {
-    type: Boolean,
-    default: false
-  },
-  validationError: {
-    type: String,
-    default: null
-  }
+  field:            { type: Object, required: true },
+  modelValue:       { type: [String, Number, Boolean, Array, Object], default: null },
+  disabled:         { type: Boolean, default: false },
+  validationError:  { type: String, default: null }
 });
 
 const emit = defineEmits(['update:modelValue']);
 </script>
 
 <style scoped>
-.universal-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.field-label {
-  font-weight: 600;
-  color: #374151;
-  font-size: 0.95rem;
-}
-
-.required-indicator {
-  color: #ef4444;
-  margin-left: 0.25rem;
-}
-
-.help-text {
-  color: #6b7280;
-  font-size: 0.875rem;
-  line-height: 1.4;
-  display: block;
-  margin-top: -0.25rem;
-}
-
-.error-text {
-  color: #ef4444;
-  font-size: 0.875rem;
-  display: block;
-  margin-top: -0.25rem;
+/* Remove default arrow for custom styled select if needed */
+select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.75rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
 }
 </style>

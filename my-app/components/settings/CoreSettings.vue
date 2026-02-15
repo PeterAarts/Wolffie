@@ -2,7 +2,7 @@
   <div class="core-settings">
     <div class="section-header mb-4">
       <h3>Systeemconfiguratie</h3>
-      <p class="text-secondary">Beheer de basisinstellingen van het WattsOn platform.</p>
+      <p class="text-secondary">Beheer de basisinstellingen van het Wolffie platform.</p>
     </div>
     
     <UniversalSettingsPanel module-id="core" />
@@ -14,6 +14,6 @@
 </template>
 
 <script setup>
-import UniversalSettingsPanel from 'UniversalSettingsPanel.vue';
-import Button from 'primevue/button';
+import UniversalSettingsPanel from './UniversalSettingsPanel.vue';
+
 </script>

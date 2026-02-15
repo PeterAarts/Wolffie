@@ -1,6 +1,6 @@
 <!-- src/App.vue - WITH AUTHENTICATION -->
 <template>
-  <div id="app">
+  <div id="app-x" class="p-4">
     <!-- Show loading screen during initial load -->
     <div v-if="isInitializing" class="loading-screen">
       <div class="loading-content">
@@ -8,9 +8,9 @@
         <p>Loading Wolffie...</p>
       </div>
     </div>
-
     <!-- Main app content -->
     <router-view v-else />
+    <ToastList />
   </div>
 </template>
 
@@ -20,6 +20,7 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useConfigStore } from '@/stores/config';
 import { useSystemStore } from '@/stores/system';
+import ToastList from '@/components/common/ToastList.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -32,21 +33,21 @@ const isInitializing = ref(true);
  * Optimized startup flow with authentication
  */
 onMounted(async () => {
-  console.log('🚀 App starting...');
+  console.log('- App starting...');
 
   try {
     // STEP 0: Check authentication
-    console.log('🔐 Checking authentication...');
+    console.log('- Checking authentication...');
     const isAuthenticated = await authStore.initialize();
 
     if (!isAuthenticated) {
-      console.log('⚠️  Not authenticated, redirecting to login');
+      console.log('- Not authenticated, redirecting to login');
       router.push('/login');
       isInitializing.value = false;
       return;
     }
 
-    console.log('✅ Authenticated as:', authStore.user.username);
+    console.log('- Authenticated as:', authStore.user.username);
 
     // PHASE 1: Load minimal config (1 API call)
     // GET /api/setup/status
@@ -78,6 +79,7 @@ onMounted(async () => {
     isInitializing.value = false;
   }
 });
+
 </script>
 
 <style scoped>
