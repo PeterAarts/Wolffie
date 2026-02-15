@@ -75,6 +75,96 @@ class HomeWizardAPI {
   }
 
   /**
+   * Set device state (control power switch and lock)
+   * @param {string} ipAddress - Device IP address
+   * @param {number} port - Device port (default 80)
+   * @param {object} state - State object with power_on and/or switch_lock
+   * @param {boolean} state.power_on - Turn device on (true) or off (false)
+   * @param {boolean} state.switch_lock - Lock (true) or unlock (false) the switch
+   * 
+   * Examples:
+   * - Turn on: setState(ip, 80, { power_on: true })
+   * - Turn off: setState(ip, 80, { power_on: false })
+   * - Lock switch: setState(ip, 80, { switch_lock: true })
+   * - Turn on and lock: setState(ip, 80, { power_on: true, switch_lock: true })
+   */
+  async setState(ipAddress, port = 80, state = {}) {
+    try {
+      // Validate state object
+      const validKeys = ['power_on', 'switch_lock'];
+      const invalidKeys = Object.keys(state).filter(k => !validKeys.includes(k));
+      
+      if (invalidKeys.length > 0) {
+        throw new Error(`Invalid state keys: ${invalidKeys.join(', ')}. Valid keys: ${validKeys.join(', ')}`);
+      }
+
+      if (Object.keys(state).length === 0) {
+        throw new Error('State object cannot be empty. Must include power_on and/or switch_lock');
+      }
+
+      // Validate boolean values
+      if ('power_on' in state && typeof state.power_on !== 'boolean') {
+        throw new Error('power_on must be a boolean');
+      }
+
+      if ('switch_lock' in state && typeof state.switch_lock !== 'boolean') {
+        throw new Error('switch_lock must be a boolean');
+      }
+
+      const response = await axios.put(
+        `http://${ipAddress}:${port}/api/v1/state`,
+        state,
+        {
+          timeout: 3000,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        const status = error.response.status;
+        const data = error.response.data;
+
+        if (status === 400) {
+          throw new Error(`Bad request: ${data?.message || 'Invalid state parameters'}`);
+        } else if (status === 403) {
+          throw new Error('Device API is disabled or locked');
+        } else if (status === 422) {
+          throw new Error('Device does not support state control (e.g., P1 meter)');
+        }
+        
+        throw new Error(`HTTP ${status}: ${error.response.statusText}`);
+      }
+      
+      throw new Error(`Failed to set device state: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get current device state
+   * @param {string} ipAddress - Device IP address
+   * @param {number} port - Device port (default 80)
+   * @returns {object} Current state with power_on and switch_lock
+   */
+  async getState(ipAddress, port = 80) {
+    try {
+      const response = await axios.get(`http://${ipAddress}:${port}/api/v1/state`, {
+        timeout: 3000
+      });
+
+      return response.data;
+    } catch (error) {
+      if (error.response?.status === 422) {
+        throw new Error('Device does not support state control (e.g., P1 meter)');
+      }
+      throw new Error(`Failed to get device state: ${error.message}`);
+    }
+  }
+
+  /**
    * Test connection to device
    */
   async testConnection(ipAddress, port = 80) {

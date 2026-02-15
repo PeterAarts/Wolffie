@@ -65,7 +65,7 @@ router.post('/module/:moduleId', authorize('admin'), async (req, res) => {
     
     res.json({ success: true, message: 'Instellingen succesvol bijgewerkt' });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    res.status(400).json({ success: false, error: error.message, moduleId});
   }
 });
 

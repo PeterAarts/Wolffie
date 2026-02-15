@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import collector from './services/collector.js';
 import alphaessAPI from './services/api.js';
+import settingsService from '../../core/system/services/settingsService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +25,7 @@ class AlphaESSCloudModule {
     this.collector = collector;
     this.api = alphaessAPI;
     this.initialized = false;
+    this.config = null;
   }
 
   /**
@@ -31,20 +33,27 @@ class AlphaESSCloudModule {
    */
   async initialize() {
     if (this.initialized) {
-      console.log('⚠️  AlphaESS Cloud module already initialized');
+      console.log('   - AlphaESS Cloud module already initialized');
       return;
     }
-
-    //console.log(' - Initializing AlphaESS Cloud module...');
-
     try {
+      console.log(`   - \x1b[93m${this.manifest.id} \x1b[37m`);
+      this.config = await settingsService.getCategory(`${this.manifest.id}`);
+      if (!this.config || this.config.enabled === false) return;
+      if (!this.config.app_id || !this.config.app_secret || !this.config.system_sn) {
+        console.warn('Missing credentials');
+        return;
+      }
+      console.log(`     - System SN: ${this.config.system_sn}`);
+      console.log(`     - Poll interval: ${this.config.poll_interval}ms`);
+
       // Test API connection
       const health = await this.api.healthCheck();
       
       if (health.available) {
-       // console.log(' - ✅ AlphaESS Cloud API is available and authenticated');
+        console.log('     - API is available and authenticated \x1b[32m✓\x1b[37m');
       } else {
-        console.warn(' - ⚠️  AlphaESS Cloud API not available:', health.lastError);
+        console.warn('     - AlphaESS Cloud API not available: \x1b[31m', health.lastError,'\x1b[37m');
       }
 
       this.initialized = true;
@@ -81,6 +90,9 @@ class AlphaESSCloudModule {
 
     return {
       initialized: this.initialized,
+      enabled: this.config?.enabled || false,
+      hasConfig: !!this.config,
+      pollInterval: this.config?.poll_interval,
       collector: {
         lastCollection: collectorStatus.lastCollection,
         lastError: collectorStatus.lastError,

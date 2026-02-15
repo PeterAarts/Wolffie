@@ -1,0 +1,29 @@
+{
+  "groups": [
+    {
+      "title": "Solar Forecast Instellingen",
+      "sections": [
+        {
+          "fields": [
+            { "key": "enabled", "component": "switch", "label": "Forecast Actief", "cols": 12 }
+          ]
+        },
+        {
+          "title": "Locatie",
+          "fields": [
+            { "key": "latitude", "component": "text", "label": "Latitude", "cols": 6, "required": true },
+            { "key": "longitude", "component": "text", "label": "Longitude", "cols": 6, "required": true }
+          ]
+        },
+        {
+          "title": "Panelen",
+          "fields": [
+            { "key": "tilt", "component": "number", "label": "Helling", "cols": 4, "suffix": "°" },
+            { "key": "azimuth", "component": "number", "label": "Richting", "cols": 4, "suffix": "°" },
+            { "key": "kwp", "component": "number", "label": "Vermogen", "cols": 4, "suffix": " kWp" }
+          ]
+        }
+      ]
+    }
+  ]
+}

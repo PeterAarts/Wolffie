@@ -116,54 +116,57 @@ class SettingsService {
   /**
    * Set a single setting met automatische schema-gebaseerde encryptie en validatie
    */
-  async set(category, key, value, changedBy = 'system', reason = null) {
+  async set(moduleId, key, value, changedBy = 'system', reason = null) {
     try {
-      // 1. Validatie tegen schema indien beschikbaar
-      await this.validate(category, key, value);
-
-      // 2. Controleer of het veld encrypted moet zijn op basis van manifest/schema
-      const module = moduleLoader.getModule(category);
-      const fieldSchema = module?.manifest?.settingsSchema?.properties?.[key];
-      const shouldEncrypt = fieldSchema?.ui?.sensitive === true;
-
-      // 3. Haal huidige info op voor historie
+      // 1. Check of de instelling al bestaat
       const [current] = await db.pool.query(
-        'SELECT id, setting_value FROM system_settings WHERE category = ? AND setting_key = ?',
-        [category, key]
+        'SELECT id, setting_value, is_encrypted, value_type FROM system_settings WHERE module_id = ? AND setting_key = ?',
+        [moduleId, key]
       );
 
-      if (current.length === 0) {
-        // Indien setting nog niet bestaat (bijv. nieuwe module velden), voeg toe
-        const type = typeof value === 'number' ? 'number' : typeof value === 'boolean' ? 'boolean' : 'string';
-        await db.pool.query(
-          'INSERT INTO system_settings (category, setting_key, setting_value, value_type, is_encrypted) VALUES (?, ?, ?, ?, ?)',
-          [category, key, null, type, shouldEncrypt ? 1 : 0]
-        );
+      let newValue = value !== null ? String(value) : null;
+      let isEncrypted = 0;
+      let settingId =0;
+      let oldValue=null;
+      let valueType = typeof value === 'number' ? 'number' : (typeof value === 'boolean' ? 'boolean' : 'string');
+
+      if (current.length > 0) {
+        isEncrypted = current[0].is_encrypted;
+        valueType = current[0].value_type;
+        settingId = current[0].id;
       }
 
-      const oldValue = current[0]?.setting_value;
-      let newValue = value !== null ? String(value) : null;
-
-      if (shouldEncrypt && newValue) {
+      // Encryptie afhandelen
+      if (isEncrypted && newValue) {
         newValue = this.encrypt(newValue);
       }
 
-      // 4. Update
-      await db.pool.query(
-        'UPDATE system_settings SET setting_value = ?, updated_at = NOW() WHERE category = ? AND setting_key = ?',
-        [newValue, category, key]
-      );
-
+      if (current.length === 0) {
+        // 2a. INSERT: Als de instelling nog niet bestaat
+        const [result] = await db.pool.query(
+          `INSERT INTO system_settings 
+          (module_id, category, setting_key, setting_value, value_type, is_module, enabled, created_at, updated_at) 
+          VALUES (?, ?, ?, ?, ?, 1, 1, NOW(), NOW())`,
+          [moduleId, moduleId, key, newValue, valueType]
+        );
+        console.log(`     - Setting inserted: ${moduleId}.${key} = ${value}`);
+      } else {
+        // 2b. UPDATE: Als de instelling al bestaat
+        await db.pool.query(
+          'UPDATE system_settings SET setting_value = ?, updated_at = NOW() WHERE id = ?',
+          [newValue, current[0].id]
+        );
+      }
       // 5. Historie loggen
       await db.pool.query(
-        'INSERT INTO settings_history (category, setting_key, old_value, new_value, changed_by, change_reason) VALUES (?, ?, ?, ?, ?, ?)',
-        [category, key, oldValue, newValue, changedBy, reason]
+        'INSERT INTO settings_history (setting_id, category, setting_key, old_value, new_value, changed_by, change_reason) VALUES (?,?, ?, ?, ?, ?, ?)',
+        [settingId, moduleId, key, oldValue, newValue, changedBy, reason]
       );
 
-      this.cache.delete(`${category}.${key}`);
+      this.cache.delete(`${moduleId}.${key}`);
       return true;
     } catch (error) {
-      console.error(`Error setting ${category}.${key}:`, error.message);
+      console.error(`Error setting ${moduleId}.${key}:`, error.message);
       throw error;
     }
   }
@@ -181,52 +184,95 @@ class SettingsService {
   /**
    * Dynamische validatie op basis van settings_schema.json
    */
-  async validate(category, key, value) {
-    const module = moduleLoader.getModule(category);
-    if (!module || !module.manifest.settingsSchema) return true;
+async validate(category, key, value) {
+  const module = moduleLoader.getModule(category);
+  if (!module || !module.manifest.settingsSchema) return true;
 
-    const schema = module.manifest.settingsSchema.properties?.[key];
-    if (!schema) return true;
+  // Zoek het veld op in de geneste structuur
+  let field = null;
+  module.manifest.settingsSchema.groups?.forEach(g => {
+    g.sections?.forEach(s => {
+      const found = s.fields?.find(f => f.key === key);
+      if (found) field = found;
+    });
+  });
 
-    // Type checking
-    if (schema.type === 'integer' || schema.type === 'number') {
-      const num = Number(value);
-      if (isNaN(num)) throw new Error(`${key} moet een getal zijn`);
-      if (schema.minimum !== undefined && num < schema.minimum) throw new Error(`${key} te klein (min ${schema.minimum})`);
-      if (schema.maximum !== undefined && num > schema.maximum) throw new Error(`${key} te groot (max ${schema.maximum})`);
-    }
+  if (!field) return true;
 
-    if (schema.pattern) {
-      const regex = new RegExp(schema.pattern);
-      if (!regex.test(String(value))) throw new Error(`${key} voldoet niet aan het patroon`);
-    }
+  // Validatie op basis van component type
+  if (field.component === 'number') {
+    const num = Number(value);
+    if (isNaN(num)) throw new Error(`${key} moet een getal zijn`);
+  }
+  
+  if (field.required && (value === null || value === '')) {
+    throw new Error(`${key} is verplicht`);
+  }
 
-    return true;
+  return true;
+}
+
+/**
+   * Alias for getCategory to support module-specific fetching
+   */
+  async getModuleSettings(moduleId) {
+    return this.getCategory(moduleId);
   }
 
   /**
-   * Initialiseer settings van alle modules (Vervangt initializeFromEnv)
+   * Generic service to initialize module settings from its schema file
+   * Reads: server/modules/{moduleId}/config/settings-schema.json
    */
+  /**
+  * Initialiseer settings van alle modules op basis van de UI-schema structuur
+  */
   async initializeModules() {
-    console.log('🔄 Initializing all module settings...');
+    console.log('   - reading schema`s...');
     const modules = moduleLoader.getAllModules();
     let count = 0;
 
     for (const mod of modules) {
       const schema = mod.manifest.settingsSchema;
-      if (!schema || !schema.properties) continue;
+      // Controleer of het schema de verwachte 'groups' structuur heeft
+      if (!schema || !schema.groups) continue;
 
-      for (const [key, config] of Object.entries(schema.properties)) {
-        const current = await this.get(mod.manifest.id, key);
-        if (current === null && config.default !== undefined) {
-          await this.set(mod.manifest.id, key, config.default, 'system', 'Default initialization');
-          count++;
+      const moduleId = mod.manifest.id;
+
+      for (const group of schema.groups) {
+        if (!group.sections) continue;
+
+        for (const section of group.sections) {
+          if (!section.fields) continue;
+
+          for (const field of section.fields) {
+            const { key, default: defaultValue, component } = field;
+            
+            // Overslaan als er geen key is (bijv. info-panels)
+            if (!key) continue;
+
+            // Controleer of de setting al bestaat in de database
+            const current = await this.get(moduleId, key);
+            
+            if (current === null) {
+              // Map component naar database type
+              const type = component === 'switch' ? 'boolean' : 
+                          component === 'number' ? 'number' : 'string';
+              
+              // Gebruik de default waarde uit het schema of null
+              const valueToSet = defaultValue !== undefined ? defaultValue : null;
+              
+              console.log(`     - ${moduleId} => Creating missing setting:  ${key} (type: ${type})`);
+              await this.set(moduleId, key, valueToSet, 'system', 'Schema-based initialization');
+              count++;
+            }
+          }
         }
       }
     }
-    console.log(`✅ Initialized ${count} new default settings`);
+    console.log(`   - Initialized ${count} new default settings from module schemas`);
   }
 
+  
   _convertType(value, type) {
     if (value === null || value === undefined) return null;
     switch (type) {

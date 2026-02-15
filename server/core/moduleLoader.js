@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import db from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,10 +15,39 @@ class ModuleLoader {
   }
 
   /**
+   * Check if a module is enabled in the database
+   * @param {string} moduleId - The module ID to check
+   * @returns {Promise<boolean>} - True if enabled, false otherwise
+   */
+  async isModuleEnabled(moduleId) {
+    try {
+      const [rows] = await db.pool.query(
+        `SELECT setting_value FROM system_settings 
+         WHERE module_id = ? AND setting_key = 'enabled' 
+         LIMIT 1`,
+        [moduleId]
+      );
+
+      if (rows.length > 0) {
+        const value = rows[0].setting_value;
+        // Handle both string 'true'/'false' and boolean values
+        return value === true || value === 'true' || value === '1' || value === 1;
+      }
+
+      // If no setting found, module is disabled by default for safety
+      return false;
+    } catch (error) {
+      console.warn(`   ⚠️  Failed to check enabled status for ${moduleId}:`, error.message);
+      // On error, assume disabled for safety
+      return false;
+    }
+  }
+
+  /**
    * Ontdekt alle modules en laadt hun manifest en instellingen-schema
    */
   async discoverModules() {
-    console.log('🔍 Scanning for modules...');
+    console.log(' - loading modules (discovery)');
 
     if (!fs.existsSync(this.modulesPath)) {
       console.log(`⚠️ Modules directory niet gevonden: ${this.modulesPath}`);
@@ -33,14 +63,14 @@ class ModuleLoader {
         const module = await this.loadModule(dir.name);
         if (module) {
           this.modules.set(module.manifest.id, module);
-          console.log(`  ✓ Loaded: ${module.manifest.name} v${module.manifest.version}`);
+          console.log(`   ✓ Loaded: ${module.manifest.name} v${module.manifest.version}`);
         }
       } catch (error) {
-        console.error(`  ✗ Failed to load module ${dir.name}:`, error.message);
+        console.error(`   ✗ Failed to load module ${dir.name}:`, error.message);
       }
     }
 
-    console.log(`✅ Discovered ${this.modules.size} module(s)`);
+    console.log(`   ---------------------------------------------------`);
     return this.modules;
   }
 
@@ -74,7 +104,7 @@ class ModuleLoader {
         try {
           const schemaContent = fs.readFileSync(schemaPath, 'utf8');
           manifest.settingsSchema = JSON.parse(schemaContent);
-          console.log(`    ℹ️ Schema found for ${manifest.id}`);
+
         } catch (schemaErr) {
           console.warn(`    ⚠️ Failed to parse schema for ${moduleName}:`, schemaErr.message);
         }
@@ -103,10 +133,19 @@ class ModuleLoader {
   }
 
   /**
-   * Filtert op alleen ingeschakelde modules
+   * Filtert op alleen ingeschakelde modules (checks database)
    */
-  getEnabledModules() {
-    return this.getAllModules().filter(m => m.manifest.enabled !== false);
+  async getEnabledModules() {
+    const enabledModules = [];
+    
+    for (const module of this.getAllModules()) {
+      const isEnabled = await this.isModuleEnabled(module.manifest.id);
+      if (isEnabled) {
+        enabledModules.push(module);
+      }
+    }
+    
+    return enabledModules;
   }
 }
 

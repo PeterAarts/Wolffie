@@ -29,13 +29,13 @@ class AlphaESSCloudAPI {
    * Get API credentials from settings service
    */
   async getCredentials() {
-    const appId = await settingsService.get('cloud_api', 'app_id');
-    const appSecret = await settingsService.get('cloud_api', 'app_secret');
-    const systemSn = await settingsService.get('cloud_api', 'system_sn');
-    const endpointUrl = (await settingsService.get('cloud_api', 'endpoint_url')) || this.baseURL;
+    const appId = await settingsService.get('alphaess-cloud', 'app_id');
+    const appSecret = await settingsService.get('alphaess-cloud', 'app_secret');
+    const systemSn = await settingsService.get('alphaess-cloud', 'system_sn');
+    const endpointUrl = (await settingsService.get('alphaess-cloud', 'endpoint_url')) || this.baseURL;
 
     if (!appId || !appSecret) {
-      throw new Error('Cloud API credentials not configured (missing app_id or app_secret)');
+      throw new Error('alphaess-cloud API credentials not configured (missing app_id or app_secret)');
     }
 
     return { appId, appSecret, systemSn, endpointUrl };
@@ -119,7 +119,7 @@ class AlphaESSCloudAPI {
 
       const response = await axios(config);
       
-      console.log('   ├ API ', config.url, ' / ', response.status, ' / ', !!response.data.data);
+      console.log('     - API ', config.url, ' / ', response.status, ' / ', !!response.data.data);
 
       // AlphaESS API returns code in response body
       if (response.data.code !== 200) {

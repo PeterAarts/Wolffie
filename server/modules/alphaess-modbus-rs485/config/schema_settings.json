@@ -1,0 +1,31 @@
+{
+  "groups": [
+    {
+      "title": "ModBus RS485 Configuratie",
+      "sections": [
+        {
+          "fields": [
+            { "key": "enabled", "component": "switch", "label": "ModBus RS485 Inschakelen", "cols": 2 }
+          ]
+        },
+        {
+          "title": "Seriële Instellingen",
+          "description": "De instellingen van je DSD TECH USB-RS485 adapter",
+          "fields": [
+            { "key": "port", "component": "text", "label": "Seriële Poort", "cols": 3, "placeholder": "/dev/ttyUSB0", "required": true },
+            { "key": "baudrate", "component": "number", "label": "Baudrate", "cols": 3, "default": 9600, "required": true }
+          ]
+        },
+        {
+          "title": "Modbus Protocol",
+          "description": "Specifieke protocol instellingen voor AlphaESS over RS485",
+          "fields": [
+            { "key": "slave_id", "component": "number", "label": "Slave ID", "cols": 2, "default": 85, "required": true },
+            { "key": "poll_interval", "component": "number", "label": "Poll Interval (ms)", "cols": 2, "default": 10000, "suffix": " ms" },
+            { "key": "timeout", "component": "number", "label": "Timeout (ms)", "cols": 2, "default": 2000, "suffix": " ms" }
+          ]
+        }
+      ]
+    }
+  ]
+}

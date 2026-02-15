@@ -4,348 +4,218 @@ import db from '../../database.js';
 class HistoryController {
   /**
    * GET /api/history/today?granularity=15
-   * Get today's data aggregated by granularity (minutes)
-   * Returns flat structure matching original format
    */
   async getToday(req, res) {
     try {
-      const granularity = parseInt(req.query.granularity) || 15;
-      
-      // Validate granularity
-      if (granularity < 1 || granularity > 60) {
-        return res.status(400).json({ 
-          error: 'Granularity must be between 1 and 60 minutes' 
-        });
-      }
-      
-      const today = new Date().toISOString().split('T')[0];
-
-      // Get all snapshots for today
-      const [snapshots] = await db.pool.query(
-        `SELECT 
-          timestamp,
-          solar_power,
-          battery_power,
-          battery_soc,
-          grid_power,
-          load_power
-        FROM energy_snapshots
-        WHERE DATE(timestamp) = ?
-        ORDER BY timestamp ASC`,
-        [today]
-      );
-
-      if (snapshots.length === 0) {
-        return res.json([]);
-      }
-
-      // Group by granularity intervals
-      const intervalMs = granularity * 60 * 1000;
-      const grouped = new Map();
-
-      for (const snapshot of snapshots) {
-        const ts = new Date(snapshot.timestamp).getTime();
-        const bucketTs = Math.floor(ts / intervalMs) * intervalMs;
-        
-        if (!grouped.has(bucketTs)) {
-          grouped.set(bucketTs, {
-            solar_power: [],
-            battery_power: [],
-            battery_soc: [],
-            grid_power: [],
-            load_power: []
-          });
-        }
-        
-        const bucket = grouped.get(bucketTs);
-        bucket.solar_power.push(parseFloat(snapshot.solar_power) || 0);
-        bucket.battery_power.push(parseFloat(snapshot.battery_power) || 0);
-        bucket.battery_soc.push(parseFloat(snapshot.battery_soc) || 0);
-        bucket.grid_power.push(parseFloat(snapshot.grid_power) || 0);
-        bucket.load_power.push(parseFloat(snapshot.load_power) || 0);
-      }
-
-      // Calculate averages - FLAT structure matching original format
-      const result = Array.from(grouped.entries()).map(([bucketTs, values]) => ({
-        timestamp: new Date(bucketTs).toISOString(),
-        battery_soc: this.avg(values.battery_soc),
-        battery_power: this.avg(values.battery_power),
-        solar: this.avg(values.solar_power),
-        grid: this.avg(values.grid_power),
-        home: this.avg(values.load_power)
-      }));
-
-      // Return array directly (not wrapped in object)
-      res.json(result);
-
+      const date = new Date().toISOString().split('T')[0];
+      // Hergebruik de getDateData logica voor consistentie
+      return await this.fetchDateData(date, req, res);
     } catch (error) {
-      console.error('Error getting today history:', error);
+      console.error('Error in getToday:', error);
       res.status(500).json({ error: error.message });
     }
   }
 
   /**
-   * GET /api/history/last-24-hours
-   */
-  async getLast24Hours(req, res) {
-    try {
-      const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-
-      const [snapshots] = await db.pool.query(
-        `SELECT 
-          timestamp,
-          solar_power,
-          battery_power,
-          battery_soc,
-          grid_power,
-          load_power
-        FROM energy_snapshots
-        WHERE timestamp >= ?
-        ORDER BY timestamp ASC`,
-        [since]
-      );
-
-      const data = snapshots.map(s => ({
-        timestamp: s.timestamp,
-        battery_soc: parseFloat(s.battery_soc) || 0,
-        battery_power: parseFloat(s.battery_power) || 0,
-        solar: parseFloat(s.solar_power) || 0,
-        grid: parseFloat(s.grid_power) || 0,
-        home: parseFloat(s.load_power) || 0
-      }));
-
-      res.json(data);
-
-    } catch (error) {
-      console.error('Error getting last 24 hours:', error);
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  /**
-   * GET /api/history/last-7-days
-   */
-  async getLast7Days(req, res) {
-    try {
-      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-      const sinceDate = since.toISOString().split('T')[0];
-
-      const [daily] = await db.pool.query(
-        `SELECT 
-          DATE(timestamp) as date,
-          MAX(solar_energy_today) as solar_generation,
-          MAX(load_energy_today) as load_consumption,
-          MAX(grid_energy_import_today) as grid_import,
-          MAX(grid_energy_export_today) as grid_export,
-          MAX(battery_charge_today) as battery_charge,
-          MAX(battery_discharge_today) as battery_discharge
-        FROM energy_snapshots
-        WHERE DATE(timestamp) >= ?
-        GROUP BY DATE(timestamp)
-        ORDER BY date ASC`,
-        [sinceDate]
-      );
-
-      const data = daily.map(d => ({
-        date: d.date,
-        solar: parseFloat(d.solar_generation) || 0,
-        home: parseFloat(d.load_consumption) || 0,
-        grid_import: parseFloat(d.grid_import) || 0,
-        grid_export: parseFloat(d.grid_export) || 0,
-        battery_charge: parseFloat(d.battery_charge) || 0,
-        battery_discharge: parseFloat(d.battery_discharge) || 0
-      }));
-
-      res.json(data);
-
-    } catch (error) {
-      console.error('Error getting last 7 days:', error);
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  /**
-   * GET /api/history/last-30-days
-   */
-  async getLast30Days(req, res) {
-    try {
-      const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-      const sinceDate = since.toISOString().split('T')[0];
-
-      const [daily] = await db.pool.query(
-        `SELECT 
-          DATE(timestamp) as date,
-          MAX(solar_energy_today) as solar_generation,
-          MAX(load_energy_today) as load_consumption,
-          MAX(grid_energy_import_today) as grid_import,
-          MAX(grid_energy_export_today) as grid_export
-        FROM energy_snapshots
-        WHERE DATE(timestamp) >= ?
-        GROUP BY DATE(timestamp)
-        ORDER BY date ASC`,
-        [sinceDate]
-      );
-
-      const data = daily.map(d => ({
-        date: d.date,
-        solar: parseFloat(d.solar_generation) || 0,
-        home: parseFloat(d.load_consumption) || 0,
-        grid_import: parseFloat(d.grid_import) || 0,
-        grid_export: parseFloat(d.grid_export) || 0
-      }));
-
-      res.json(data);
-
-    } catch (error) {
-      console.error('Error getting last 30 days:', error);
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  /**
-   * GET /api/history/last-365-days
-   */
-  async getLast365Days(req, res) {
-    try {
-      const since = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
-      const sinceDate = since.toISOString().split('T')[0];
-
-      const [daily] = await db.pool.query(
-        `SELECT 
-          DATE(timestamp) as date,
-          MAX(solar_energy_today) as solar_generation,
-          MAX(load_energy_today) as load_consumption,
-          MAX(grid_energy_import_today) as grid_import,
-          MAX(grid_energy_export_today) as grid_export
-        FROM energy_snapshots
-        WHERE DATE(timestamp) >= ?
-        GROUP BY DATE(timestamp)
-        ORDER BY date ASC`,
-        [sinceDate]
-      );
-
-      const data = daily.map(d => ({
-        date: d.date,
-        solar: parseFloat(d.solar_generation) || 0,
-        home: parseFloat(d.load_consumption) || 0,
-        grid_import: parseFloat(d.grid_import) || 0,
-        grid_export: parseFloat(d.grid_export) || 0
-      }));
-
-      res.json(data);
-
-    } catch (error) {
-      console.error('Error getting last 365 days:', error);
-      res.status(500).json({ error: error.message });
-    }
-  }
-
-  /**
-   * GET /api/history/date/:date (YYYY-MM-DD)
+   * GET /api/history/date/:date?granularity=15
    */
   async getDateData(req, res) {
-    try {
-      const { date } = req.params;
-      
-      // Validate date format
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return res.status(400).json({ 
-          error: 'Invalid date format. Use YYYY-MM-DD' 
-        });
-      }
-
-      const [snapshots] = await db.pool.query(
-        `SELECT 
-          timestamp,
-          solar_power,
-          battery_power,
-          battery_soc,
-          grid_power,
-          load_power
-        FROM energy_snapshots
-        WHERE DATE(timestamp) = ?
-        ORDER BY timestamp ASC`,
-        [date]
-      );
-
-      const data = snapshots.map(s => ({
-        timestamp: s.timestamp,
-        battery_soc: parseFloat(s.battery_soc) || 0,
-        battery_power: parseFloat(s.battery_power) || 0,
-        solar: parseFloat(s.solar_power) || 0,
-        grid: parseFloat(s.grid_power) || 0,
-        home: parseFloat(s.load_power) || 0
-      }));
-
-      res.json(data);
-
-    } catch (error) {
-      console.error(`Error getting date ${req.params.date}:`, error);
-      res.status(500).json({ error: error.message });
-    }
+    return await this.fetchDateData(req.params.date, req, res);
   }
 
   /**
-   * GET /api/history/daily
-   * Get daily summary for all available days
+   * Interne helper voor dag-data (gebruikt door getToday en getDateData)
    */
-  async getDailySummary(req, res) {
+  async fetchDateData(date, req, res) {
     try {
+      const granularity = parseInt(req.query.granularity) || 15;
+
+      // 1. Haal stats op uit de snelle daily tabel
       const [daily] = await db.pool.query(
         `SELECT 
-          DATE(timestamp) as date,
-          MAX(solar_energy_today) as solar_generation,
-          MAX(load_energy_today) as load_consumption,
-          MAX(grid_energy_import_today) as grid_import,
-          MAX(grid_energy_export_today) as grid_export,
-          MAX(battery_charge_today) as battery_charge,
-          MAX(battery_discharge_today) as battery_discharge
-        FROM energy_snapshots
-        GROUP BY DATE(timestamp)
-        ORDER BY date DESC
-        LIMIT 365`
+          pv_generation_kwh as pv_generation,
+          load_consumption_kwh as load_consumption,
+          grid_import_kwh as grid_import,
+          grid_export_kwh as grid_export,
+          battery_charge_kwh as battery_charge,
+          battery_discharge_kwh as battery_discharge
+        FROM energy_daily WHERE date = ?`, [date]
       );
 
-      const data = daily.map(d => ({
-        date: d.date,
-        solar: parseFloat(d.solar_generation) || 0,
-        home: parseFloat(d.load_consumption) || 0,
-        grid_import: parseFloat(d.grid_import) || 0,
-        grid_export: parseFloat(d.grid_export) || 0,
-        battery_charge: parseFloat(d.battery_charge) || 0,
-        battery_discharge: parseFloat(d.battery_discharge) || 0
-      }));
+      // 2. Haal gedetailleerde snapshots op voor de grafiek
+      const [snapshots] = await db.pool.query(
+        `SELECT timestamp, solar_power, battery_power, battery_soc, grid_power, load_power 
+         FROM energy_snapshots WHERE DATE(timestamp) = ? ORDER BY timestamp ASC`, [date]
+      );
 
-      res.json(data);
-
+      res.json({
+        stats: daily[0] ? this.formatStats(daily[0]) : this.emptyStats(),
+        data: this.aggregateSnapshots(snapshots, granularity)
+      });
     } catch (error) {
-      console.error('Error getting daily summary:', error);
       res.status(500).json({ error: error.message });
     }
   }
 
   /**
-   * GET /api/history/monthly/:year
+   * GENERIEK: Voor periodes (meerdere dagen)
+   * GET /api/history/range?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
    */
-  async getMonthlySummary(req, res) {
-    try {
-      const { year } = req.params;
-      
-      if (!/^\d{4}$/.test(year)) {
-        return res.status(400).json({ error: 'Invalid year format' });
-      }
-      
-      // TODO: Implement monthly aggregation
-      res.json([]);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+async getRange(req, res) {
+  try {
+    const { startDate, endDate } = req.query;
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'startDate and endDate are mandatory' });
     }
+
+    // Bereken aantal dagen
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 1000)) + 1;
+
+    let data;
+    let granularity;
+    
+    if (daysDiff === 1) {
+      // Voor 1 dag: gebruik snapshots met 15-min aggregatie
+      granularity = 'minute';
+      const [snapshots] = await db.pool.query(
+        `SELECT timestamp, solar_power, battery_power, battery_soc, grid_power, load_power 
+         FROM energy_snapshots WHERE DATE(timestamp) = ? ORDER BY timestamp ASC`,
+        [startDate]
+      );
+      data = this.aggregateSnapshots(snapshots, 15);
+      
+    } else if (daysDiff <= 31) {
+      // Voor 2-31 dagen: gebruik hourly data (energy_hours tabel)
+      granularity = 'hour';
+      const [hours] = await db.pool.query(
+        `SELECT 
+          timestamp,
+          pv_power_avg as solar,
+          load_power_avg as home,
+          grid_power_avg as grid,
+          battery_power_avg as battery_power,
+          battery_soc_avg as battery_soc
+        FROM energy_hours
+        WHERE DATE(timestamp) BETWEEN ? AND ?
+        ORDER BY timestamp ASC`,
+        [startDate, endDate]
+      );
+      
+      data = hours.map(h => ({
+        timestamp: h.timestamp,
+        solar: parseFloat(h.solar) || 0,
+        home: parseFloat(h.home) || 0,
+        grid: parseFloat(h.grid) || 0,
+        battery_power: parseFloat(h.battery_power) || 0,
+        battery_soc: parseFloat(h.battery_soc) || 0
+      }));
+      
+    } else {
+      // Voor >31 dagen: gebruik daily data (energy_daily tabel)
+      granularity = 'day';
+      const [days] = await db.pool.query(
+        `SELECT 
+          date as timestamp,
+          pv_generation_kwh as solar,
+          load_consumption_kwh as home,
+          grid_import_kwh,
+          grid_export_kwh,
+          battery_charge_kwh,
+          battery_discharge_kwh,
+          battery_soc_avg as battery_soc
+        FROM energy_daily
+        WHERE date BETWEEN ? AND ?
+        ORDER BY date ASC`,
+        [startDate, endDate]
+      );
+      
+      data = days.map(d => ({
+        timestamp: d.timestamp,
+        solar: parseFloat(d.solar) || 0,
+        home: parseFloat(d.home) || 0,
+        // Grid: net flow (export - import)
+        grid: (parseFloat(d.grid_export_kwh) || 0) - (parseFloat(d.grid_import_kwh) || 0),
+        // Battery: net flow (discharge - charge)
+        battery_power: (parseFloat(d.battery_discharge_kwh) || 0) - (parseFloat(d.battery_charge_kwh) || 0),
+        battery_soc: parseFloat(d.battery_soc) || 0
+      }));
+    }
+
+    // Bereken totalen voor stats
+    const [dailyStats] = await db.pool.query(
+      `SELECT 
+        SUM(pv_generation_kwh) as pv_generation,
+        SUM(load_consumption_kwh) as load_consumption,
+        SUM(grid_import_kwh) as grid_import,
+        SUM(grid_export_kwh) as grid_export,
+        SUM(battery_charge_kwh) as battery_charge,
+        SUM(battery_discharge_kwh) as battery_discharge
+      FROM energy_daily
+      WHERE date BETWEEN ? AND ?`,
+      [startDate, endDate]
+    );
+
+    const stats = dailyStats[0] ? this.formatStats(dailyStats[0]) : this.emptyStats();
+
+    res.json({
+      stats,
+      data,
+      meta: {
+        startDate,
+        endDate,
+        days: daysDiff,
+        granularity: granularity,
+        dataPoints: data.length
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error in getRange:', error);
+    res.status(500).json({ error: error.message });
+  }
+}
+
+  // --- HELPER FUNCTIES ---
+
+  aggregateSnapshots(snapshots, granularity) {
+    const intervalMs = granularity * 60 * 1000;
+    const grouped = new Map();
+
+    for (const s of snapshots) {
+      const bucketTs = Math.floor(new Date(s.timestamp).getTime() / intervalMs) * intervalMs;
+      if (!grouped.has(bucketTs)) {
+        grouped.set(bucketTs, { solar: [], battery_p: [], battery_s: [], grid: [], home: [] });
+      }
+      const b = grouped.get(bucketTs);
+      b.solar.push(parseFloat(s.solar_power) || 0);
+      b.battery_p.push(parseFloat(s.battery_power) || 0);
+      b.battery_s.push(parseFloat(s.battery_soc) || 0);
+      b.grid.push(parseFloat(s.grid_power) || 0);
+      b.home.push(parseFloat(s.load_power) || 0);
+    }
+
+    return Array.from(grouped.entries()).map(([ts, v]) => ({
+      timestamp: new Date(ts).toISOString(),
+      solar: this.avg(v.solar),
+      battery_power: this.avg(v.battery_p),
+      battery_soc: this.avg(v.battery_s),
+      grid: this.avg(v.grid),
+      home: this.avg(v.home)
+    }));
   }
 
-  // Helper methods
   avg(arr) {
-    if (arr.length === 0) return 0;
-    return parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2));
+    return arr.length ? parseFloat((arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2)) : 0;
+  }
+
+  emptyStats() {
+    return { pv_generation: 0, load_consumption: 0, grid_import: 0, grid_export: 0, battery_charge: 0, battery_discharge: 0 };
+  }
+
+  formatStats(s) {
+    return Object.fromEntries(Object.entries(s).map(([k, v]) => [k, parseFloat(parseFloat(v).toFixed(2))]));
   }
 }
 

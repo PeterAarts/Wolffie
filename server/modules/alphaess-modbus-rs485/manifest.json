@@ -1,9 +1,9 @@
 {
   "id": "alphaess-modbus-rs485",
   "name": "AlphaESS ModBus RS485",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "AlphaESS inverter communication via ModBus RS485 serial connection",
-  "author": "WattsOn",
+  "author": "Wolffie",
   "type": "data-collector",
   
   "capabilities": {
@@ -13,7 +13,7 @@
   },
 
   "collector": {
-    "enabled": false,
+    "enabled": true,
     "interval": 10000,
     "priority": 10,
     "description": "Collects real-time data via RS485 serial every 10 seconds"

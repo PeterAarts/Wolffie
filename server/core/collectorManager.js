@@ -12,7 +12,7 @@
 //   collect()   → async, does one poll cycle, returns true/false
 //   getStatus() → { lastCollection, lastError, consecutiveErrors, ... }
 
-import db from '../config/database.js';
+import db from './database.js';
 
 const FALLBACK_INTERVAL = 30000; // 30 s — used when nothing else is configured
 const MAX_CONSECUTIVE_ERRORS = 5; // pause a collector after this many back-to-back failures
@@ -37,6 +37,35 @@ class CollectorManager {
     this.isRunning = false;
   }
 
+  /**
+   * Check if a module is enabled in the database
+   * @param {string} moduleId - The module ID to check
+   * @returns {Promise<boolean>} - True if enabled, false otherwise
+   */
+  async isModuleEnabled(moduleId) {
+    try {
+      const [rows] = await db.pool.query(
+        `SELECT setting_value FROM system_settings 
+         WHERE module_id = ? AND setting_key = 'enabled' 
+         LIMIT 1`,
+        [moduleId]
+      );
+
+      if (rows.length > 0) {
+        const value = rows[0].setting_value;
+        // Handle both string 'true'/'false' and boolean values
+        return value === true || value === 'true' || value === '1' || value === 1;
+      }
+
+      // If no setting found, module is disabled by default for safety
+      return false;
+    } catch (error) {
+      console.warn(` - ⚠️  Failed to check enabled status for ${moduleId}:`, error.message);
+      // On error, assume disabled for safety
+      return false;
+    }
+  }
+
   // ─── Public API ─────────────────────────────────────────────────
 
   /**
@@ -47,6 +76,7 @@ class CollectorManager {
    */
   register(module) {
     const manifest = module.manifest;
+    const loader='';
 
     if (!manifest?.capabilities?.dataCollection) {
       return; // Module doesn't do data collection — nothing to register
@@ -73,7 +103,7 @@ class CollectorManager {
       paused:            false
     });
 
-    console.log(` -  Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
+    //console.log(`     • Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
   }
 
   /**
@@ -83,27 +113,31 @@ class CollectorManager {
    */
   async start() {
     if (this.isRunning) {
-      console.log('⚠️  CollectorManager already running');
+      console.log('- CollectorManager already running');
       return;
     }
-
-    console.log('\n - 📋 CollectorManager: starting collectors...');
     this.isRunning = true;
+    // Convert the entries to names and join them with a separator
+    const loader = Array.from(this.schedules.values())
+      .map(entry => entry.name)
+      .join(' / ');
 
+    console.log(loader);
     for (const [id, entry] of this.schedules) {
-      if (!entry.enabled) {
+      // Check database for enabled status
+      const isEnabled = await this.isModuleEnabled(id);
+      entry.enabled = isEnabled; // Update the entry with database value
+      
+      console.log(`   - Starting: ${entry.name} (interval: ${entry.interval / 1000}s)`);
+      if (!isEnabled) {
         console.log(`  ⊘ Skipped (disabled): ${entry.name}`);
         continue;
       }
 
       // Resolve final interval from device_settings if available
       entry.interval = await this._resolveInterval(id, entry.interval);
-
-      console.log(` -  Starting: ${entry.name} (interval: ${entry.interval / 1000}s)`);
-
       // Immediate first collection
       await this._runCollector(id);
-
       // Arm the first scheduled timeout (next run after interval)
       this._armNext(id);
     }
@@ -263,34 +297,31 @@ class CollectorManager {
    * Resolve the effective poll interval for a module.
    *
    * Priority:
-   *   1. device_settings.poll_interval WHERE module = moduleId AND enabled = 1
-   *      (takes the value from the first enabled device row — if there are multiple
-   *       devices for one module they're expected to share the same poll_interval,
-   *       since the manager polls the module once and it fans out internally)
+   *   1. system_settings.setting_value WHERE module_id = moduleId AND setting_key = 'poll_interval'
    *   2. The default passed in (from manifest.json)
    *
    * Returns the interval in milliseconds.
    */
   async _resolveInterval(moduleId, manifestDefault) {
     try {
-      const [rows] = await db.query(
-        `SELECT poll_interval FROM device_settings
-         WHERE module = ? AND enabled = 1 AND poll_interval IS NOT NULL
+      const [rows] = await db.pool.query(
+        `SELECT setting_value FROM system_settings
+         WHERE module_id = ? AND setting_key = 'poll_interval' 
          LIMIT 1`,
         [moduleId]
       );
 
-      if (rows.length > 0 && rows[0].poll_interval) {
-        const dbInterval = Number(rows[0].poll_interval);
+      if (rows.length > 0 && rows[0].setting_value) {
+        const dbInterval = Number(rows[0].setting_value);
         if (dbInterval > 0) {
-          console.log(`    📎 ${moduleId}: using device_settings interval (${dbInterval}ms)`);
+          console.log(`  - ${moduleId}: using system_settings interval (${dbInterval}ms)`);
           return dbInterval;
         }
       }
     } catch (error) {
-      // device_settings table might not exist yet or query failed —
+      // system_settings table might not exist yet or query failed —
       // fall through to manifest default silently
-      console.log(` -    ℹ️  ${moduleId}: device_settings lookup failed (${error.message}), using manifest default`);
+      console.log(`   - ℹ️  ${moduleId}: system_settings lookup failed (${error.message}), using manifest default`);
     }
 
     console.log(`    📎 ${moduleId}: using manifest default interval (${manifestDefault}ms)`);

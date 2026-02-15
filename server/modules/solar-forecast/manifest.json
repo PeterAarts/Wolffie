@@ -1,0 +1,42 @@
+{
+  "id": "solar-forecast",
+  "name": "Solar Forecast",
+  "version": "1.0.0",
+  "description": "External solar production forecasting service integration",
+  "author": "Wolffie",
+  "type": "data-collector",
+  
+  "capabilities": {
+    "dataCollection": true,
+    "api": true,
+    "ui": true
+  },
+
+  "collector": {
+    "enabled": true,
+    "interval": 900000,
+    "priority": 10,
+    "description": "Retrieves solar production forecasts every 15 minutes"
+  },
+
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/solar-forecast",
+    "description": "Solar forecast data endpoints"
+  },
+
+  "settings": {
+    "component": "SolarForecastSettings",
+    "schema": "settings-schema.js"
+  },
+
+  "dependencies": {
+    "node": ">=18.0.0",
+    "axios": "^1.0.0"
+  },
+
+  "config": {
+    "required": ["api_key", "latitude", "longitude"],
+    "optional": ["azimuth", "declination", "kwp"]
+  }
+}

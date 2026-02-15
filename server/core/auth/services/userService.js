@@ -243,24 +243,27 @@ class UserService {
   /**
    * Verify user credentials
    */
-  async verifyCredentials(username, password) {
-    const user = await this.getUserByUsername(username);
-    if (!user) {
-      return null;
-    }
+  async verifyCredentials(identifier, password) {
+// Zoek de gebruiker op basis van gebruikersnaam OF email
+  const [rows] = await db.pool.query(
+    `SELECT * FROM users WHERE (username = ? OR email = ?) AND is_active = true`,
+    [identifier, identifier]
+  );
 
-    if (!user.is_active) {
-      throw new Error('User account is disabled');
-    }
+  const user = rows[0];
 
-    const isValid = await bcrypt.compare(password, user.password_hash);
-    if (!isValid) {
-      return null;
-    }
-
-    return user;
+  if (!user) {
+    return null; // Gebruiker niet gevonden of niet actief
   }
 
+  // Verifieer het wachtwoord
+  const isValid = await bcrypt.compare(password, user.password_hash);
+  if (!isValid) {
+    return null;
+  }
+
+  return user;
+}
   /**
    * Update last login time
    */

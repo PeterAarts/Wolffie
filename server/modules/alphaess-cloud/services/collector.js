@@ -13,7 +13,7 @@ class AlphaESSCloudCollector {
 
   async collect() {
     try {
-      console.log(` - [${new Date().toISOString()}] - Collecting from AlphaESS Cloud API...`);
+      console.log(`   - [${new Date().toISOString()}] - Collecting from AlphaESS Cloud API...`);
 
 
 
@@ -138,7 +138,7 @@ class AlphaESSCloudCollector {
       ]
     );
 
-    console.log(`   ├ Complete snapshot stored `);
+    console.log(`     - Complete energy_snapshot stored `);
  //     Power: SOC=${powerData.soc}%, Solar=${powerData.ppv}W, Grid=${powerData.pgrid}W, Load=${powerData.pload}W
  //     Today: PV=${summaryData.epvtoday}kWh, Load=${summaryData.eload}kWh, Import=${summaryData.einput}kWh, Export=${summaryData.eoutput}kWh
   //    Battery: Charge=${summaryData.echarge}kWh, Discharge=${summaryData.edischarge}kWh

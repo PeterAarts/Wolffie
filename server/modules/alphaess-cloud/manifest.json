@@ -1,7 +1,7 @@
 {
   "id": "alphaess-cloud",
   "name": "AlphaESS Cloud API",
-  "version": "1.0.0",
+  "version": "1.0.5",
   "description": "AlphaESS Cloud API integration for remote data collection",
   "author": "Wolffie",
   "type": "data-collector",
@@ -27,7 +27,7 @@
 
   "settings": {
     "component": "AlphaESSCloudSettings",
-    "schema": "settings-schema.js"
+    "schema": "settings_schema.json"
   },
 
   "dependencies": {

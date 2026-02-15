@@ -215,16 +215,16 @@ router.get('/devices', async (req, res) => {
     // Using a subquery to get the most recent measurement per device_id
     const [devices] = await db.pool.query(`
       SELECT 
-        dm.*
+        dm.*, ds.ip_address,ds.enabled 
       FROM device_measurements dm
-      INNER JOIN (
-        SELECT 
-          device_id,
-          MAX(timestamp) as latest_timestamp
+        INNER JOIN (
+          SELECT 
+              device_id, MAX(timestamp) as latest_timestamp
         FROM device_measurements
         GROUP BY device_id
-      ) latest ON dm.device_id = latest.device_id 
-        AND dm.timestamp = latest.latest_timestamp
+        ) latest ON dm.device_id = latest.device_id AND dm.timestamp = latest.latest_timestamp
+        LEFT JOIN device_settings ds ON ds.serial = dm.device_id
+      WHERE ds.enabled=1
       ORDER BY dm.power DESC
     `);
 
@@ -258,7 +258,9 @@ router.get('/devices', async (req, res) => {
         extra_metrics: extraMetrics,
         // Add computed fields for convenience
         wifi_ssid: extraMetrics?.wifi_ssid || null,
-        wifi_strength: extraMetrics?.wifi_strength || null
+        wifi_strength: extraMetrics?.wifi_strength || null,
+        ipaddress: device.ip_address,
+        enabled:device.enabled
       };
     });
 

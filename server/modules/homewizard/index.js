@@ -1,51 +1,62 @@
 // modules/homewizard/index.js
-import fs from 'fs';
-import path from 'path';
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import collector from './services/collector.js';
-import homewizardAPI from './services/api.js';
+import routes from './routes/index.js';
+import settingsService from '../../core/system/services/settingsService.js';
 
+// Get current directory for ESM
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
 
-// Load manifest
-const manifestPath = path.join(__dirname, 'manifest.json');
-const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+// Load manifest.json
+const manifestPath = join(__dirname, 'manifest.json');
+const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
 
 /**
- * HomeWizard Module
- * 
- * This module provides HomeWizard local API integration for monitoring
- * P1 meters, energy sockets, and kWh meters on the local network.
+ * HomeWizard Energy Module
+ * Follows the standard class-based pattern for WattsOn modules
  */
 class HomeWizardModule {
   constructor() {
     this.manifest = manifest;
     this.collector = collector;
-    this.api = homewizardAPI;
+    this.routes = routes;
     this.initialized = false;
+    this.config = null;  // Store database configuration
   }
 
   /**
-   * Initialize the module
+   * Initialize the module (called during system startup)
    */
   async initialize() {
     if (this.initialized) {
-      console.log('⚠️  HomeWizard module already initialized');
+      console.log('   - HomeWizard Energy module already initialized');
       return;
     }
 
-    console.log('🔌 Initializing HomeWizard module...');
-
     try {
-      // HomeWizard devices are discovered and tested individually
-      // No global API health check needed
-      console.log('✅ HomeWizard API service ready');
-
+      console.log(`   - \x1b[93m${this.manifest.id} \x1b[37m`);
+      
+      // Load configuration from database
+      this.config = await settingsService.getCategory(`${this.manifest.id}`);
+      
+      if (!this.config || this.config.enabled === false) {
+        return; // Module disabled
+      }
+      
+      // Log configuration
+      console.log(`     - Auto discovery: ${this.config.auto_discover !== false ? 'enabled' : 'disabled'}`);
+      console.log(`     - Poll interval: ${this.config.poll_interval || 10000}ms`);
+      
+      // Note: Device discovery happens in the collector
+      
       this.initialized = true;
-      console.log('✅ HomeWizard module initialized');
+      console.log('     - HomeWizard service ready \x1b[32m✓\x1b[37m');
+      
     } catch (error) {
-      console.error('❌ Failed to initialize HomeWizard module:', error.message);
+      console.error('✗ Failed to initialize HomeWizard Energy module:', error.message);
       throw error;
     }
   }
@@ -57,30 +68,36 @@ class HomeWizardModule {
     if (!this.initialized) {
       await this.initialize();
     }
-    console.log('▶️  HomeWizard module started');
   }
 
   /**
    * Stop the module (called by module manager)
    */
   async stop() {
-    console.log('⏹️  HomeWizard module stopped');
+    console.log('⏹️  HomeWizard Energy module stopped');
+    this.initialized = false;
   }
 
   /**
    * Get module status
    */
   getStatus() {
-    const collectorStatus = this.collector.getStatus();
+    const collectorStatus = typeof this.collector.getStatus === 'function' 
+      ? this.collector.getStatus() 
+      : {};
 
     return {
       initialized: this.initialized,
+      enabled: this.config?.enabled || false,
+      hasConfig: !!this.config,
+      pollInterval: this.config?.poll_interval,
+      autoDiscover: this.config?.auto_discover,
       collector: {
-        deviceCount: collectorStatus.deviceCount,
-        lastCollection: collectorStatus.lastCollection,
-        lastError: collectorStatus.lastError,
-        consecutiveErrors: collectorStatus.consecutiveErrors,
-        healthy: collectorStatus.consecutiveErrors < 3
+        deviceCount: collectorStatus.deviceCount || 0,
+        lastRun: collectorStatus.lastCollection || null,
+        lastError: collectorStatus.lastError || null,
+        consecutiveErrors: collectorStatus.consecutiveErrors || 0,
+        healthy: (collectorStatus.consecutiveErrors || 0) < 5
       }
     };
   }
@@ -93,21 +110,12 @@ class HomeWizardModule {
   }
 
   /**
-   * Get API routes (if this module provides HTTP endpoints)
+   * Get API routes
    */
   getRoutes() {
-    // Import routes dynamically if they exist
-    try {
-      const routesPath = path.join(__dirname, 'routes', 'index.js');
-      if (fs.existsSync(routesPath)) {
-        return import('./routes/index.js');
-      }
-    } catch (error) {
-      console.warn('No routes found for HomeWizard module');
-    }
-    return null;
+    return this.routes;
   }
 }
 
-// Export singleton instance
+// Export a singleton instance
 export default new HomeWizardModule();

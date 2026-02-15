@@ -28,7 +28,7 @@
 
   "settings": {
     "component": "HomeWizardSettings",
-    "schema": "settings-schema.js"
+    "schema": "settings_schema.json"
   },
 
   "dependencies": {

@@ -1,6 +1,6 @@
 // server/core/system/routes/config.js
 import express from 'express';
-import systemConfigService from '../services/systemConfigService.js';
+import systemConfigService from '../services/systemconfigservice.js';
 import { authorize } from '../../auth/middleware/authorize.js';
 
 const router = express.Router();

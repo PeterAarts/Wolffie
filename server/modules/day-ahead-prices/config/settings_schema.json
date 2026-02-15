@@ -1,0 +1,44 @@
+{
+  "groups": [
+    {
+      "title": "Prijsinstellingen",
+      "sections": [
+        {
+          "fields": [
+            {
+              "key": "enabled",
+              "component": "switch",
+              "label": "Day-Ahead Prijzen Inschakelen",
+              "description": "Activeer het ophalen van de dagelijkse stroomprijzen",
+              "cols": 4
+            },
+            {
+              "key": "bidding_zone",
+              "component": "dropdown",
+              "label": "Biedingszone",
+              "description": "Selecteer de elektriciteitszone voor jouw regio",
+              "options": [
+                { "label": "Nederland (NL)", "value": "NL" },
+                { "label": "Duitsland (DE)", "value": "DE" },
+                { "label": "België (BE)", "value": "BE" },
+                { "label": "Frankrijk (FR)", "value": "FR" },
+                { "label": "Noorwegen 2 (NO2)", "value": "NO2" }
+              ],
+              "default": "NL",
+              "cols": 4
+            },
+            {
+              "key": "country_code",
+              "component": "text",
+              "label": "Landcode",
+              "description": "Tweeletterige landcode (optioneel)",
+              "placeholder": "NL",
+              "default": "NL",
+              "cols": 4
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

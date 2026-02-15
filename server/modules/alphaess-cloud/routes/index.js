@@ -185,5 +185,48 @@ router.post('/collect', async (req, res) => {
     });
   }
 });
+/**
+ * GET /api/alphaess-cloud/settings
+ * Haalt het schema en de huidige database-waarden op voor deze module
+ */
+router.get('/settings', async (req, res) => {
+  try {
+    // 1. Pad naar het schema bestand in de module folder
+    const schemaPath = path.join(__dirname, '../config/settings-schema.json');
+    
+    // 2. Lees het schema (fallback naar leeg object als het niet bestaat)
+    let schema = {};
+    if (fs.existsSync(schemaPath)) {
+      schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+    }
+
+    // 3. Haal de actuele waarden op uit de database (categorie: alphaess-cloud)
+    const values = await settingsService.getCategory('alphaess-cloud');
+
+    res.json({
+      success: true,
+      schema,
+      values
+    });
+  } catch (error) {
+    console.error('❌ Error fetching alphaess-cloud settings:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/alphaess-cloud/settings
+ * Slaat nieuwe waarden op in de database
+ */
+router.post('/settings', async (req, res) => {
+  try {
+    const newValues = req.body;
+    await settingsService.setCategory('alphaess-cloud', newValues, req.user?.username || 'system');
+    
+    res.json({ success: true, message: 'Settings saved successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 export default router;

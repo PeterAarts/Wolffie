@@ -1,0 +1,42 @@
+{
+  "id": "alphaess-modbus-tcp",
+  "name": "AlphaESS ModBus TCP",
+  "version": "1.0.6",
+  "description": "AlphaESS inverter communication via ModBus TCP/IP",
+  "author": "WattsOn",
+  "type": "data-collector",
+  
+  "capabilities": {
+    "dataCollection": true,
+    "api": true,
+    "ui": true
+  },
+
+  "collector": {
+    "enabled": false,
+    "interval": 10000,
+    "priority": 10,
+    "description": "Collects real-time data via ModBus TCP every 10 seconds"
+  },
+
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/alphaess-modbus-tcp",
+    "description": "ModBus TCP configuration and diagnostics"
+  },
+
+  "settings": {
+    "component": "AlphaESSModbusTCPSettings",
+    "schema": "settings_schema.json"
+  },
+
+  "dependencies": {
+    "node": ">=18.0.0",
+    "modbus-serial": "^8.0.0"
+  },
+
+  "config": {
+    "required": ["ip_address", "port", "slave_id"],
+    "optional": ["timeout", "poll_interval"]
+  }
+}

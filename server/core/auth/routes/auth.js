@@ -11,6 +11,7 @@ const router = express.Router();
 /**
  * POST /api/auth/login
  * Login user
+ * ENHANCED: Now also creates session for browser refresh support
  */
 router.post('/login', authLimiter, async (req, res) => {
   try {
@@ -30,6 +31,19 @@ router.post('/login', authLimiter, async (req, res) => {
       req.get('user-agent')
     );
 
+    // ENHANCEMENT: Store user in session for browser refresh
+    if (req.session) {
+      req.session.authenticated = true;
+      req.session.user = {
+        id: result.user.id,
+        username: result.user.username,
+        email: result.user.email,
+        role: result.user.role
+      };
+      req.session.loginAt = new Date().toISOString();
+      req.session.refreshToken = result.refreshToken;
+    }
+
     res.json({
       success: true,
       ...result
@@ -45,6 +59,7 @@ router.post('/login', authLimiter, async (req, res) => {
 /**
  * POST /api/auth/logout
  * Logout user
+ * ENHANCED: Now also destroys session
  */
 router.post('/logout', authenticate, async (req, res) => {
   try {
@@ -58,6 +73,16 @@ router.post('/logout', authenticate, async (req, res) => {
     }
 
     await authService.logout(refreshToken, req.ip);
+
+    // ENHANCEMENT: Destroy session
+    if (req.session) {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error('Session destruction error:', err);
+        }
+      });
+      res.clearCookie('wattson_session_id');
+    }
 
     res.json({
       success: true,
@@ -74,10 +99,16 @@ router.post('/logout', authenticate, async (req, res) => {
 /**
  * POST /api/auth/refresh
  * Refresh access token
+ * ENHANCED: Can now use session if refresh token not provided
  */
 router.post('/refresh', async (req, res) => {
   try {
-    const { refreshToken } = req.body;
+    let { refreshToken } = req.body;
+
+    // ENHANCEMENT: Try to get refresh token from session if not provided
+    if (!refreshToken && req.session && req.session.refreshToken) {
+      refreshToken = req.session.refreshToken;
+    }
 
     if (!refreshToken) {
       return res.status(400).json({
@@ -87,6 +118,11 @@ router.post('/refresh', async (req, res) => {
     }
 
     const result = await authService.refreshAccessToken(refreshToken, req.ip);
+
+    // ENHANCEMENT: Update session with new tokens
+    if (req.session && req.session.authenticated) {
+      req.session.refreshToken = result.refreshToken;
+    }
 
     res.json({
       success: true,
@@ -98,6 +134,26 @@ router.post('/refresh', async (req, res) => {
       error: error.message
     });
   }
+});
+
+/**
+ * GET /api/auth/status
+ * NEW ENDPOINT: Check authentication status without requiring auth
+ * Used by frontend router to check if user is logged in
+ */
+router.get('/status', (req, res) => {
+  const isAuthenticated = !!(
+    req.session && 
+    req.session.authenticated && 
+    req.session.user
+  );
+
+  res.json({
+    success: true,
+    authenticated: isAuthenticated,
+    user: isAuthenticated ? req.session.user : null,
+    sessionId: req.session?.id
+  });
 });
 
 /**
@@ -117,7 +173,9 @@ router.get('/me', authenticate, async (req, res) => {
 
     res.json({
       success: true,
-      user
+      user,
+      sessionId: req.session?.id,
+      loginAt: req.session?.loginAt
     });
   } catch (error) {
     res.status(500).json({
