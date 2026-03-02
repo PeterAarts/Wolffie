@@ -13,13 +13,13 @@ import { performance } from 'perf_hooks';
 // Configuration
 const TEST_CONFIG = {
   ips: [
-    { name: 'Ethernet', ip: '192.168.1.158' },
+    { name: 'Ethernet', ip: '192.168.3.156' },
   ],
   port: 502,
   slaveId: 85, // 0x55 - Default for Alpha ESS Smile G3
   timeout: 5000,
   retries: 3,
-  commandInterval: 300 // Alpha ESS requires minimum 300ms between commands
+  commandInterval: 320 // Alpha ESS requires minimum 300ms between commands
 };
 
 // AlphaESS Register Map for Testing - Based on official Alpha ESS ModBus Protocol v1.28

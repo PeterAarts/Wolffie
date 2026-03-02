@@ -1,3 +1,5 @@
+
+import './systemLogger.js'; 
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -5,7 +7,11 @@ import { createSessionMiddleware, attachSessionInfo } from './core/auth/middlewa
 import authRoutes from './core/auth/routes/auth.js';
 import { authenticate } from './core/auth/middleware/authenticate.js';
 import { authorize } from './core/auth/middleware/authorize.js';
-import { apiLimiter } from './core/auth/middleware/rateLimiter.js';
+import { 
+  apiLimiter, 
+  authLimiter, 
+  settingsLimiter 
+} from './core/auth/middleware/rateLimiter.js';
 import userService from './core/auth/services/userService.js';
 import settingsService from './core/system/services/settingsService.js'
 import moduleLoader from './core/moduleLoader.js';
@@ -29,14 +35,16 @@ export const authenticateToken = authenticate;
 // ============================================================================
 
 // 1. Security middleware
-app.use(helmet()); // Security headers
+app.use(helmet({
+  contentSecurityPolicy: false  // Apache handles CSP
+}));
 
 // 2. CORS - MUST include credentials: true for sessions to work
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL || 'http://localhost:5173',
     'http://localhost:5173',        // Voor lokale ontwikkeling
-    'http://192.168.1.155:88',      // Je nieuwe Apache adres
+    'http://192.168.1.160:88',      // Je nieuwe Apache adres
     'https://wolffie.nl'            // Je servernaam
   ],
   credentials: true  // CRITICAL: Required for cookies/sessions to work
@@ -55,7 +63,9 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // 6. Rate limiting
-app.use(apiLimiter);
+//app.use(apiLimiter);
+//app.use(authLimiter);
+//app.use(settingsLimiter);
 
 // ============================================================================
 // PUBLIC ROUTES (No authentication required)
@@ -67,7 +77,6 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok',
     timestamp: new Date().toISOString(),
-    session: req.session?.id ? 'active' : 'none'
   });
 });
 
@@ -79,6 +88,7 @@ app.use('/api/auth', authRoutes);
 // ============================================================================
 // Apply authentication to all /api/* routes (except /api/auth which is above)
 // The enhanced authenticate middleware checks BOTH JWT token AND session
+app.use('/api', apiLimiter);   
 app.use('/api', authenticate);
 app.use('/api/setup', setupRoutes);
 app.use('/api/settings', settingsRoutes);
@@ -93,7 +103,7 @@ app.use('/api/system', dataRoutes);
 async function initializeModules() {
   try {
     console.log('');
-    console.log(' - \x1b[32mDiscovering modules...\x1b[37m');
+    console.log(' - \x1b[32mDiscovering available modules...\x1b[37m');
     console.log('   -------------------------------------------');
     // 1. Discover all modules (loads from filesystem)
     const allModules = await moduleLoader.discoverModules();
@@ -107,7 +117,7 @@ async function initializeModules() {
     
     // 3. Filter to only enabled modules from database
     console.log(' ');
-    console.log(' - \x1b[32mInitializing modules...');
+    console.log(' - \x1b[32mInitializing active modules...');
     console.log('   -------------------------------------------\x1b[37m');
     const enabledModules = await moduleLoader.getEnabledModules();
     console.log(`   \x1b[32m✓\x1b[37m ${enabledModules.length} modules enabled`);
@@ -144,12 +154,12 @@ async function initializeModules() {
     console.log('   -------------------------------------------');
     aggregatorService.start();
     
-    console.log('✅ \x1b[32mAll modules initialized\x1b[37m');
+    console.log('\x1b[32m - All modules initialized\x1b[37m');
     console.log('   -------------------------------------------');
     console.log('');
-    console.log('');
+    console.log('\x1b[93m - logging  \x1b[37m');
   } catch (error) {
-    console.error('❌ Module initialization failed:', error);
+    console.error('\x1b[91m - Module initialization failed:', error, '\x1b[37m');
     console.error(error.stack);
   }
 }
@@ -167,16 +177,16 @@ app.listen(PORT, async () => {
   console.log('   -------------------------------------------');
   
   // Create default admin user if needed
-  console.log(' - Checking for default admin user... \x1b[32m✓\x1b[37m ');
+  console.log(' - Checking for default admin user... \x1b[92m✓\x1b[37m ');
   await userService.createDefaultAdminIfNeeded();
   
   // Initialize modules
   await initializeModules();
 
-  // Start strategy engine every 5 minutes
+  // Start strategy engine every 15 minutes
   setInterval(() => { 
     strategyManager.run();  
-  }, 5 * 60 * 1000);
+  }, 15 * 60 * 1000);
 });
 
 // ============================================================================
@@ -184,13 +194,15 @@ app.listen(PORT, async () => {
 // ============================================================================
 
 process.on('SIGTERM', async () => {
-  console.log('🛑 Shutting down gracefully...');
+  console.log('\x1b[91m  -------------------------------------------');
+  console.log(' - Shutting down gracefully...\x1b[37m');
   await collectorManager.stop();
   process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-  console.log('🛑 Shutting down gracefully...');
+  console.log('\x1b[91m  -------------------------------------------');
+  console.log('- Shutting down gracefully...\x1b[37m');
   await collectorManager.stop();
   process.exit(0);
 });
