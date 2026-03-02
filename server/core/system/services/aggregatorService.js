@@ -41,12 +41,13 @@ class AggregatorService {
 
   async aggregate() {
     try {
-      console.log('   - Starting aggregation cycle...');
+      // aggregate in sequence - minutes → hours → daily → monthly for the inverter data
       await this.aggregateMinutes();
       await this.aggregateHours();
       await this.aggregateDaily();
       await this.aggregateMonthly();
-
+      // Then update the device's aggregated values for quick access
+      await this.aggregateDevices();
       // Daily forecast comparison
       const today = new Date().toISOString().split('T')[0];
       const hour = new Date().getHours();
@@ -56,7 +57,7 @@ class AggregatorService {
         this.lastComparisonDate = today;
       }
     } catch (error) {
-      console.error('   - Aggregation error:', error.message);
+      console.error('   - Aggregator error:', error.message);
     }
   }
 
@@ -120,9 +121,9 @@ class AggregatorService {
           sample_count = VALUES(sample_count)
       `, [lastTime]);
 
-      console.log('     ├ Aggregated snapshots → minutes');
+      console.log('\x1b[37m   • Aggregator - snapshots → minutes');
     } catch (error) {
-      console.error('     ├ Minute aggregation failed:', error.message);
+      console.error('\x1b[91m   • Aggregator - Minute aggregation failed:', error.message,'\x1b[37m');
     }
   }
 
@@ -166,9 +167,9 @@ class AggregatorService {
           load_power_avg = VALUES(load_power_avg)
       `, [lastTime]);
 
-      console.log('     ├ Aggregated minutes → hours (power only)');
+      console.log('\x1b[37m   • Aggregator - minutes → hours (power only)');
     } catch (error) {
-      console.error('     ├  Hour aggregation failed:', error.message);
+      console.error('\x1b[91m   • Aggregator - Hour aggregation failed:', error.message,'\x1b[37m');
       // Don't throw - daily aggregation can still work
     }
   }
@@ -216,9 +217,9 @@ class AggregatorService {
           battery_discharge_kwh = VALUES(battery_discharge_kwh)
       `, [lastDate]);
 
-      console.log('     ├ Aggregated snapshots → daily (using inverter totals)');
+      console.log('\x1b[37m   • Aggregator - snapshots → daily (using inverter totals)');
     } catch (error) {
-      console.error('     ├ Daily aggregation failed:', error.message);
+      console.error('\x1b[37m   • Aggregator - Daily aggregation failed:', error.message,'\x1b[91m');
     }
   }
 
@@ -265,11 +266,44 @@ class AggregatorService {
           battery_discharge_kwh = VALUES(battery_discharge_kwh)
       `, [lastMonth]);
 
-      console.log('     ├ Aggregated daily → monthly');
+      console.log('\x1b[37m   • Aggregator - daily → monthly');
     } catch (error) {
-      console.error('     ├ Monthly aggregation failed:', error.message);
+      console.error(' \x1b[91m   • Aggregator - Monthly aggregation failed:', error.message,'\x1b[37m');
     }
   }
+
+  /**
+   * NEW: Aggregate raw device measurements into hourly/daily usage
+   * This is critical for smart-plug performance tracking.
+   */async aggregateDevices() {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+
+    // Using the "Substring trick" ensures we get the delta between 
+    // the actual first and last reading of the day.
+    await db.pool.query(`
+      INSERT INTO device_daily_usage (device_id, date, usage_kwh, last_update)
+      SELECT 
+        device_id,
+        CURDATE() as date,
+        (
+          SUBSTRING_INDEX(MAX(CONCAT(timestamp, '|', energy_total)), '|', -1) - 
+          SUBSTRING_INDEX(MIN(CONCAT(timestamp, '|', energy_total)), '|', -1)
+        ) as usage_kwh,
+        MAX(timestamp) as last_update
+      FROM device_measurements
+      WHERE timestamp >= CURDATE()
+      GROUP BY device_id
+      ON DUPLICATE KEY UPDATE 
+        usage_kwh = VALUES(usage_kwh),
+        last_update = VALUES(last_update)
+    `);
+
+    console.log('\x1b[37m   • Aggregator - device measurements → daily usage');
+  } catch (error) {
+    console.error('\x1b[91m   • Aggregator - Device aggregation failed:', error.message, '\x1b[37m');
+  }
+}
 
   async compareForecastWithActual() {
     const yesterday = new Date();
@@ -291,10 +325,10 @@ class AggregatorService {
           WHERE date = ?
         `, [actual, dateStr]);
 
-        console.log(`     ├ Updated forecast accuracy for ${dateStr}: ${actual} kWh`);
+        console.log(`\x1b[37m   • SolarForecast - Updated forecast accuracy for ${dateStr}: ${actual} kWh`);
       }
     } catch (error) {
-      console.error('     ├ Forecast comparison failed:', error.message);
+      console.error('\x1b[91m   • SolarForecast - comparison failed:', error.message,'\x1b[37m');
     }
   }
 }

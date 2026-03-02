@@ -103,7 +103,7 @@ class CollectorManager {
       paused:            false
     });
 
-    //console.log(`     • Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
+    //console.log(`   • Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
   }
 
   /**
@@ -118,19 +118,15 @@ class CollectorManager {
     }
     this.isRunning = true;
     // Convert the entries to names and join them with a separator
-    const loader = Array.from(this.schedules.values())
-      .map(entry => entry.name)
-      .join(' / ');
 
-    console.log(loader);
     for (const [id, entry] of this.schedules) {
       // Check database for enabled status
       const isEnabled = await this.isModuleEnabled(id);
       entry.enabled = isEnabled; // Update the entry with database value
       
-      console.log(`   - Starting: ${entry.name} (interval: ${entry.interval / 1000}s)`);
+      //console.log(`   - Starting: ${entry.name} (interval: ${entry.interval / 1000}s)`);
       if (!isEnabled) {
-        console.log(`  ⊘ Skipped (disabled): ${entry.name}`);
+        console.log(`\x1b[91m   - Skipped (disabled): ${entry.name} \x1b[37m`);
         continue;
       }
 
@@ -142,14 +138,14 @@ class CollectorManager {
       this._armNext(id);
     }
 
-    //console.log(' - ✅ CollectorManager: all collectors started\n');
+    console.log('\x1b[32m   • all collectors started\n \x1b[37m');
   }
 
   /**
    * Stop all collectors and clear all pending timers.
    */
   async stop() {
-    console.log(' - 🛑 CollectorManager: stopping all collectors...');
+    console.log('\x1b[91m   - CollectorManager: stopping all collectors...\x1b[37m');
 
     for (const [id, entry] of this.schedules) {
       if (entry.timer) {
@@ -159,7 +155,7 @@ class CollectorManager {
     }
 
     this.isRunning = false;
-    console.log(' - ✅ CollectorManager: all collectors stopped');
+    console.log('\x1b[91m   - CollectorManager: all collectors stopped\x1b[37m');
   }
 
   /**
@@ -211,7 +207,7 @@ class CollectorManager {
     // Re-resolve interval
     entry.interval = await this._resolveInterval(moduleId, entry.interval);
 
-    console.log(` - 🔄 CollectorManager: restarting ${entry.name} (interval: ${entry.interval / 1000}s)`);
+    console.log(` - CollectorManager: restarting ${entry.name} (interval: ${entry.interval / 1000}s)`);
 
     // Immediate collect + re-arm
     await this._runCollector(moduleId);
@@ -272,7 +268,7 @@ class CollectorManager {
       entry.lastRun = new Date();
       entry.consecutiveErrors++;
       entry.lastError = error.message;
-      console.error(` -   ❌ ${entry.name}: ${error.message}`);
+      console.error(`\x1b[91m -   ❌ ${entry.name}: ${error.message} \x1b[37m`);
       this._checkPause(entry);
     }
   }
@@ -287,7 +283,7 @@ class CollectorManager {
         clearTimeout(entry.timer);
         entry.timer = null;
       }
-      console.warn(` -  ⏸️  ${entry.name}: paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Use restart('${entry.id}') to resume.`);
+      console.warn(`\x1b[93m   • ${entry.name}: paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Use restart('${entry.id}') to resume.  \x1b[37m`);
     }
   }
 
@@ -314,17 +310,17 @@ class CollectorManager {
       if (rows.length > 0 && rows[0].setting_value) {
         const dbInterval = Number(rows[0].setting_value);
         if (dbInterval > 0) {
-          console.log(`  - ${moduleId}: using system_settings interval (${dbInterval}ms)`);
+//          console.log(`   • ${moduleId}: using system_settings interval (${dbInterval}ms)`);
           return dbInterval;
         }
       }
     } catch (error) {
       // system_settings table might not exist yet or query failed —
       // fall through to manifest default silently
-      console.log(`   - ℹ️  ${moduleId}: system_settings lookup failed (${error.message}), using manifest default`);
+      console.log(`\x1b[91m   • ${moduleId}: system_settings lookup failed (${error.message}), using manifest default\x1b[37m `);
     }
 
-    console.log(`    📎 ${moduleId}: using manifest default interval (${manifestDefault}ms)`);
+    //console.log(`\x1b[37m   • ${moduleId} - ${new Date().toISOString()} - using manifest default interval (${manifestDefault}ms)\x1b[37m `);
     return manifestDefault;
   }
 }

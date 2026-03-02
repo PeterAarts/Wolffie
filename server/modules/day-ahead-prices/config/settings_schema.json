@@ -20,9 +20,19 @@
               "options": [
                 { "label": "Nederland (NL)", "value": "NL" },
                 { "label": "Duitsland (DE)", "value": "DE" },
+                { "label": "Duitsland-Luxemburg (DE-LU)", "value": "DE-LU" },
                 { "label": "België (BE)", "value": "BE" },
                 { "label": "Frankrijk (FR)", "value": "FR" },
-                { "label": "Noorwegen 2 (NO2)", "value": "NO2" }
+                { "label": "Zwitserland (CH)", "value": "CH" },
+                { "label": "Oostenrijk (AT)", "value": "AT" },
+                { "label": "Denemarken West (DK1)", "value": "DK1" },
+                { "label": "Denemarken Oost (DK2)", "value": "DK2" },
+                { "label": "Noorwegen 1 (NO1)", "value": "NO1" },
+                { "label": "Noorwegen 2 (NO2)", "value": "NO2" },
+                { "label": "Zweden 1 (SE1)", "value": "SE1" },
+                { "label": "Zweden 2 (SE2)", "value": "SE2" },
+                { "label": "Zweden 3 (SE3)", "value": "SE3" },
+                { "label": "Zweden 4 (SE4)", "value": "SE4" }
               ],
               "default": "NL",
               "cols": 4
@@ -37,6 +47,82 @@
               "cols": 4
             }
           ]
+        }
+      ]
+    },
+    {
+      "title": "Ophaalinstellingen",
+      "sections": [
+        {
+          "fields": [
+            {
+              "key": "fetch_days",
+              "component": "number",
+              "label": "Dagen Ophalen",
+              "description": "Hoeveel dagen historische prijzen ophalen bij elke collectie",
+              "min": 1,
+              "max": 30,
+              "default": 10,
+              "cols": 4
+            },
+            {
+              "key": "fetch_interval_hours",
+              "component": "number",
+              "label": "Ophaalinterval (uren)",
+              "description": "Hoe vaak de prijzen opnieuw opgehaald worden (in uren). Standaard: 4 uur",
+              "min": 1,
+              "max": 24,
+              "default": 4,
+              "cols": 4
+            },
+            {
+              "key": "retry_max",
+              "component": "number",
+              "label": "Max Retries",
+              "description": "Maximum aantal pogingen als morgen-prijzen ontbreken",
+              "min": 1,
+              "max": 24,
+              "default": 10,
+              "cols": 4
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Collector Status",
+      "sections": [
+        {
+          "component": "info-panel",
+          "data": {
+            "endpoint": "/api/day-ahead-prices/status",
+            "dynamic": true,
+            "items": [
+              {
+                "label": "Laatste Ophaalmoment",
+                "field": "lastFetch",
+                "template": { "type": "datetime" }
+              },
+              {
+                "label": "Opgehaalde Records",
+                "field": "lastFetchRecords"
+              },
+              {
+                "label": "Status",
+                "field": "healthy",
+                "template": { "type": "status-badge" }
+              },
+              {
+                "label": "Retry Actief",
+                "field": "retrying",
+                "template": { "type": "status-badge" }
+              },
+              {
+                "label": "Retry Pogingen",
+                "field": "retryCount"
+              }
+            ]
+          }
         }
       ]
     }

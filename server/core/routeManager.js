@@ -10,7 +10,7 @@ class RouteManager {
    */
   registerModuleRoutes(modules) {
     if (!modules || modules.size === 0) {
-      console.log('ℹ️  No modules to register routes for');
+      console.log('\x1b[91m   - No modules to register routes for \x1b[37m');
       return;
     }
 
@@ -23,13 +23,13 @@ class RouteManager {
 
         // Check if routes are enabled
         if (module.manifest?.routes?.enabled === false) {
-          console.log(`  ⊘ Routes disabled: ${module.manifest.name}`);
+          console.log(`\x1b[93m   - Routes disabled: ${module.manifest.name} \x1b[37m`);
           continue;
         }
 
         // Check if module has routes
         if (!module.routes) {
-          console.warn(`  ⚠️  Module ${id} has API capability but no routes exported`);
+          console.warn(`\x1b[91m   - Module ${id} has API capability but no routes exported \x1b[37m`);
           continue;
         }
 
@@ -37,21 +37,19 @@ class RouteManager {
         const prefix = module.manifest?.routes?.prefix || `/api/${id}`;
 
         // Register routes
-        console.log(`  📡 Registering: ${prefix} (${module.manifest.name})`);
+        console.log(`\x1b[37m   - Registering: ${prefix} (${module.manifest.name})`);
         this.app.use(prefix, module.routes);
         
         this.registeredRoutes.set(id, {
           prefix,
           module: module.manifest.name
         });
-
-        console.log(`  ✓ Registered: ${prefix}`);
       } catch (error) {
-        console.error(`  ✗ Failed to register routes for ${id}:`, error.message);
+        console.error(`\x1b[91m   - Failed to register routes for ${id}:`, error.message,'\x1b[37m');
       }
     }
 
-    console.log(`✓ Registered ${this.registeredRoutes.size} route(s)`);
+    console.log(`\x1b[32m   • Registered ${this.registeredRoutes.size} route(s)  \x1b[37m`);
   }
 
   /**

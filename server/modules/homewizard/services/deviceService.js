@@ -4,7 +4,7 @@ import homewizardAPI from './api.js';
 
 class DeviceService {
   /**
-   * Get all configured HomeWizard devices
+   * Get all configured HomeWizard devices.
    */
   async getAllDevices() {
     const [devices] = await db.pool.query(
@@ -14,7 +14,7 @@ class DeviceService {
   }
 
   /**
-   * Get a single device by ID
+   * Get a single device by ID.
    */
   async getDevice(id) {
     const [rows] = await db.pool.query(
@@ -25,7 +25,7 @@ class DeviceService {
   }
 
   /**
-   * Create a new device
+   * Create a new device.
    */
   async addDevice(data) {
     const { name, ip_address, port, serial, product_type, priority, enabled } = data;
@@ -48,7 +48,7 @@ class DeviceService {
   }
 
   /**
-   * Update an existing device – only allows known columns
+   * Update an existing device — only allows known columns.
    */
   async updateDevice(id, data) {
     const allowed = ['name', 'ip_address', 'port', 'serial', 'product_type', 'priority', 'enabled'];
@@ -66,7 +66,7 @@ class DeviceService {
   }
 
   /**
-   * Delete a device by ID
+   * Delete a device by ID.
    */
   async deleteDevice(id) {
     await db.pool.query(
@@ -76,8 +76,63 @@ class DeviceService {
   }
 
   /**
-   * Scan local network for HomeWizard devices via API,
-   * insert any that aren't already in device_settings
+   * Enhanced getDailyStats to handle the "usage_today" calculation
+   * using the optimized range filter.
+   */
+  async getDailyStats(id) {
+    // First, get the serial for the internal device ID
+    const [device] = await db.pool.query('SELECT serial FROM device_settings WHERE id = ?', [id]);
+    if (!device.length) return null;
+
+    const serial = device[0].serial;
+
+    // Optimized query to get start and end readings of today
+    const [rows] = await db.pool.query(
+      `SELECT 
+        SUBSTRING_INDEX(MIN(CONCAT(timestamp, '|', energy_total)), '|', -1) + 0 AS first_reading_kwh,
+        SUBSTRING_INDEX(MAX(CONCAT(timestamp, '|', energy_total)), '|', -1) + 0 AS latest_reading_kwh
+      FROM device_measurements
+      WHERE device_id = ? 
+        AND timestamp >= CURDATE()`,
+      [serial]
+    );
+
+    if (!rows.length || rows[0].first_reading_kwh === null) {
+      return { firstReadingToday: 0, latestReading: 0, dailyUsedPower: 0 };
+    }
+
+    const first = parseFloat(rows[0].first_reading_kwh);
+    const latest = parseFloat(rows[0].latest_reading_kwh);
+
+    return {
+      firstReadingToday: Math.round(first * 1000),   // Wh
+      latestReading:     Math.round(latest * 1000),   // Wh
+      dailyUsedPower:    Math.round(Math.max(0, latest - first) * 1000) // Wh
+    };
+  }
+  /**
+   * Get the power history for a specific device for the current day.
+   * Used for the "power" chart in the edit modal.
+   */
+  async getDailyHistory(id) {
+    const [rows] = await db.pool.query(
+      `SELECT 
+        timestamp, 
+        power 
+      FROM device_measurements 
+      WHERE device_id = (SELECT serial FROM device_settings WHERE id = ?)
+        AND timestamp >= CURDATE()
+      ORDER BY timestamp ASC`,
+      [id]
+    );
+    
+    return rows.map(r => ({
+      timestamp: r.timestamp,
+      power: parseFloat(r.power) || 0
+    }));
+  }
+  /**
+   * Scan the local network for HomeWizard devices and persist any new ones.
    */
   async discoverDevices() {
     try {
@@ -85,7 +140,6 @@ class DeviceService {
       console.log(`HomeWizard discovery found ${discovered.length} device(s)`);
 
       for (const device of discovered) {
-        // Skip if already tracked by IP
         const [existing] = await db.pool.query(
           `SELECT id FROM device_settings WHERE module = 'homewizard' AND ip_address = ?`,
           [device.ip_address]

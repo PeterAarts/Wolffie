@@ -1,27 +1,122 @@
 {
   "groups": [
     {
-      "title": "Solar Forecast Instellingen",
+      "title": "Zonnepaneel Configuratie",
       "sections": [
         {
           "fields": [
-            { "key": "enabled", "component": "switch", "label": "Forecast Actief", "cols": 12 }
+            {
+              "key": "enabled",
+              "component": "boolean",
+              "label": "Zonnevoorspelling Inschakelen",
+              "description": "Activeer het ophalen van zonnestroomvoorspellingen",
+              "cols": 6
+            }
           ]
         },
         {
-          "title": "Locatie",
           "fields": [
-            { "key": "latitude", "component": "text", "label": "Latitude", "cols": 6, "required": true },
-            { "key": "longitude", "component": "text", "label": "Longitude", "cols": 6, "required": true }
+            {
+              "key": "kwp",
+              "component": "text",
+              "label": "Systeemvermogen (kWp)",
+              "description": "Totaal vermogen van je zonnepanelen in kilowatt-piek",
+              "placeholder": "3.56",
+              "default": "3.56",
+              "cols": 2
+            },
+            {"key": "tilt","component": "number","label": "Hellingshoek (°)","description": "Kantelhoek van de panelen (0 = plat, 90 = verticaal)",
+              "min": 0,"max": 90,"default": 35,"cols": 2
+            },
+            {
+              "key": "latitude",
+              "component": "text",
+              "label": "Breedtegraad",
+              "description": "Breedtegraad van je locatie",
+              "placeholder": "51.34674556",
+              "cols": 2
+            },
+            {
+              "key": "longitude",
+              "component": "text",
+              "label": "Lengtegraad",
+              "description": "Lengtegraad van je locatie",
+              "placeholder": "3.7426737",
+              "cols": 2
+            },
+            {
+              "key": "azimuth",
+              "component": "number",
+              "label": "Azimut (°)",
+              "description": "Richting panelen: 0=Zuid, 90=West, 180=Noord, 270=Oost",
+              "min": 0,
+              "max": 360,
+              "default": 0,
+              "cols": 2
+            }
           ]
-        },
+        }
+      ]
+    },
+    {
+      "title": "Ophaalinstellingen",
+      "sections": [
         {
-          "title": "Panelen",
           "fields": [
-            { "key": "tilt", "component": "number", "label": "Helling", "cols": 4, "suffix": "°" },
-            { "key": "azimuth", "component": "number", "label": "Richting", "cols": 4, "suffix": "°" },
-            { "key": "kwp", "component": "number", "label": "Vermogen", "cols": 4, "suffix": " kWp" }
+            {
+              "key": "fetch_interval_hours",
+              "component": "number",
+              "label": "Ophaalinterval (uren)",
+              "description": "Hoe vaak de voorspelling opnieuw opgehaald wordt. API limiet: 12 verzoeken/uur",
+              "min": 1,
+              "max": 24,
+              "default": 15,
+              "cols": 4
+            },
+            {
+              "key": "forecast_days",
+              "component": "number",
+              "label": "Voorspellingsdagen",
+              "description": "Hoeveel dagen historische nauwkeurigheid bijhouden voor vergelijking",
+              "min": 1,
+              "max": 30,
+              "default": 7,
+              "cols": 4
+            }
           ]
+        }
+      ]
+    },
+    {
+      "title": "Collector Status",
+      "sections": [
+        {
+          "component": "info-panel",
+          "data": {
+            "endpoint": "/api/solar-forecast/status",
+            "dynamic": true,
+            "items": [
+              {
+                "label": "Laatste Ophaalmoment",
+                "field": "lastFetch",
+                "template": { "type": "datetime" }
+              },
+              {
+                "label": "Voorspellingsdagen Opgehaald",
+                "field": "lastFetchRecords"
+              },
+              {
+                "label": "Status",
+                "field": "healthy",
+                "template": { "type": "status-badge" }
+              },
+              {
+                "label": "Gemiddelde Nauwkeurigheid",
+                "field": "avgAccuracy",
+                "template": { "type": "percentage" }
+              }
+            ]
+          }
         }
       ]
     }

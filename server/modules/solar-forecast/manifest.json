@@ -1,42 +1,60 @@
 {
   "id": "solar-forecast",
   "name": "Solar Forecast",
-  "version": "1.0.0",
-  "description": "External solar production forecasting service integration",
-  "author": "Wolffie",
-  "type": "data-collector",
-  
+  "version": "1.0.5",
+  "description": "Daily solar generation predictions from Forecast.Solar API - No registration required!",
+  "type": "collector",
+  "author": "WattsOn",
+  "enabled": true,
+
   "capabilities": {
     "dataCollection": true,
-    "api": true,
-    "ui": true
+    "api": true
   },
 
-  "collector": {
-    "enabled": true,
-    "interval": 900000,
-    "priority": 10,
-    "description": "Retrieves solar production forecasts every 15 minutes"
+  "schedules": [
+    {
+      "name": "daily_forecast",
+      "cron": "0 6 * * *",
+      "description": "Fetch daily solar forecast at 6:00 AM"
+    }
+  ],
+  "dependencies": {
+    "axios": "^1.6.0"
   },
-
+  "settings": {
+    "schema": "settings_schema.json"
+  },
   "routes": {
     "enabled": true,
     "prefix": "/api/solar-forecast",
-    "description": "Solar forecast data endpoints"
+    "file": "routes/index.js"
   },
-
-  "settings": {
-    "component": "SolarForecastSettings",
-    "schema": "settings-schema.js"
+  "collector": {
+    "service": "services/collector.js",
+    "enabled": true,
+    "interval": 3600000,
+    "scheduled": true
   },
-
-  "dependencies": {
-    "node": ">=18.0.0",
-    "axios": "^1.0.0"
+  "database": {
+    "tables": [
+      "solar_forecasts"
+    ]
   },
-
-  "config": {
-    "required": ["api_key", "latitude", "longitude"],
-    "optional": ["azimuth", "declination", "kwp"]
+  "api": {
+    "provider": "Forecast.Solar",
+    "authentication": "None - Free API",
+    "documentation": "https://doc.forecast.solar/",
+    "advantages": [
+      "No API token required",
+      "No registration needed",
+      "Simple JSON format",
+      "7-day forecast horizon"
+    ],
+    "limits": {
+      "tier": "free",
+      "requestsPerHour": 12,
+      "note": "Free tier - register for higher limits"
+    }
   }
 }

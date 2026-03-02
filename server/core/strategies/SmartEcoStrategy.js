@@ -37,6 +37,20 @@ class SmartEcoStrategy {
 
     return { action: 'IDLE', reason: 'Geen actie vereist' };
   }
+  async generateFullDayPlan(context) {
+    const plan = [];
+    for (let hour = 0; hour < 24; hour++) {
+      // Logic to simulate context for each hour and call decide()
+      const hourlyDecision = await this.decide({ ...context, hour }); 
+      plan.push({
+        time: `${hour.toString().padStart(2, '0')}:00`,
+        action: hourlyDecision.action,
+        watts: hourlyDecision.power || 0,
+        reason: hourlyDecision.reason
+      });
+    }
+    return plan;
+  }
 }
 
 export default new SmartEcoStrategy();

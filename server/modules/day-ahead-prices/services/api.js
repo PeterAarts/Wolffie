@@ -56,14 +56,13 @@ class EnergyChartsAPI {
     };
 
     try {
-      console.log(`  🌐 Fetching prices: ${url}?bzn=${biddingZone}&start=${start}&end=${end}`);
-      
+      console.log(`\x1b[37m   • Day-Ahead-prices - [${new Date().toISOString()}] - Fetching prices: ${url}?bzn=${biddingZone}&start=${start}&end=${end}`);
       const response = await axios.get(url, {
         params,
         timeout: this.timeout,
         headers: {
           'Accept': 'application/json',
-          'User-Agent': 'WattsOn/1.0'
+          'User-Agent': 'Wolffie/1.0'
         }
       });
 

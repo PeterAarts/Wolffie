@@ -12,7 +12,7 @@ class UserService {
     const [rows] = await db.pool.query(
       `SELECT 
         id, username, email, full_name, role, 
-        is_active, created_at, updated_at, last_login_at
+        is_active, created_at, updated_at, last_password_update, last_login_at
        FROM users
        ORDER BY created_at DESC`
     );
@@ -26,7 +26,7 @@ class UserService {
     const [rows] = await db.pool.query(
       `SELECT 
         id, username, email, full_name, role, 
-        is_active, created_at, updated_at, last_login_at
+        is_active, created_at, updated_at, last_password_update,last_login_at
        FROM users
        WHERE id = ?`,
       [id]
@@ -88,8 +88,8 @@ class UserService {
 
     // Insert user
     const [result] = await db.pool.query(
-      `INSERT INTO users (username, email, password_hash, full_name, role, is_active)
-       VALUES (?, ?, ?, ?, ?, true)`,
+      `INSERT INTO users (username, email, password_hash, full_name, role, is_active,last_password_update)
+       VALUES (?, ?, ?, ?, ?, true,NOW())`,
       [username, email, password_hash, full_name, role]
     );
 
@@ -182,7 +182,7 @@ class UserService {
     const password_hash = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
     await db.pool.query(
-      `UPDATE users SET password_hash = ?, updated_at = NOW()
+      `UPDATE users SET password_hash = ?, updated_at = NOW(), last_password_update = NOW()
        WHERE id = ?`,
       [password_hash, id]
     );
@@ -208,7 +208,7 @@ class UserService {
     const password_hash = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
     await db.pool.query(
-      `UPDATE users SET password_hash = ?, updated_at = NOW()
+      `UPDATE users SET password_hash = ?, updated_at = NOW(), last_password_update = NOW()
        WHERE id = ?`,
       [password_hash, id]
     );

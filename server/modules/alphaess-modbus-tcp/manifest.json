@@ -1,9 +1,9 @@
 {
   "id": "alphaess-modbus-tcp",
   "name": "AlphaESS ModBus TCP",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "AlphaESS inverter communication via ModBus TCP/IP",
-  "author": "WattsOn",
+  "author": "Wolffie",
   "type": "data-collector",
   
   "capabilities": {
@@ -13,10 +13,10 @@
   },
 
   "collector": {
-    "enabled": false,
+    "enabled": true,
     "interval": 10000,
     "priority": 10,
-    "description": "Collects real-time data via ModBus TCP every 10 seconds"
+    "description": "Collects real-time data via ModBus TCP every 20 seconds"
   },
 
   "routes": {

@@ -174,51 +174,48 @@ router.post('/core', authorize('admin'), async (req, res) => {
  * GET /api/settings/users
  */
 router.get('/users', authorize('admin'), async (req, res) => {
-  try {
-    res.json({
-      success: true,
-      schema: {
-        groups: [
-          {
-            title: 'Gebruikersbeheer',
-            sections: [{
-              component: 'table',
-              title: 'Huidige Gebruikers',
-              data: {
-                endpoint: '/settings/users/list',
-                columns: [
-                  { field: 'username', header: 'Gebruikersnaam' },
-                  { field: 'email', header: 'E-mail' },
-                  { field: 'role', header: 'Rol' }
-                ],
-                rowActions: [
-                  { label: 'Verwijderen', icon: 'pi-trash', action: 'delete', severity: 'danger' }
-                ]
+  res.json({
+    success: true,
+    schema: {
+      groups: [{
+        title: 'Gebruikersbeheer',
+        sections: [{
+          component: 'table',
+          data: {
+            endpoint: '/settings/users/list',
+            columns: [
+              { field: 'username', header: 'Gebruikersnaam', sortable: true },
+              { field: 'email', header: 'E-mail', sortable: true },
+              { field: 'role', header: 'Rol' }
+            ],
+            rowActions: [
+              { 
+                label: 'edit', 
+                icon: 'pi-pencil', 
+                action: 'edit', 
+                type: 'drawer', // Tells frontend to use AppDrawer
+                endpoint: '/settings/users/{id}', // Template for saving
+                method: 'PUT'
+              },
+              { 
+                label: 'delete', 
+                icon: 'pi-trash', 
+                action: 'delete', 
+                type: 'modal', // Tells frontend to use AppModal
+                severity: 'danger',
+                endpoint: '/settings/users/{id}',
+                method: 'DELETE',
+                confirmMessage: 'Weet je zeker dat je gebruiker {username} wilt verwijderen?'
               }
-            }]
-          },
-          {
-            title: 'Nieuwe Gebruiker Toevoegen',
-            sections: [{
-              fields: [
-                { key: 'new_username', component: 'text', label: 'Gebruikersnaam', column: 2, editable: true, },
-                { key: 'new_password', component: 'password', label: 'Wachtwoord', column: 2, editable: true, },
-                { key: 'new_email', component: 'text', label: 'E-mailadres', column: 2 , editable: true, placeholder: ''},
-                { key: 'new_role', component: 'dropdown', label: 'Rol', column: 2, editable: true,
-                  options: [{label: 'Admin', value: 'admin'}, {label: 'User', value: 'user'}] }
-              ]
-            }]
+            ]
           }
-        ],
-        globalActions: [
-          { label: 'Gebruiker Aanmaken', icon: 'pi-user-plus', endpoint: '/settings/users/create', method: 'POST' }
-        ]
-      },
-      values: {}
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+        }]
+      }],
+      globalActions: [
+        { label: 'Gebruiker Aanmaken', icon: 'pi-user-plus', type: 'drawer', endpoint: '/settings/users/create', method: 'POST' }
+      ]
+    }
+  });
 });
 
 /**
@@ -242,9 +239,87 @@ router.post('/users/create', authorize('admin'), async (req, res) => {
       email: new_email,
       role: new_role
     });
-    res.json({ success: true, message: 'Gebruiker succesvol aangemaakt' });
+    res.json({ success: true, message: 'user created' });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/users/update', authorize('admin'), async (req, res) => {
+  try {
+    const { user_id, new_username, new_password, new_email, new_role } = req.body;
+    await userService.updateUser(user_id, {
+      username: new_username,
+      password: new_password,
+      email: new_email,
+      role: new_role  
+    });
+    res.json({ success: true, message: 'user update' });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+router.post('/users/delete', authorize('admin'), async (req, res) => {
+  try {
+    const { user_id } = req.body;
+    await userService.deleteUser(user_id);
+    res.json({ success: true, message: 'user deleted' });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  } 
+});
+
+// ============================================================================
+// DAY-AHEAD CHART SETTINGS — price threshold persistence
+// ============================================================================
+
+/**
+ * GET /api/settings/day-ahead-chart
+ * Returns { green_below: number, red_above: number }
+ * No admin required — any authenticated user can read/write their chart prefs
+ */
+router.get('/day-ahead-chart', async (req, res) => {
+  try {
+    const settings = await settingsService.getCategory('day-ahead-chart');
+    res.json({
+      success    : true,
+      green_below: settings.green_below ?? 30,
+      red_above  : settings.red_above   ?? 70,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * PUT /api/settings/day-ahead-chart
+ * Body: { green_below: number, red_above: number }
+ * Upserts rows — works even if rows don't exist yet
+ */
+router.put('/day-ahead-chart', async (req, res) => {
+  try {
+    const { green_below, red_above } = req.body;
+    const gb = Number(green_below);
+    const ra = Number(red_above);
+
+    if (isNaN(gb) || isNaN(ra))  return res.status(400).json({ success: false, error: 'Values must be numbers' });
+    if (gb < 0 || gb > 100)      return res.status(400).json({ success: false, error: 'green_below must be 0–100' });
+    if (ra < 0 || ra > 100)      return res.status(400).json({ success: false, error: 'red_above must be 0–100' });
+    if (gb >= ra)                 return res.status(400).json({ success: false, error: 'green_below must be less than red_above' });
+
+    const changedBy = req.user?.username ?? 'ui';
+    const meta      = { changedBy, reason: 'User adjusted price thresholds', valueType: 'number', editable: 1, visible: 1 };
+
+    await settingsService.upsert('day-ahead-chart', 'green_below', gb, {
+      ...meta, description: 'Price percentile below which bars show green (cheap). 0=day-min, 100=day-max.'
+    });
+    await settingsService.upsert('day-ahead-chart', 'red_above', ra, {
+      ...meta, description: 'Price percentile above which bars show red (expensive). 0=day-min, 100=day-max.'
+    });
+
+    res.json({ success: true, green_below: gb, red_above: ra });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 

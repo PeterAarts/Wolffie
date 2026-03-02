@@ -62,7 +62,7 @@ class DayAheadPricesModule {
       console.log('     - Price fetching configured \x1b[32m✓\x1b[37m');
       
     } catch (error) {
-      console.error('✗ Failed to initialize Day-Ahead Electricity Prices module:', error.message);
+      console.error('\x1b[31m   • Failed to initialize Day-Ahead Electricity Prices module:', error.message);
       throw error;
     }
   }
@@ -80,7 +80,7 @@ class DayAheadPricesModule {
    * Stop the module (called by module manager)
    */
   async stop() {
-    console.log('⏹️  Day-Ahead Electricity Prices module stopped');
+    console.log('\x1b[31m   • Day-Ahead Electricity Prices module stopped');
     this.initialized = false;
   }
 

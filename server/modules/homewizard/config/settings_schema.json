@@ -13,7 +13,7 @@
           "component": "info-panel",
           "title": "Collector Status",
           "data": {
-            "endpoint": "/api/homewizard/collector/status",
+            "endpoint": "/homewizard/collector/status",
             "dynamic": true,
             "items": [
               { "label": "Status", "field": "isRunning", "template": { "type": "status-badge" } },
@@ -31,7 +31,7 @@
           "component": "table",
           "title": "Device List",
           "data": {
-            "endpoint": "/api/homewizard/devices",
+            "endpoint": "/homewizard/devices",
             "columns": [
               { "field": "name", "header": "Device Name", "sortable": true },
               { "field": "ip_address", "header": "IP Address", "sortable": true },
@@ -42,7 +42,7 @@
               { 
                 "label": "Discover Devices", 
                 "icon": "pi-search",
-                "endpoint": "/api/homewizard/discover",
+                "endpoint": "/homewizard/discover",
                 "method": "POST",
                 "confirmMessage": "This will scan your local network for HomeWizard devices. Continue?"
               }
@@ -57,7 +57,7 @@
           "component": "card-grid",
           "title": "Statistics",
           "data": {
-            "endpoint": "/api/homewizard/devices/stats",
+            "endpoint": "/homewizard/devices/stats",
             "cards": [
               { "title": "Total Devices", "field": "totalDevices", "icon": "pi-box","color": "primary"},
               { "title": "Total Power", "field": "totalPower", "suffix": " W","icon": "pi-bolt","color": "warning"}

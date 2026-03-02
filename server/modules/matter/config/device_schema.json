@@ -1,0 +1,60 @@
+{
+  "version": "1.0",
+  "description": "Matter Protocol module — maps Node IDs and Energy Clusters to the WattsOn UI.",
+
+  "storage": {
+    "backend": "MariaDB",
+    "table": "device_settings",
+    "filter": "WHERE module = 'matter'"
+  },
+
+  "db_fields": {
+    "id":           { "type": "INT AUTO_INCREMENT", "label": "Internal ID" },
+    "module":       { "type": "VARCHAR(50)",  "value": "matter" },
+    "name":         { "type": "VARCHAR(255)", "label": "Device Name" },
+    "serial":       { "type": "VARCHAR(100)", "label": "Matter Node ID", "description": "The unique numeric ID assigned during pairing (e.g., 1)" },
+    "product_type": { "type": "VARCHAR(100)", "label": "Product Type", "default": "socket" },
+    "priority":     { "type": "INT",          "default": 5 },
+    "enabled":      { "type": "TINYINT(1)",   "default": 1 }
+  },
+
+  "api_routes": {
+    "base": "/api/matter",
+    "note": "Routes registered in modules/matter/routes/index.js",
+
+    "device_management": {
+      "endpoints": [
+        { "method": "GET",    "path": "/devices",      "description": "List all commissioned Matter devices" },
+        { "method": "GET",    "path": "/devices/:id",  "description": "Get device details and energy history" },
+        { "method": "PUT",    "path": "/devices/:id",  "description": "Update name or enabled status in DB" },
+        { "method": "DELETE", "path": "/devices/:id",  "description": "Unpair and remove device" }
+      ]
+    },
+
+    "commissioning": {
+      "endpoints": [
+        { "method": "POST", "path": "/commission", "description": "Pair a new device via Setup Code" }
+      ]
+    },
+
+    "live_data": {
+      "endpoints": [
+        { "method": "GET", "path": "/devices/:id/data", "description": "Fetch real-time power/energy from clusters" }
+      ]
+    },
+
+    "status": {
+      "endpoints": [
+        { "method": "GET", "path": "/collector/status", "description": "Check Matter Hub health" }
+      ]
+    }
+  },
+
+  "frontend_field_mapping": {
+    "fields": {
+      "name":    { "storage": "DB", "route": "PUT /devices/:id", "db_field": "name" },
+      "serial":  { "storage": "DB", "route": "PUT /devices/:id", "db_field": "serial" },
+      "enabled": { "storage": "DB", "route": "PUT /devices/:id", "db_field": "enabled" }
+    }
+  }
+}

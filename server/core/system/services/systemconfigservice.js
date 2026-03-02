@@ -2,6 +2,12 @@
 // Service to manage system configuration
 
 import db from '../../database.js';
+import fs from 'fs/promises';        // Missing: Required for getSchemaByModule
+import path from 'path';              // Missing: Required for getSchemaByModule
+import { fileURLToPath } from 'url'; // Required for ES Modules __dirname
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 
 class SystemConfigService {
   constructor() {
@@ -188,6 +194,35 @@ class SystemConfigService {
   clearCache() {
     this.cache.clear();
   }
+  /**
+   * Get the device schema for a specific module.
+   */
+  async getSchemaByModule(moduleName) {
+    try {
+      // Look for either name used in your modules
+      const schemaFiles = ['device_schema.json'];
+      const projectRoot = path.resolve(__dirname, '../../../../');
+      
+      // 2. Build the path: [ProjectRoot] / server / modules / [moduleName] / config
+      const moduleConfigPath = path.join(projectRoot, 'server', 'modules', moduleName, 'config');  
+      for (const fileName of schemaFiles) {
+        const fullPath = path.join(moduleConfigPath, fileName);
+        try {
+          const content = await fs.readFile(fullPath, 'utf8');
+          return JSON.parse(content);
+        } catch (err) {
+          // File not found, check next possible filename
+          continue;
+        }
+      }
+      return null;
+    } catch (error) {
+      // This is where the "path is not defined" error was being caught
+      console.error(`❌ Error reading schema for ${moduleName} in /core/system/services/systemconfigservice.js`, error.message);
+      return null;
+    }
+  }
+
 }
 
 export default new SystemConfigService();

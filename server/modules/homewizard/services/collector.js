@@ -23,11 +23,11 @@ class HomeWizardCollector {
       }
 
       if (this.devices.length === 0) {
-        console.log('ℹ️ HomeWizard: no devices configured, skipping');
+        console.log('\x1b[91m   • HomeWizard: no devices configured, skipping');
         return true; // Not an error — just nothing to do
       }
 
-      console.log(` - [${new Date().toISOString()}] Collecting from ${this.devices.length} HomeWizard device(s)...`);
+      console.log(`\x1b[37m   • HomeWizard - ${new Date().toISOString()} Collecting from ${this.devices.length} device(s)...\x1b[37m`);
 
       const results = await Promise.allSettled(
         this.devices.map(device => this.collectFromDevice(device))
@@ -48,7 +48,7 @@ class HomeWizardCollector {
     } catch (error) {
       this.lastError = error.message;
       this.consecutiveErrors++;
-      console.error('❌ HomeWizard collection failed:', error.message);
+      console.error('\x1b[91m   • HomeWizard collection failed:', error.message,'\x1b[97m');
       return false;
     }
   }
@@ -63,9 +63,9 @@ class HomeWizardCollector {
       );
       this.devices = devices;
       this.devicesLoaded = true;
-      console.log(`✅ HomeWizard: loaded ${devices.length} device(s)`);
+      console.log(`\x1b[37m   • HomeWizard: loaded ${devices.length} device(s)\x1b[37m`);
     } catch (error) {
-      console.error('❌ HomeWizard: failed to load devices:', error.message);
+      console.error('\x1b[91m   • HomeWizard: failed to load devices:', error.message,'\x1b[97m');
       this.devices = [];
       this.devicesLoaded = true; // Don't retry every tick — use reloadDevices() explicitly
     }

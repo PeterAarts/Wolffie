@@ -12,9 +12,10 @@ class DayAheadPricesCollector {
     this.name = 'day-ahead-prices';
     this.lastError = null;
     this.lastRun = null;
-    this.retryTimer = null;  // Timer for hourly retries
-    this.retryCount = 0;     // Count of retry attempts
-    this.maxRetries = 10;    // Max retries (stop after 10 hours)
+    this.lastFetchRecords = 0;
+    this.retryTimer = null;
+    this.retryCount = 0;
+    this.maxRetries = 10;
   }
 
   /**
@@ -28,38 +29,54 @@ class DayAheadPricesCollector {
       // Reset retry count if it's a new day (after midnight)
       const now = new Date();
       if (this.lastRun && this.lastRun.getDate() !== now.getDate()) {
-        console.log('  🆕 New day detected - resetting retry counter');
+        console.log('\x1b[33m   • New day detected - resetting retry counter/timer\x1b[37m');
         this.retryCount = 0;
         this.clearRetryTimer();
       }
 
-      console.log('💰 Day-Ahead Prices: Starting collection...');
-
-      // Load settings from database (same as other modules)
+      // Load settings from database
       const settings = await settingsService.getCategory('day-ahead-prices');
 
       if (!settings || settings.enabled === false) {
-        console.log('⏭️  Day-Ahead Prices: Disabled in settings');
-        return false; // Return false instead of object to match collector pattern
-      }
-
-      // Validate required settings
-      const { bidding_zone, country_code } = settings;
-
-      if (!bidding_zone) {
-        this.lastError = 'Missing bidding_zone in settings';
-        console.error('✗ Day-Ahead Prices: Missing bidding_zone');
+        console.log('\x1b[31m   • Day-Ahead Prices: Disabled in settings/configuration\x1b[37m');
         return false;
       }
 
-      // Determine date range (10 days ago + today + tomorrow)
-      const { startDate, endDate } = this.getDateRange();
+      // Read configurable settings with defaults
+      const { 
+        bidding_zone, 
+        country_code,
+        fetch_days = 10,
+        fetch_interval_hours = 4,
+        retry_max = 10,
+        last_fetch = null
+      } = settings;
 
-      console.log(`  📅 Fetching prices from ${api.formatDateForAPI(startDate)} to ${api.formatDateForAPI(endDate)}`);
-      console.log(`  📊 Date range: 10 days history + today + tomorrow`);
-      console.log(`  🌍 Bidding zone: ${bidding_zone} (${country_code || 'N/A'})`);
+      if (!bidding_zone) {
+        this.lastError = 'Missing bidding_zone in settings';
+        console.error('\x1b[31m   • Day-Ahead Prices: Missing bidding_zone/configuration\x1b[37m');
+        return false;
+      }
 
-      // Fetch prices from Energy Charts API (no token needed!)
+      // Update max retries from settings
+      this.maxRetries = retry_max;
+
+      // Check if enough time has passed since last fetch
+      if (last_fetch && !this.retryTimer) {
+        const lastFetchDate = new Date(last_fetch);
+        const hoursSinceLastFetch = (now - lastFetchDate) / (1000 * 60 * 60);
+        
+        if (hoursSinceLastFetch < fetch_interval_hours) {
+          const nextFetchIn = Math.round((fetch_interval_hours - hoursSinceLastFetch) * 60);
+          console.log(`\x1b[37m   • Day-Ahead-pricing - ${new Date().toISOString()} - Skipping - last fetch was ${Math.round(hoursSinceLastFetch * 10) / 10}h ago (interval: ${fetch_interval_hours}h, next in ~${nextFetchIn}min)`);
+          return true; // Return true (not an error, just not needed yet)
+        }
+      }
+
+      // Determine date range using configurable fetch_days
+      const { startDate, endDate } = this.getDateRange(fetch_days);
+
+      // Fetch prices from Energy Charts API
       const prices = await api.getDayAheadPrices(
         bidding_zone,
         startDate,
@@ -70,31 +87,61 @@ class DayAheadPricesCollector {
       recordsCollected = await this.storePrices(prices, country_code || bidding_zone, bidding_zone);
 
       this.lastRun = new Date();
+      this.lastFetchRecords = recordsCollected;
 
-      console.log(`✅ Day-Ahead Prices: Collected ${recordsCollected} price points`);
+      // Store last fetch info in system_settings
+      await this.updateLastFetchInfo(recordsCollected);
 
-      // Check if we got tomorrow's data (important for optimization)
+      // Check if we got tomorrow's data
       await this.checkAndSetupRetryIfNeeded(bidding_zone);
 
-      return true; // Return true for success to match collector pattern
+      return true;
 
     } catch (error) {
       this.lastError = error.message;
-      console.error('✗ Day-Ahead Prices Error:', error.message);
-      return false; // Return false for failure
+      console.error('`\x1b[31m   • Day-Ahead-prices - Error:', error.message,'\x1b[37m');
+      return false;
+    }
+  }
+
+  /**
+   * Store last fetch timestamp and record count in system_settings
+   */
+  async updateLastFetchInfo(recordsCollected) {
+    try {
+      const now = new Date().toISOString();
+
+      // Upsert last_fetch datetime
+      await db.pool.query(`
+        INSERT INTO system_settings (category, setting_key, setting_value, value_type, description)
+        VALUES ('day-ahead-prices', 'last_fetch', ?, 'string', 'Last successful fetch datetime')
+        ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()
+      `, [now, now]);
+
+      // Upsert last_fetch_records count
+      await db.pool.query(`
+        INSERT INTO system_settings (category, setting_key, setting_value, value_type, description)
+        VALUES ('day-ahead-prices', 'last_fetch_records', ?, 'number', 'Records collected in last fetch')
+        ON DUPLICATE KEY UPDATE setting_value = ?, updated_at = NOW()
+      `, [String(recordsCollected), String(recordsCollected)]);
+
+      //console.log(`  💾 Updated last fetch info: ${now} (${recordsCollected} records)`);
+    } catch (error) {
+      // Non-critical - don't let this fail the collection
+      console.warn('\x1b[31m   • Could not update last fetch info:', error.message,'\x1b[37m');
     }
   }
 
   /**
    * Get date range for fetching prices
-   * Returns 10 days ago 00:00 to day after tomorrow 00:00
+   * @param {number} fetchDays - Number of historical days to fetch
    */
-  getDateRange() {
+  getDateRange(fetchDays = 10) {
     const now = new Date();
-    
-    // Start: 10 days ago at 00:00
+
+    // Start: fetchDays ago at 00:00
     const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - 10);
+    startDate.setDate(startDate.getDate() - fetchDays);
     startDate.setHours(0, 0, 0, 0);
 
     // End: day after tomorrow at 00:00 (to ensure we get all of tomorrow)
@@ -107,9 +154,6 @@ class DayAheadPricesCollector {
 
   /**
    * Store prices in database
-   * @param {array} prices - Normalized price data from API
-   * @param {string} countryCode - Country code
-   * @param {string} biddingZone - Bidding zone
    */
   async storePrices(prices, countryCode, biddingZone) {
     if (!prices || prices.length === 0) {
@@ -120,7 +164,6 @@ class DayAheadPricesCollector {
 
     try {
       for (const price of prices) {
-        // Format datetime for MySQL
         const datetimeStr = price.datetime.toISOString().slice(0, 19).replace('T', ' ');
 
         await db.pool.query(`
@@ -148,7 +191,7 @@ class DayAheadPricesCollector {
         recordsStored++;
       }
 
-      console.log(`  💾 Stored ${recordsStored} price records`);
+      //console.log(`  💾 Stored ${recordsStored} price records`);
       return recordsStored;
 
     } catch (error) {
@@ -158,8 +201,6 @@ class DayAheadPricesCollector {
 
   /**
    * Get prices for specific date
-   * @param {string} date - Date in YYYY-MM-DD format
-   * @param {string} biddingZone - Bidding zone code
    */
   async getPricesForDate(date, biddingZone = 'NL') {
     const [rows] = await db.pool.query(`
@@ -180,9 +221,6 @@ class DayAheadPricesCollector {
 
   /**
    * Get cheapest and most expensive hours
-   * @param {string} date - Date in YYYY-MM-DD format
-   * @param {string} biddingZone - Bidding zone code
-   * @param {number} topN - Number of hours to return
    */
   async getExtremeHours(date, biddingZone = 'NL', topN = 3) {
     const [cheapest] = await db.pool.query(`
@@ -208,8 +246,6 @@ class DayAheadPricesCollector {
 
   /**
    * Get price summary for a date
-   * @param {string} date - Date in YYYY-MM-DD format
-   * @param {string} biddingZone - Bidding zone code
    */
   async getPriceSummary(date, biddingZone = 'NL') {
     const [rows] = await db.pool.query(`
@@ -235,13 +271,12 @@ class DayAheadPricesCollector {
 
   /**
    * Get current hour price
-   * @param {string} biddingZone - Bidding zone code
    */
   async getCurrentPrice(biddingZone = 'NL') {
     const now = new Date();
     const currentHour = new Date(now);
-    currentHour.setMinutes(0, 0, 0, 0);
-    
+    currentHour.setMinutes(0, 0, 0);
+
     const datetimeStr = currentHour.toISOString().slice(0, 19).replace('T', ' ');
 
     const [rows] = await db.pool.query(`
@@ -259,53 +294,44 @@ class DayAheadPricesCollector {
 
   /**
    * Check if tomorrow's prices are available, setup retry if needed
-   * Only retries if:
-   * - Current time is after 14:00
-   * - Tomorrow's data is missing
-   * - We haven't exceeded max retries
    */
   async checkAndSetupRetryIfNeeded(biddingZone) {
     try {
       const now = new Date();
       const currentHour = now.getHours();
-      
-      // Only set up retries if it's after 14:00 (when prices should be published)
+
       if (currentHour < 14) {
-        console.log('  ℹ️  Before 14:00 - tomorrow\'s prices may not be published yet');
+        console.log('\x1b[93m   • Before 14:00 - tomorrow\'s prices may not be published yet/\x1b[37m');
         return;
       }
 
-      // Check if tomorrow's prices exist in database
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       const tomorrowDate = tomorrow.toISOString().split('T')[0];
-      
+
       const tomorrowPrices = await this.getPricesForDate(tomorrowDate, biddingZone);
-      
+
       if (tomorrowPrices.length >= 24) {
-        // We have tomorrow's full data - clear any existing retry timer
         this.clearRetryTimer();
-        console.log(`  ✅ Tomorrow's prices available (${tomorrowPrices.length} hours)`);
+        console.log(`\x1b[33m   • Tomorrow's prices available (${tomorrowPrices.length} hours)/\x1b[37m`);
         this.retryCount = 0;
         return;
       }
 
-      // Tomorrow's data is missing or incomplete
       if (tomorrowPrices.length > 0) {
-        console.log(`  ⚠️  Tomorrow's prices incomplete (${tomorrowPrices.length}/24 hours)`);
+        console.log(`\x1b[31m   • Tomorrow's prices incomplete (${tomorrowPrices.length}/24 hours)/\x1b[37m`);
       } else {
-        console.log(`  ⚠️  Tomorrow's prices not yet available`);
+        console.log(`\x1b[31m   • Tomorrow's prices not yet available/\x1b[37m`);
       }
 
-      // Set up hourly retry if not already running and within retry limit
       if (!this.retryTimer && this.retryCount < this.maxRetries) {
         this.setupHourlyRetry();
       } else if (this.retryCount >= this.maxRetries) {
-        console.log(`  ⏸️  Max retries (${this.maxRetries}) reached - stopping retries`);
+        console.log(`\x1b[31m   • Max retries (${this.maxRetries}) reached - stopping retries/\x1b[37m`);
       }
 
     } catch (error) {
-      console.error('  ✗ Error checking tomorrow\'s data:', error.message);
+      console.error('\x1b[31m   • Error checking tomorrow\'s data:', error.message,'\x1b[37m');
     }
   }
 
@@ -313,19 +339,18 @@ class DayAheadPricesCollector {
    * Setup hourly retry timer
    */
   setupHourlyRetry() {
-    // Clear any existing timer
     this.clearRetryTimer();
 
-    const retryInterval = 60 * 60 * 1000; // 1 hour in milliseconds
+    const retryInterval = 60 * 60 * 1000; // 1 hour
     const nextRetryTime = new Date(Date.now() + retryInterval);
-    
-    console.log(`  🔄 Setting up hourly retry (attempt ${this.retryCount + 1}/${this.maxRetries})`);
-    console.log(`  ⏰ Next retry at: ${nextRetryTime.toLocaleTimeString('nl-NL')}`);
+
+    console.log(`\x1b[37m   • Day-Ahead-prices - Setting up hourly retry (attempt ${this.retryCount + 1}/${this.maxRetries})`);
+    console.log(`\x1b[37m   • Day-Ahead-prices - Next retry at: ${nextRetryTime.toLocaleTimeString('nl-NL')}`);
 
     this.retryTimer = setTimeout(async () => {
       this.retryCount++;
-      console.log(`\n🔄 Retry attempt ${this.retryCount}/${this.maxRetries} - Checking for tomorrow's prices...`);
-      
+      console.log(`\x1b[37m   • Day-Ahead-prices - Retry attempt ${this.retryCount}/${this.maxRetries} - Checking for tomorrow's prices...`);
+
       try {
         await this.collect();
       } catch (error) {
@@ -341,17 +366,18 @@ class DayAheadPricesCollector {
     if (this.retryTimer) {
       clearTimeout(this.retryTimer);
       this.retryTimer = null;
-      console.log('  ✓ Cleared retry timer');
     }
   }
 
   /**
-   * Get collector status
+   * Get collector status (used by routes and status endpoint)
    */
   getStatus() {
     return {
       name: this.name,
       lastRun: this.lastRun,
+      lastFetch: this.lastRun ? this.lastRun.toISOString() : null,
+      lastFetchRecords: this.lastFetchRecords,
       lastError: this.lastError,
       healthy: this.lastError === null,
       retrying: this.retryTimer !== null,
@@ -365,15 +391,15 @@ class DayAheadPricesCollector {
    * Test API connection
    */
   async testConnection() {
-    console.log('🔍 Testing Energy Charts API connection...');
+    console.log('`\x1b[37m   • Day-Ahead-prices - Testing Energy Charts API connection...');
     const health = await api.healthCheck();
-    
+
     if (health.available) {
-      console.log('✅ API is available');
+      console.log(`\x1b[37m   • Day-Ahead-prices - API is available`);
     } else {
-      console.log('❌ API is unavailable:', health.error);
+      console.log(`\x1b[31m   • Day-Ahead-prices - API is unavailable:`, health.error,'\x1b[37m');
     }
-    
+
     return health;
   }
 

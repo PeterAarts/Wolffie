@@ -60,7 +60,7 @@ class SolarForecastModule {
       console.log(`     - Location: ${this.config.latitude}°, ${this.config.longitude}°`);
       console.log(`     - Panel power: ${this.config.kwp} kWp`);
       console.log(`     - Tilt: ${this.config.tilt || 'N/A'}°, Azimuth: ${this.config.azimuth || 'N/A'}°`);
-      console.log(`     - Poll interval: ${this.config.poll_interval || 900000}ms`);
+      console.log(`     - Fetch interval: ${this.config.fetch_interval_hours || 15}h`);
       
       this.initialized = true;
       console.log('     - Solar forecasting configured \x1b[32m✓\x1b[37m');
@@ -84,7 +84,7 @@ class SolarForecastModule {
    * Stop the module (called by module manager)
    */
   async stop() {
-    console.log('⏹️  Solar Forecast module stopped');
+    console.log('ℹ️  Solar Forecast module stopped');
     this.initialized = false;
   }
 

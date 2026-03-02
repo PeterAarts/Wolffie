@@ -1,0 +1,72 @@
+{
+  "groups": [
+    {
+      "title": "Matter Controller Settings",
+      "sections": [
+        {
+          "fields": [
+            { 
+              "key": "enabled", 
+              "component": "switch",
+              "label": "Enable Matter Protocol",
+              "description": "Enable the local Matter Controller for smart devices"
+            },
+            { 
+              "key": "poll_interval", 
+              "component": "number",
+              "label": "Poll Interval (seconds)",
+              "min": 5, "max": 60, "default": 15
+            }
+          ]
+        },
+        {
+          "component": "info-panel",
+          "title": "Matter Fabric Status",
+          "data": {
+            "endpoint": "/matter/collector/status",
+            "dynamic": true,
+            "items": [
+              { "label": "Controller Status", "field": "isRunning", "template": { "type": "status-badge" } },
+              { "label": "Active Nodes", "field": "deviceCount" },
+              { "label": "Last Data Sync", "field": "lastCollectionTime", "template": { "type": "datetime" } }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "title": "Commissioned Devices",
+      "sections": [
+        {
+          "component": "table",
+          "title": "Matter Nodes",
+          "data": {
+            "endpoint": "/matter/devices",
+            "columns": [
+              { "field": "name", "header": "Name", "sortable": true },
+              { "field": "serial", "header": "Node ID", "sortable": true },
+              { "field": "product_type", "header": "Device Type" },
+              { "field": "enabled", "header": "Status", "template": { "type": "boolean" } }
+            ],
+            "globalActions": [
+              { 
+                "label": "Commission New Device", 
+                "icon": "pi-plus",
+                "endpoint": "/matter/commission",
+                "method": "POST",
+                "inputs": [
+                  { "key": "pairingCode", "label": "8-Digit Setup Code", "type": "text" }
+                ],
+                "confirmMessage": "Enter the Matter setup code found on your device label."
+              }
+            ],
+            "rowActions": [
+              { "label": "Identify", "icon": "fa-eye", "action": "identify" },
+              { "label": "Delete", "icon": "fa-trash", "action": "delete", "confirmMessage": "Unpair this device from the WattsOn fabric?" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

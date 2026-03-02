@@ -11,10 +11,15 @@
     "ui": true
   },
   "collector": {
-    "enabled": false,
+    "enabled": true,
     "interval": 20000,
     "priority": 6,
     "description": "Collects real-time power data every 10 seconds"
+  },
+    "routes": {
+    "enabled": true,
+    "prefix": "/api/solaredge-modbus",
+    "description": "SolarEdge Modbus API endpoints"
   },
   "config": {
     "required": ["host"],

@@ -1,0 +1,45 @@
+{
+  "id": "matter",
+  "name": "Matter Protocol",
+  "version": "1.1.0",
+  "description": "Local control for Matter-enabled smart plugs and energy devices using the unified @matter stack",
+  "author": "Peter",
+  "type": "data-collector",
+  
+  "capabilities": {
+    "dataCollection": true,
+    "api": true,
+    "ui": true,
+    "discovery": true,
+    "commissioning": true
+  },
+
+  "collector": {
+    "enabled": true,
+    "interval": 15000,
+    "priority": 4,
+    "description": "Polls active Matter nodes for energy and power clusters"
+  },
+
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/matter",
+    "description": "Matter commissioning, discovery, and device management"
+  },
+
+  "settings": {
+    "component": "MatterSettings",
+    "schema": "settings_schema.json"
+  },
+
+  "dependencies": {
+    "node": ">=18.0.0",
+    "@matter/main": "^0.8.0",
+    "@matter/nodejs": "^0.8.0"
+  },
+
+  "config": {
+    "required": ["storage_path"],
+    "optional": ["poll_interval", "mdns_interface"]
+  }
+}

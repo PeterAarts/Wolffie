@@ -119,7 +119,7 @@ class AlphaESSCloudAPI {
 
       const response = await axios(config);
       
-      console.log('     - API ', config.url, ' / ', response.status, ' / ', !!response.data.data);
+      console.log(`\x1b[37m   • AlphaESS Cloud - ${new Date().toISOString()} - API `, config.url, ' / ', response.status, ' / ', !!response.data.data);
 
       // AlphaESS API returns code in response body
       if (response.data.code !== 200) {
@@ -289,15 +289,11 @@ class AlphaESSCloudAPI {
         current: apiData.igrid || 0
       },
       pv: {
-        power: apiData.ppv || 0,
+        power:    apiData.ppv  || 0,
         pv1Power: apiData.ppv1 || 0,
         pv2Power: apiData.ppv2 || 0,
         pv3Power: apiData.ppv3 || 0,
-        pv4Power: apiData.ppv4 || 0,
-        voltage1: apiData.upv1 || 0,
-        voltage2: apiData.upv2 || 0,
-        voltage3: apiData.upv3 || 0,
-        voltage4: apiData.upv4 || 0
+        pv4Power: apiData.ppv4 || 0
       },
       load: {
         power: apiData.pload || 0

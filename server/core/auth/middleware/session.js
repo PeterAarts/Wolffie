@@ -15,7 +15,7 @@ export function createSessionMiddleware() {
     // Reuse existing database connection pool
     clearExpired: true,
     checkExpirationInterval: 900000, // Clean up expired sessions every 15 minutes
-    expiration: 86400000 * 7, // Sessions expire after 7 days
+    expiration: 1000 * 60 * 60 * 8, // Sessions expire after 8 hours
     createDatabaseTable: true, // Auto-create sessions table
     schema: {
       tableName: 'sessions',
@@ -41,7 +41,7 @@ export function createSessionMiddleware() {
     saveUninitialized: false, // Don't create session until something stored
     rolling: true, // Reset expiration on each request
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      maxAge: 1000 * 60 * 60 * 8, // 8 hours
       httpOnly: true, // Prevent XSS attacks
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       sameSite: 'lax', // CSRF protection

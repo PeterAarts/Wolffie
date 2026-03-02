@@ -28,7 +28,7 @@ class HistoryController {
    */
   async fetchDateData(date, req, res) {
     try {
-      const granularity = parseInt(req.query.granularity) || 15;
+      const granularity = parseInt(req.query.granularity) || 5;
 
       // 1. Haal stats op uit de snelle daily tabel
       const [daily] = await db.pool.query(

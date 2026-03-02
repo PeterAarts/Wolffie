@@ -21,7 +21,7 @@
           "description": "Specifieke protocol instellingen voor AlphaESS",
           "fields": [
             { "key": "unit_id", "component": "number", "label": "Unit ID (Slave ID)", "cols": 2, "default": 85, "required": true },
-            { "key": "poll_interval", "component": "number", "label": "Poll Interval (ms)", "cols": 2, "default": 5000, "suffix": " ms" },
+            { "key": "poll_interval", "component": "number", "label": "Poll Interval (ms)", "cols": 2, "default": 20000, "suffix": " ms" },
             { "key": "timeout", "component": "number", "label": "Timeout (ms)", "cols": 2, "default": 2000, "suffix": " ms" }
           ]
         },

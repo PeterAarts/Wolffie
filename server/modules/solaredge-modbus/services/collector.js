@@ -22,7 +22,7 @@ class SolarEdgeCollector {
 
       // Check for required fields before attempting connection
       if (!(config.host || config.ip_address) || !config.port) {
-        console.warn(' - ⚠️ SolarEdge: Connection parameters missing in database');
+        console.warn('\x1b[91m   • SolarEdge: Connection parameters missing in database \x1b[37m');
         return false;
       }
       // Normalize data for Wolffie's standard database format
@@ -46,7 +46,7 @@ class SolarEdgeCollector {
     } catch (error) {
       this.lastError = error.message;
       this.consecutiveErrors++;
-      console.error(`❌ SolarEdge Collector Error: ${error.message}`);
+      console.error(`\x1b[91m   • SolarEdge Collector Error: ${error.message}`, '\x1b[37m');
       return false;
     }
   }

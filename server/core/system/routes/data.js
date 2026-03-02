@@ -2,6 +2,7 @@
 // Updated to read from your existing energy_snapshots table structure
 import express from 'express';
 import db from '../../database.js';
+import systemConfigService from '../services/systemconfigservice.js';
 
 const router = express.Router();
 
@@ -155,7 +156,7 @@ router.get('/collector-status', async (req, res) => {
  * Current power values (W)
  */
 router.get('/realtime', async (req, res) => {
-  console.log(` - [${new Date().toLocaleString()}] - FrontEnd - Collect Power measurements...`);
+  console.log(`  • Front-End - [${new Date().toLocaleString()}] - Collect Power measurements...`);
   try {
     const [snapshots] = await db.pool.query(
       `SELECT 
@@ -209,13 +210,13 @@ router.get('/realtime', async (req, res) => {
  */
 router.get('/devices', async (req, res) => {
   try {
-    console.log(` - [${new Date().toLocaleString()}] - FrontEnd - Fetching device measurements...`);
+    console.log(`  • Front-End - [${new Date().toLocaleString()}] - Fetching device measurements...`);
     
     // Get latest measurement for each device
     // Using a subquery to get the most recent measurement per device_id
     const [devices] = await db.pool.query(`
       SELECT 
-        dm.*, ds.ip_address,ds.enabled 
+        dm.*, ds.*
       FROM device_measurements dm
         INNER JOIN (
           SELECT 
@@ -250,6 +251,8 @@ router.get('/devices', async (req, res) => {
         device_type: device.device_type,
         device_name: device.device_name,
         source: device.source,
+        brightness: device.brightness,
+        switch_lock: device.switch_lock,
         power: parseFloat(device.power) || 0,
         voltage: parseFloat(device.voltage) || 0,
         current: parseFloat(device.current) || 0,
@@ -280,6 +283,35 @@ router.get('/devices', async (req, res) => {
   }
 });
 
+router.get('/schemas/active', async (req, res) => {
+  try {
+    // 1. Get unique modules currently registered in settings
+    const [modules] = await db.pool.query(
+      'SELECT module FROM device_settings GROUP BY module'
+    );
+
+    const activeSchemas = {};
+
+    // 2. Iterate and collect schemas for each active module
+    for (const row of modules) {
+      const moduleName = row.module;
+      if (!moduleName) continue;
+
+      const schema = await systemConfigService.getSchemaByModule(moduleName);
+      if (schema) {
+        activeSchemas[moduleName] = schema;
+      }
+    }
+
+    res.json({ 
+      success: true, 
+      schemas: activeSchemas,
+      count: Object.keys(activeSchemas).length 
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 /**
  * GET /api/system/devices/:deviceId
  * Returns latest measurement for a specific device
@@ -287,7 +319,7 @@ router.get('/devices', async (req, res) => {
 router.get('/devices/:deviceId', async (req, res) => {
   try {
     const { deviceId } = req.params;
-    console.log(` - [${new Date().toLocaleString()}] - FrontEnd : Fetching measurements for device: ${deviceId}`);
+    console.log(`  • FrontEnd - [${new Date().toLocaleString()}] - Fetching measurements for device: ${deviceId}`);
     
     // Get latest measurement for this specific device
     const [devices] = await db.pool.query(`
@@ -350,6 +382,97 @@ router.get('/devices/:deviceId', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/system/devices-usage
+ * Returns a complete list of all enabled devices from multiple suppliers
+ * along with their pre-aggregated energy totals for today.
+ */
+router.get('/devices-list', async (req, res) => {
+  try {
+    const now = new Date().toLocaleString();
+    console.log(`  • FrontEnd - [${now}] - Fetching aggregated device usage...`);
+
+    // The query joins device_settings with the daily aggregation table.
+    // This allows support for HomeWizard, Matter, and other modules in one list.
+    const [devices] = await db.pool.query(`
+      SELECT 
+        ds.*,
+        COALESCE(ddu.usage_kwh, 0) AS usage_today,
+        ddu.last_update
+      FROM device_settings ds
+      LEFT JOIN device_daily_usage ddu 
+        ON ds.serial = ddu.device_id 
+        AND ddu.date = CURDATE()
+      ORDER BY usage_today DESC
+    `);
+
+    //console.log(`   - Successfully retrieved ${devices.length} devices from the aggregate table`);
+
+    // Normalize the data for the Vue.js frontend
+    const normalizedDevices = devices.map(device => ({
+      id: device.id,
+      name: device.name,
+      brightness: device.brightness,
+      switch_lock: device.switch_lock,
+      power: parseFloat(device.power) || 0,
+      serial: device.serial,
+      module: device.module,           // e.g., 'homewizard', 'matter'
+      product_type: device.product_type, // e.g., 'HWE-P1', 'Matter_Plug'
+      ip_address: device.ip_address,
+      usage_today: parseFloat(device.usage_today) || 0,
+      last_update: device.last_update,
+      priority: device.priority,
+      enabled: device.enabled,
+      poll_interval: device.poll_interval
+    }));
+
+    res.json({
+      success: true,
+      count: normalizedDevices.length,
+      devices: normalizedDevices,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('✗ Error fetching aggregated device usage:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: 'Failed to fetch device usage data',
+      message: error.message 
+    });
+  }
+});
+router.post('/charge', async (req, res) => {
+  const { watts, targetSoc } = req.body;
+  const userId = req.user.id; // Extracted from JWT token
+
+  // 1. Execute the command on the inverter
+  await alphaModule.setGridCharge(true, watts);
+
+  // 2. Log the event with User ID
+  await eventService.log({
+    category: 'MANUAL',
+    action: 'CHARGE',
+    source: 'dashboard_ui',
+    userId: userId,
+    details: { watts, targetSoc, reason: 'User initiated charge' }
+  });
+  res.json({ success: true });
+});
+
+router.get('/events', async (req, res) => {
+  try {
+    const [rows] = await db.pool.query(`
+      SELECT e.*, u.username 
+      FROM events e 
+      LEFT JOIN users u ON e.userId= u.id 
+      ORDER BY e.timestamp DESC LIMIT 100
+    `);
+    res.json(rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Helper function
 function avg(arr) {

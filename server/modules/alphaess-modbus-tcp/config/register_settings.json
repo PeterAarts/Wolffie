@@ -1,0 +1,88 @@
+{
+  "registers": {
+    "system": {
+      "work_mode":            { "address": 1088, "length": 1, "type": "int16",  "scale": 1.0,  "name": "Mode" },
+      "inverter_temp":        { "address": 1077, "length": 1, "type": "int16",  "scale": 0.1,  "name": "Inv Temp" }
+    },
+    "battery": {
+      "soc":                  { "address": 258,  "length": 1, "type": "int16",  "scale": 0.1,  "name": "SoC" },
+      "power":                { "address": 294,  "length": 1, "type": "int16",  "scale": 1.0,  "name": "Power" },
+      "charge_today":         { "address": 264,  "length": 1, "type": "uint16", "scale": 0.1,  "name": "Charge Today" },
+      "discharge_today":      { "address": 266,  "length": 1, "type": "uint16", "scale": 0.1,  "name": "Discharge Today" }
+    },
+    "solar": {
+      "total_power":          { "address": 1036, "length": 2, "type": "int32",  "scale": 1.0,  "name": "PV Power" },
+      "energy_today":         { "address": 1086, "length": 2, "type": "uint32", "scale": 0.1,  "name": "PV Today" }
+    },
+    "grid": {
+      "total_active_power":   { "address": 33,   "length": 2, "type": "int32",  "scale": 1.0,  "name": "Grid Power" },
+      "import_today":         { "address": 18,   "length": 2, "type": "uint32", "scale": 0.01, "name": "Grid Import" },
+      "export_today":         { "address": 16,   "length": 2, "type": "uint32", "scale": 0.01, "name": "Grid Export" },
+      "l1_voltage":           { "address": 20,   "length": 1, "type": "int16",  "scale": 1.0,  "name": "Voltage" }
+    }
+  },
+  "registers_backup": {
+    "system": {
+      "work_mode":            { "address": 1088, "length": 1, "type": "int16",  "scale": 1.0,  "unit": "",    "name": "Inverter Work Mode", "signed": true },
+      "inverter_temp":        { "address": 1077, "length": 1, "type": "int16",  "scale": 0.1,  "unit": "°C",  "name": "Inverter Temp",      "signed": true },
+      "max_feed_in_percent":  { "address": 2048, "length": 1, "type": "uint16", "scale": 1.0,  "unit": "%",   "name": "Max Feed-in Limit",  "signed": false, "writable": true },
+      "ups_enable":           { "address": 303,  "length": 1, "type": "uint16", "scale": 1.0,  "unit": "",    "name": "UPS Enable",         "signed": false, "writable": true },
+      "min_soc_backup":       { "address": 2128, "length": 1, "type": "uint16", "scale": 1.0,  "unit": "%",   "name": "Min SoC Backup",     "signed": false, "writable": true },
+      "battery_dod":          { "address": 274,  "length": 1, "type": "uint16", "scale": 1.0,  "unit": "%",   "name": "Battery DoD",        "signed": false, "writable": true },
+      "dispatch_mode":        { "address": 2181, "length": 1, "type": "uint16", "scale": 1.0,  "unit": "",    "name": "Dispatch Mode",      "signed": false, "writable": true },
+      "dispatch_power":       { "address": 2177, "length": 2, "type": "int32",  "scale": 1.0,  "unit": "W",   "name": "Dispatch Power",     "signed": true,  "writable": true, "offset": -32000 },
+      "dispatch_cutoff_soc":  { "address": 2182, "length": 1, "type": "uint16", "scale": 0.392,"unit": "%",   "name": "Dispatch Target SoC","signed": false, "writable": true },
+      "charging_cutoff_soc":  { "address": 2133, "length": 1, "type": "int16",  "scale": 1.0,  "unit": "%",   "name": "Charging Cutoff SoC","signed": false, "writable": true  },
+      "bms_version":          { "address": 277,  "length": 1, "type": "int16",  "scale": 1.0,  "unit": "",    "name": "BMS Version",         "signed": true },
+      "ems_version_high":     { "address": 1867, "length": 1, "type": "int16",  "scale": 1.0,  "unit": "",    "name": "EMS Version High",    "signed": true }
+    },
+    "battery": {
+      "soc":                  { "address": 258,  "length": 1, "type": "int16",  "scale": 0.1,  "unit": "%",   "name": "Battery SoC",        "signed": true },
+      "soh":                  { "address": 283,  "length": 1, "type": "int16",  "scale": 0.1,  "unit": "%",   "name": "Battery SoH",        "signed": true },
+      "power":                { "address": 294,  "length": 1, "type": "int16",  "scale": 1.0,  "unit": "W",   "name": "Battery Power",       "signed": true },
+      "voltage":              { "address": 256,  "length": 1, "type": "int16",  "scale": 0.1,  "unit": "V",   "name": "Battery Voltage",     "signed": true },
+      "current":              { "address": 257,  "length": 1, "type": "int16",  "scale": 0.1,  "unit": "A",   "name": "Battery Current",     "signed": true },
+      "temp":                 { "address": 260,  "length": 1, "type": "int16",  "scale": 0.1,  "unit": "°C",  "name": "Battery Temp",        "signed": true },
+      "charge_today":         { "address": 264,  "length": 2, "type": "uint32", "scale": 0.001,  "unit": "kWh", "name": "Battery Charge Today","signed": false },
+      "discharge_today":      { "address": 266,  "length": 2, "type": "uint32", "scale": 0.001,  "unit": "kWh", "name": "Battery Discharge Today", "signed": false }
+    },
+    "solar": {
+      "pv1_power":            { "address": 1055, "length": 2, "type": "uint32", "scale": 1.0,  "unit": "W",   "name": "PV1 Power",          "signed": false },
+      "pv2_power":            { "address": 1059, "length": 2, "type": "uint32", "scale": 1.0,  "unit": "W",   "name": "PV2 Power",          "signed": false },
+      "total_power":          { "address": 1036, "length": 2, "type": "int32",  "scale": 1.0,  "unit": "W",   "name": "Total Inverter Power","signed": true },
+      "energy_today":         { "address": 1086, "length": 2, "type": "uint32", "scale": 0.1,  "unit": "kWh", "name": "Solar Energy Today", "signed": false }
+    },
+    "grid": {
+      "total_active_power":   { "address": 33,   "length": 2, "type": "int32",  "scale": 1.0,  "unit": "W",   "name": "Meter Total Power",   "signed": true },
+      "l1_voltage":           { "address": 20,   "length": 1, "type": "int16",  "scale": 1.0,  "unit": "V",   "name": "Grid L1 Voltage",     "signed": true },
+      "l2_voltage":           { "address": 21,   "length": 1, "type": "int16",  "scale": 1.0,  "unit": "V",   "name": "Grid L2 Voltage",     "signed": true },
+      "l3_voltage":           { "address": 22,   "length": 1, "type": "int16",  "scale": 1.0,  "unit": "V",   "name": "Grid L3 Voltage",     "signed": true },
+      "frequency":            { "address": 1052, "length": 1, "type": "int16",  "scale": 0.01, "unit": "Hz",  "name": "Grid Frequency",      "signed": true },
+      "import_today":         { "address": 18,   "length": 2, "type": "uint32", "scale": 0.001, "unit": "kWh", "name": "Grid Import Today",   "signed": false },
+      "export_today":         { "address": 16,   "length": 2, "type": "uint32", "scale": 0.001, "unit": "kWh", "name": "Grid Export Today",   "signed": false }
+    },
+    "load": {
+      "total_power":          { "address": 1051, "length": 1, "type": "int16",  "scale": 1.0,  "unit": "W",   "name": "Load Power",         "signed": true },
+      "energy_today":         { "address": 1053, "length": 2, "type": "uint32", "scale": 0.1,  "unit": "kWh", "name": "Load Energy Today",  "signed": false }
+    },
+    "diagnostics": {
+      "system_fault":         { "address": 2260, "length": 2, "type": "uint32", "scale": 1.0,  "unit": "",    "name": "AlphaESS System Fault",   "signed": false },
+      "inverter_warning_1":   { "address": 1078, "length": 2, "type": "uint32", "scale": 1.0,  "unit": "",    "name": "Inverter Warning 1",      "signed": false },
+      "inverter_warning_2":   { "address": 1080, "length": 2, "type": "uint32", "scale": 1.0,  "unit": "",    "name": "Inverter Warning 2",      "signed": false },
+      "inverter_fault_1":     { "address": 1082, "length": 2, "type": "uint32", "scale": 1.0,  "unit": "",    "name": "Inverter Fault 1",        "signed": false },
+      "inverter_fault_2":     { "address": 1084, "length": 2, "type": "uint32", "scale": 1.0,  "unit": "",    "name": "Inverter Fault 2",        "signed": false },
+      "battery_warning":      { "address": 284,  "length": 2, "type": "uint32", "scale": 1.0,  "unit": "",    "name": "Battery General Warning", "signed": false },
+      "battery_fault":        { "address": 286,  "length": 2, "type": "uint32", "scale": 1.0,  "unit": "",    "name": "Battery General Fault",   "signed": false }
+    },
+    "grid_safety": {
+      "grid_regulation":      { "address": 4096, "length": 1, "type": "int16",  "scale": 1.0,  "unit": "",    "name": "Grid Regulation Mode",    "signed": true },
+      "ovp_l1":               { "address": 4107, "length": 1, "type": "int16",  "scale": 0.1,  "unit": "V",   "name": "Overvoltage Limit L1",    "signed": true },
+      "uvp_l1":               { "address": 4111, "length": 1, "type": "int16",  "scale": 0.1,  "unit": "V",   "name": "Undervoltage Limit L1",   "signed": true }
+    },
+    "dispatch": {
+      "active_power":         { "address": 2177, "length": 2, "type": "int32",  "scale": 1.0,  "unit": "W",   "name": "Dispatch Power",          "signed": true, "writable": true, "offset": -32000 },
+      "mode":                 { "address": 2181, "length": 1, "type": "uint16", "scale": 1.0,  "unit": "",    "name": "Dispatch Mode",           "signed": false, "writable": true },
+      "cutoff_soc":           { "address": 2182, "length": 1, "type": "uint16", "scale": 0.392, "unit": "%",  "name": "Dispatch Target SoC",     "signed": false, "writable": true }
+    }
+  }
+}

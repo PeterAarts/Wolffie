@@ -272,6 +272,76 @@ async validate(category, key, value) {
     console.log(`   - Initialized ${count} new default settings from module schemas`);
   }
 
+  // ─── ADD THESE TWO METHODS to settingsService.js (server/core/system/services/settingsService.js)
+// Insert them BEFORE the last closing brace of the class, after the existing set() / setCategory() methods.
+
+  /**
+   * Upsert a single setting — creates the row if it doesn't exist yet.
+   * Unlike set(), this does NOT throw when the row is missing.
+   *
+   * @param {string} category
+   * @param {string} key
+   * @param {any}    value
+   * @param {object} meta  { changedBy, reason, valueType, description, editable, visible }
+   */
+  async upsert(category, key, value, meta = {}) {
+    const {
+      changedBy   = 'system',
+      reason      = null,
+      valueType   = 'string',
+      description = null,
+      editable    = 1,
+      visible     = 1,
+    } = meta;
+
+    try {
+      const newValue = value !== null ? String(value) : null;
+
+      // Auto-detect db interface (db.query vs db.pool.query)
+      const dbExec = typeof db.query === 'function'
+        ? (sql, params) => db.query(sql, params)
+        : (sql, params) => db.pool.query(sql, params);
+
+      // Single atomic operation: INSERT new row or UPDATE existing value
+      await dbExec(
+        `INSERT INTO system_settings
+           (category, setting_key, setting_value, value_type, description, editable, visible)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE
+           setting_value = VALUES(setting_value),
+           updated_at    = NOW()`,
+        [category, key, newValue, valueType, description, editable, visible]
+      );
+
+      this.cache.delete(`${category}.${key}`);
+      console.log(`✅ Setting upserted: ${category}.${key} by ${changedBy}`);
+      return true;
+
+    } catch (error) {
+      console.error(`Error upserting ${category}.${key}:`, error.message);
+      throw error;
+    }
+  }
+
+  /**
+   * Upsert multiple settings in a category at once.
+   *
+   * @param {string} category
+   * @param {object} settings  { key: value }  or  { key: { value, ...meta } }
+   * @param {object} meta      Shared meta applied to all keys
+   */
+  async upsertCategory(category, settings, meta = {}) {
+    for (const [key, entry] of Object.entries(settings)) {
+      const value    = typeof entry === 'object' && entry !== null && 'value' in entry
+        ? entry.value
+        : entry;
+      const entryMeta = typeof entry === 'object' && entry !== null
+        ? { ...meta, ...entry }
+        : meta;
+      await this.upsert(category, key, value, entryMeta);
+    }
+    return true;
+  }
   
   _convertType(value, type) {
     if (value === null || value === undefined) return null;

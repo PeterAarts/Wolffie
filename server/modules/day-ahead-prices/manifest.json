@@ -1,11 +1,17 @@
 {
   "id": "day-ahead-prices",
   "name": "Day-Ahead Electricity Prices",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Hourly electricity prices from Energy Charts API (Fraunhofer ISE) - No registration required!",
   "type": "collector",
   "author": "WattsOn",
   "enabled": true,
+
+  "capabilities": {
+    "dataCollection": true,
+    "api": true
+  },
+
   "schedules": [
     {
       "name": "daily_prices",
@@ -20,12 +26,14 @@
     "schema": "settings_schema.json"
   },
   "routes": {
-    "prefix": "/day-ahead-prices",
+    "enabled": true,
+    "prefix": "/api/day-ahead-prices",
     "file": "routes/index.js"
   },
   "collector": {
     "service": "services/collector.js",
-    "interval": null,
+    "enabled": true,
+    "interval": 3600000,
     "scheduled": true
   },
   "database": {

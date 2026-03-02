@@ -13,11 +13,7 @@ class AlphaESSCloudCollector {
 
   async collect() {
     try {
-      console.log(`   - [${new Date().toISOString()}] - Collecting from AlphaESS Cloud API...`);
-
-
-
-      const systemSn = await settingsService.get('cloud_api', 'system_sn');
+        const systemSn = await settingsService.get('cloud_api', 'system_sn');
 
       // Fetch both API endpoints (atomic operation)
       const [powerData, summaryData] = await Promise.all([
@@ -38,7 +34,7 @@ class AlphaESSCloudCollector {
     } catch (error) {
       this.lastError = error.message;
       this.consecutiveErrors++;
-      console.error('❌ AlphaESS Cloud collection failed:', error.message);
+      console.error(`\x1b[31m   • AlphaESS Cloud - collection failed:`, error.message,'\x1b[37m');
       return false;
     }
   }
@@ -137,8 +133,6 @@ class AlphaESSCloudCollector {
         summaryData.carbonNum || 0
       ]
     );
-
-    console.log(`     - Complete energy_snapshot stored `);
  //     Power: SOC=${powerData.soc}%, Solar=${powerData.ppv}W, Grid=${powerData.pgrid}W, Load=${powerData.pload}W
  //     Today: PV=${summaryData.epvtoday}kWh, Load=${summaryData.eload}kWh, Import=${summaryData.einput}kWh, Export=${summaryData.eoutput}kWh
   //    Battery: Charge=${summaryData.echarge}kWh, Discharge=${summaryData.edischarge}kWh
