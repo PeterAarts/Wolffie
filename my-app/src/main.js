@@ -1,32 +1,25 @@
 // src/main.js
 import { createApp } from 'vue';
 import { createPinia } from 'pinia';
-import PrimeVue from 'primevue/config';
-import Aura from '@primevue/themes/aura';
-import ToastService from 'primevue/toastservice';
-import ConfirmationService from 'primevue/confirmationservice';
-
 import App from './App.vue';
+import { useSchemaStore } from '@/stores/schema';
 import router from './router';
-
-import 'primeicons/primeicons.css';
+import { registerSW } from 'virtual:pwa-register'
 import './assets/styles/main.css';
+import i18n from './i18n';     
 
+registerSW({ immediate: true })
 const app = createApp(App);
+const pinia = createPinia();
+app.use(pinia);
+app.use(i18n);
 
-app.use(createPinia());
-app.use(router);
-app.use(PrimeVue, {
-  theme: {
-    preset: Aura,
-    options: {
-      prefix: 'p',
-      darkModeSelector: 'system',
-      cssLayer: false
-    }
-  }
+import { useAuthStore } from './stores/auth';
+const authStore = useAuthStore();
+const schemaStore = useSchemaStore();
+
+authStore.initialize().then(() => {
+  app.use(router);
+  schemaStore.initialize();
+  app.mount('#app');
 });
-app.use(ToastService);
-app.use(ConfirmationService);
-
-app.mount('#app');

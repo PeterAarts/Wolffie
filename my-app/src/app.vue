@@ -1,16 +1,16 @@
 <!-- src/App.vue - WITH AUTHENTICATION -->
 <template>
-  <div id="app">
+  <div id="app-x" class="p-4">
     <!-- Show loading screen during initial load -->
     <div v-if="isInitializing" class="loading-screen">
       <div class="loading-content">
         <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>
-        <p>Loading Woffie...</p>
+        <p> Wolffie</p>
       </div>
     </div>
-
     <!-- Main app content -->
     <router-view v-else />
+    <ToastList />
   </div>
 </template>
 
@@ -20,33 +20,36 @@ import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useConfigStore } from '@/stores/config';
 import { useSystemStore } from '@/stores/system';
+import ToastList from '@/components/common/ToastList.vue';
+import { useLocale } from '@/composables/useLocale';
+
 
 const router = useRouter();
 const authStore = useAuthStore();
 const configStore = useConfigStore();
 const systemStore = useSystemStore();
-
+const { t } = useLocale();
 const isInitializing = ref(true);
 
 /**
  * Optimized startup flow with authentication
  */
 onMounted(async () => {
-  console.log('🚀 App starting...');
+  console.log('- App starting...');
 
   try {
     // STEP 0: Check authentication
-    console.log('🔐 Checking authentication...');
+    console.log('- Checking authentication...');
     const isAuthenticated = await authStore.initialize();
 
     if (!isAuthenticated) {
-      console.log('⚠️  Not authenticated, redirecting to login');
+      console.log('- Not authenticated, redirecting to login');
       router.push('/login');
       isInitializing.value = false;
       return;
     }
 
-    console.log('✅ Authenticated as:', authStore.user.username);
+    console.log('- Authenticated as:', authStore.user.username);
 
     // PHASE 1: Load minimal config (1 API call)
     // GET /api/setup/status
@@ -78,6 +81,7 @@ onMounted(async () => {
     isInitializing.value = false;
   }
 });
+
 </script>
 
 <style scoped>
@@ -87,7 +91,7 @@ onMounted(async () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(135deg, #e8eaf1 0%, #a6a7a5 100%);
+  background: linear-gradient(135deg, #e8eaf1 0%, #737472 100%);
   display: flex;
   align-items: center;
   justify-content: center;
