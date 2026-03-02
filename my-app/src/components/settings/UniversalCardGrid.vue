@@ -39,7 +39,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import apiClient from '@/services/api';
-import ProgressSpinner from 'primevue/progressspinner';
+
 
 const props = defineProps({
   config: {

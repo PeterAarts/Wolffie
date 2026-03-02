@@ -1,4 +1,4 @@
-// src/stores/auth.js - Auth Store using apiClient
+// src/stores/auth.js - Auth Store with Session Support
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import apiClient from '../services/api';
@@ -17,39 +17,109 @@ export const useAuthStore = defineStore('auth', () => {
   const userName = computed(() => user.value?.username || 'User');
 
   /**
-   * Initialize auth - check token and load user
+   * Initialize auth - ENHANCED with session support
+   * Checks in this order:
+   * 1. Session (via /auth/status) - most reliable for browser refresh
+   * 2. JWT token (via /auth/me) - fallback if no session
    */
   async function initialize() {
-    const storedToken = localStorage.getItem('auth_token');
-    const storedRefreshToken = localStorage.getItem('refresh_token');
+    console.log('🔐 Initializing authstore latest version...');
+    
+    try {
+      // STEP 1: Check if we have a valid session (works even without tokens)
+      // The session cookie is sent automatically
+      try {
+        const { data: statusData } = await apiClient.get('/auth/status', {
+          skipAuth: true // Don't add Authorization header
+        });
 
-    if (!storedToken) {
+        if (statusData.success && statusData.authenticated) {
+          console.log('✅ Valid session found');
+          
+          // Set user from session
+          user.value = statusData.user;
+          isAuthenticated.value = true;
+
+          // Get JWT token if we don't have one
+          const storedToken = localStorage.getItem('auth_token');
+          if (!storedToken) {
+            console.log('🔄 Getting JWT from session...');
+            
+            // Refresh endpoint will use session to issue new JWT
+            const { data: refreshData } = await apiClient.post('/auth/refresh', {}, {
+              skipAuth: true
+            });
+
+            if (refreshData.success && refreshData.accessToken) {
+              token.value = refreshData.accessToken;
+              localStorage.setItem('auth_token', refreshData.accessToken);
+              
+              if (refreshData.refreshToken) {
+                refreshToken.value = refreshData.refreshToken;
+                localStorage.setItem('refresh_token', refreshData.refreshToken);
+              }
+              
+              console.log('✅ JWT obtained from session');
+            }
+          } else {
+            token.value = storedToken;
+          }
+
+          console.log('✅ Authentication restored from session');
+          return true;
+        } else {
+          console.log('ℹ️  No active session');
+        }
+      } catch (sessionError) {
+        console.log('ℹ️  Session check failed, trying token validation...');
+      }
+
+      // STEP 2: If no session, try to validate stored JWT token
+      const storedToken = localStorage.getItem('auth_token');
+      const storedRefreshToken = localStorage.getItem('refresh_token');
+
+      if (!storedToken) {
+        console.log('ℹ️  No stored token found');
+        isAuthenticated.value = false;
+        return false;
+      }
+
+      token.value = storedToken;
+      refreshToken.value = storedRefreshToken;
+
+      try {
+        // Verify token by fetching current user
+        const { data } = await apiClient.get('/auth/me');
+        
+        if (data.success && data.user) {
+          user.value = data.user;
+          isAuthenticated.value = true;
+          
+          console.log('✅ Authentication restored from JWT token');
+          return true;
+        }
+      } catch (tokenError) {
+        console.log('⚠️  Token validation failed');
+        // Token is invalid - clear it
+        await logout();
+        return false;
+      }
+
+      // No valid authentication found
+      console.log('❌ No valid authentication');
       isAuthenticated.value = false;
       return false;
-    }
 
-    token.value = storedToken;
-    refreshToken.value = storedRefreshToken;
-
-    try {
-      // Verify token by fetching current user
-      const { data } = await apiClient.get('/auth/me');
-      
-      user.value = data.user;
-      isAuthenticated.value = true;
-      
-      console.log('✅ Authentication restored from token');
-      return true;
     } catch (err) {
-      // Token is invalid or expired - apiClient will handle logout
-      console.log('⚠️ Token validation failed');
-      await logout();
+      console.error('❌ Auth initialization error:', err);
+      isAuthenticated.value = false;
       return false;
     }
   }
 
   /**
    * Login with username and password
+   * ENHANCED: Backend now creates session + returns JWT
    */
   async function login(username, password) {
     loading.value = true;
@@ -63,6 +133,10 @@ export const useAuthStore = defineStore('auth', () => {
         skipAuth: true // Don't add auth header to login request
       });
 
+      if (!data.success) {
+        throw new Error(data.error || 'Login failed');
+      }
+
       // Store tokens
       token.value = data.accessToken;
       refreshToken.value = data.refreshToken;
@@ -73,9 +147,11 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem('refresh_token', data.refreshToken);
 
       console.log('✅ Login successful:', user.value.username);
+      console.log('🍪 Session created (cookie set by backend)');
+      
       return true;
     } catch (err) {
-      error.value = err.response?.data?.error || 'Login failed';
+      error.value = err.response?.data?.error || err.message || 'Login failed';
       console.error('❌ Login error:', error.value);
       return false;
     } finally {
@@ -85,6 +161,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Logout
+   * ENHANCED: Backend now destroys session + invalidates tokens
    */
   async function logout() {
     try {
@@ -93,9 +170,10 @@ export const useAuthStore = defineStore('auth', () => {
         await apiClient.post('/auth/logout', {
           refreshToken: refreshToken.value
         });
+        console.log('✅ Session destroyed on backend');
       }
     } catch (err) {
-      console.error('Logout API error:', err);
+      console.error('⚠️  Logout API error:', err);
       // Continue with local logout even if API call fails
     }
 
@@ -121,10 +199,14 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
 
     try {
-      await apiClient.put('/auth/change-password', {
+      const { data } = await apiClient.put('/auth/change-password', {
         oldPassword,
         newPassword
       });
+
+      if (!data.success) {
+        throw new Error(data.error || 'Password change failed');
+      }
 
       console.log('✅ Password changed successfully');
       
@@ -190,7 +272,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function listUsers() {
     try {
       const { data } = await apiClient.get('/auth/users');
-      return data.users;
+      return data.users || [];
     } catch (err) {
       console.error('List users error:', err);
       return [];
@@ -205,13 +287,17 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
 
     try {
-      await apiClient.post('/auth/users', {
+      const { data } = await apiClient.post('/auth/users', {
         username,
         email,
         password,
         full_name: fullName,
         role
       });
+
+      if (!data.success) {
+        throw new Error(data.error || 'User creation failed');
+      }
 
       console.log('✅ User created:', username);
       return true;
@@ -232,7 +318,11 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
 
     try {
-      await apiClient.put(`/auth/users/${id}`, updates);
+      const { data } = await apiClient.put(`/auth/users/${id}`, updates);
+
+      if (!data.success) {
+        throw new Error(data.error || 'User update failed');
+      }
 
       console.log('✅ User updated');
       return true;
@@ -253,7 +343,11 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null;
 
     try {
-      await apiClient.delete(`/auth/users/${id}`);
+      const { data } = await apiClient.delete(`/auth/users/${id}`);
+
+      if (!data.success) {
+        throw new Error(data.error || 'User deletion failed');
+      }
 
       console.log('✅ User deleted');
       return true;
@@ -272,7 +366,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function getSessions() {
     try {
       const { data } = await apiClient.get('/auth/sessions');
-      return data.sessions;
+      return data.sessions || [];
     } catch (err) {
       console.error('Get sessions error:', err);
       return [];
@@ -284,7 +378,12 @@ export const useAuthStore = defineStore('auth', () => {
    */
   async function revokeSession(sessionId) {
     try {
-      await apiClient.delete(`/auth/sessions/${sessionId}`);
+      const { data } = await apiClient.delete(`/auth/sessions/${sessionId}`);
+
+      if (!data.success) {
+        throw new Error(data.error || 'Session revocation failed');
+      }
+
       console.log('✅ Session revoked');
       return true;
     } catch (err) {

@@ -1,612 +1,254 @@
 <template>
-  <div class="universal-table">
-    <!-- Toolbar with Global Actions -->
-    <div v-if="config.globalActions || config.filters" class="table-toolbar">
-      <div class="toolbar-left">
-        <Button
-          v-for="action in config.globalActions"
+  <div class="universal-table flex flex-col gap-4">
+    <!-- Global Actions / Filters toolbar -->
+    <div v-if="tableConfig.globalActions?.length || tableConfig.filters?.length" class="flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <button
+          v-for="action in tableConfig.globalActions"
           :key="action.label"
-          :label="action.label"
-          :icon="action.icon"
-          :severity="action.severity || 'secondary'"
           @click="executeGlobalAction(action)"
-          :loading="actionLoading[action.id]"
-        />
+          :disabled="actionLoading[action.id]"
+          class="flex items-center gap-2 p-4 bg-white border border-gray-200  text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-all shadow-sm disabled:opacity-50"
+        >
+          <i v-if="actionLoading[action.id]" class="fa-light fa-spinner-third fa-spin text-slate-500"></i>
+          <i v-else :class="['fa-light', mapIcon(action.icon), 'text-blue-700']"></i>
+          {{ action.label }}
+        </button>
       </div>
 
-      <!-- Filters -->
-      <div v-if="config.filters" class="toolbar-right">
-        <Dropdown
-          v-for="filter in config.filters"
+      <div v-if="tableConfig.filters?.length" class="flex items-center gap-2">
+        <select
+          v-for="filter in tableConfig.filters"
           :key="filter.field"
           v-model="filterValues[filter.field]"
-          :options="filter.options"
-          :optionLabel="filter.optionLabel || 'label'"
-          :optionValue="filter.optionValue || 'value'"
-          :placeholder="filter.placeholder || 'Filter...'"
           @change="applyFilters"
-          class="filter-dropdown"
-        />
+          class="bg-white border border-gray-200 p-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+        >
+          <option value="">{{ filter.placeholder || 'Filter...' }}</option>
+          <option v-for="opt in filter.options" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
       </div>
     </div>
 
-    <!-- DataTable -->
-    <DataTable
-      :value="tableData"
-      :dataKey="config.dataKey"
-      :loading="loading"
-      :paginator="config.paginator !== false"
-      :rows="config.rows || 10"
-      :rowsPerPageOptions="[5, 10, 20, 50]"
-      :globalFilterFields="globalFilterFields"
-      v-model:filters="filters"
-      filterDisplay="row"
-      :sortField="config.defaultSortField"
-      :sortOrder="config.defaultSortOrder || 1"
-      stripedRows
-      class="p-datatable-sm"
-    >
-      <!-- Dynamic Columns -->
-      <Column
-        v-for="col in config.columns"
-        :key="col.field"
-        :field="col.field"
-        :header="col.header"
-        :sortable="col.sortable !== false"
-        :style="col.width ? { width: col.width } : {}"
-      >
-        <!-- Header Template (for filters) -->
-        <template v-if="col.filter" #filter="{ filterModel, filterCallback }">
-          <InputText
-            v-model="filterModel.value"
-            @input="filterCallback()"
-            placeholder="Search..."
-            class="p-column-filter"
-          />
-        </template>
+    <!-- Loading state -->
+    <div v-if="loading" class="flex items-center justify-center py-12 text-gray-400 text-sm gap-2">
+      <i class="fa-duotone fa-spinner-third fa-spin"></i>
+      Laden...
+    </div>
 
-        <!-- Body Template -->
-        <template #body="{ data, index }">
-          <!-- Simple Field -->
-          <span v-if="!col.template">
-            {{ data[col.field] }}
-          </span>
+    <!-- Error state -->
+    <div v-else-if="loadError" class="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+      <i class="fa-duotone fa-circle-exclamation"></i>
+      {{ loadError }}
+    </div>
 
-          <!-- Icon + Text Template -->
-          <div v-else-if="col.template.type === 'icon-text'" class="flex align-items-center gap-2">
-            <i :class="`pi ${getIcon(col.template.icon, data)}`"></i>
-            <div class="flex flex-column">
-              <span class="font-semibold">{{ data[col.template.text] }}</span>
-              <span v-if="col.template.subtext" class="text-sm text-600">
-                {{ data[col.template.subtext] }}
-              </span>
-            </div>
-          </div>
+    <!-- Empty state -->
+    <div v-else-if="!tableData.length" class="flex flex-col items-center justify-center py-12 text-gray-400 text-sm gap-2">
+      <i class="fa-duotone fa-table text-2xl"></i>
+      Geen gegevens beschikbaar
+    </div>
 
-          <!-- Badge Template -->
-          <Tag
-            v-else-if="col.template.type === 'badge'"
-            :value="getBadgeLabel(col.template, data[col.field])"
-            :severity="getBadgeSeverity(col.template, data[col.field])"
-          />
+    <!-- Table -->
+    <div v-else class="overflow-hidden  overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50/50">
+          <tr>
+            <th
+              v-for="col in tableConfig.columns"
+              :key="col.field"
+              class="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-widest"
+            >
+              {{ col.header }}
+            </th>
+            <th
+              v-if="tableConfig.rowActions?.length"
+              class="p-4text-right text-xs font-extrabold text-gray-400 uppercase tracking-widest"
+            >
+              Acties
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200">
+          <tr
+            v-for="(row, rowIndex) in tableData"
+            :key="row.id || rowIndex"
+            class="hover:bg-blue-50/30 transition-colors"
+          >
+            <td
+              v-for="col in tableConfig.columns"
+              :key="col.field"
+              class="px-6 py-4 text-sm text-gray-600 font-medium"
+            >
+              <template v-if="col.template?.type === 'boolean'">
+                <i :class="row[col.field] ? 'fa-solid fa-circle-check text-green-500' : 'fa-solid fa-circle-xmark text-gray-300'"></i>
+              </template>
 
-          <!-- Switch Template (Inline Toggle) -->
-          <InputSwitch
-            v-else-if="col.template.type === 'switch'"
-            :modelValue="data[col.field]"
-            @update:modelValue="updateField(data, col.field, $event, col.template.updateEndpoint)"
-            :disabled="!col.editable"
-          />
+              <template v-else-if="col.template?.type === 'status-badge'">
+                <span :class="[getStatusClass(row[col.field], col.template), 'px-2 py-1 rounded text-[10px] font-bold uppercase tracking-tight']">
+                  {{ row[col.field] }}
+                </span>
+              </template>
 
-          <!-- Boolean Icon Template -->
-          <div v-else-if="col.template.type === 'boolean-icon'">
-            <i
-              :class="`pi ${data[col.field] ? col.template.trueIcon : col.template.falseIcon}`"
-              :style="{ color: data[col.field] ? col.template.trueColor : col.template.falseColor }"
-            ></i>
-          </div>
+              <template v-else-if="col.template?.type === 'number'">
+                {{ formatNumber(row[col.field], col.template) }}
+              </template>
 
-          <!-- Status Dot Template -->
-          <div v-else-if="col.template.type === 'status-dot'" class="flex align-items-center gap-2">
-            <span
-              class="status-dot"
-              :style="{ backgroundColor: data[col.field] ? col.template.trueColor : col.template.falseColor }"
-            ></span>
-            <span>{{ data[col.field] ? col.template.trueLabel : col.template.falseLabel }}</span>
-          </div>
+              <template v-else>
+                {{ col.template?.type === 'datetime' ? formatDate(row[col.field], col.template.format) : (row[col.field] ?? '-') }}
+              </template>
+            </td>
 
-          <!-- Number Template -->
-          <span v-else-if="col.template.type === 'number'">
-            {{ formatNumber(data[col.field], col.template) }}
-          </span>
+            <td v-if="tableConfig.rowActions?.length" class="px-6 py-4 text-right">
+              <div class="flex justify-end gap-2">
+                <button
+                  v-for="btn in getVisibleButtons(tableConfig.rowActions, row)"
+                  :key="btn.label"
+                  @click="executeRowAction(btn, row)"
+                  :title="btn.label"
+                  class="p-4 hover:bg-gray-100 rounded-lg group"
+                >
+                  <i :class="['fa-light ', mapIcon(btn.icon), 'text-gray-400 group-hover:text-gray-900 ']"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
 
-          <!-- Date Template -->
-          <span v-else-if="col.template.type === 'date'">
-            {{ formatDate(data[col.field], col.template.format) }}
-          </span>
-
-          <!-- Actions Template (Edit/Delete buttons) -->
-          <div v-else-if="col.template.type === 'actions'" class="flex gap-1">
-            <Button
-              v-for="button in getVisibleButtons(col.template.buttons, data)"
-              :key="button.icon"
-              :icon="button.icon"
-              :severity="button.severity || 'secondary'"
-              :tooltip="button.tooltip"
-              size="small"
-              text
-              rounded
-              @click="executeRowAction(button, data)"
-            />
-          </div>
-
-          <!-- Editable Field (Inline Editing) -->
-          <InputText
-            v-else-if="col.editable && !col.template"
-            :modelValue="data[col.field]"
-            @blur="updateField(data, col.field, $event.target.value)"
-            class="p-inputtext-sm"
-          />
-        </template>
-      </Column>
-
-      <!-- Empty State -->
-      <template #empty>
-        <div class="text-center p-4 text-600">
-          No data available
-        </div>
-      </template>
-    </DataTable>
-
-    <!-- Confirm Dialog -->
-    <ConfirmDialog />
-
-    <!-- Dynamic Form Dialog -->
-    <Dialog
-      v-model:visible="dialogVisible"
-      :header="dialogConfig.title"
-      :modal="true"
-      :style="{ width: '50vw' }"
-    >
-      <div class="flex flex-column gap-3">
-        <UniversalField
-          v-for="field in dialogConfig.fields"
-          :key="field.key"
-          :field="field"
-          v-model="dialogData[field.key]"
-        />
-      </div>
-
-      <template #footer>
-        <Button label="Cancel" @click="dialogVisible = false" severity="secondary" />
-        <Button label="Save" @click="saveDialog" :loading="dialogLoading" />
-      </template>
-    </Dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive } from 'vue';
+import { ref, reactive, computed, watch, onMounted } from 'vue';
 import apiClient from '@/services/api';
-import { useToast } from 'primevue/usetoast';
-import { useConfirm } from 'primevue/useconfirm';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import InputText from 'primevue/inputtext';
-import InputSwitch from 'primevue/inputswitch';
-import Dropdown from 'primevue/dropdown';
-import Tag from 'primevue/tag';
-import Dialog from 'primevue/dialog';
-import ConfirmDialog from 'primevue/confirmdialog';
-import UniversalField from './UniversalField.vue';
-
 
 const props = defineProps({
-  config: {
-    type: Object,
-    required: true
-  },
-  moduleId: {
-    type: String,
-    default: null
-  }
+  config:   { type: Object, required: true },
+  moduleId: { type: String, required: true }
 });
 
-const toast = useToast();
-const confirm = useConfirm();
+// ─── Normalise config ────────────────────────────────────────────────────────
+// The schema may nest the table config inside a `data` property (legacy format)
+// or put everything directly on the section object (flat format).
+// This computed always gives us a consistent object to work with.
+const tableConfig = computed(() => props.config.data ?? props.config);
 
-const tableData = ref([]);
-const loading = ref(false);
+// ─── State ───────────────────────────────────────────────────────────────────
+const tableData     = ref([]);
+const loading       = ref(false);
+const loadError     = ref(null);
+const filterValues  = reactive({});
 const actionLoading = reactive({});
-const filterValues = reactive({});
-const filters = ref({});
-const dialogVisible = ref(false);
-const dialogConfig = ref({ fields: [] });
-const dialogData = reactive({});
-const dialogLoading = ref(false);
-const currentRowData = ref(null);
 
-const globalFilterFields = computed(() => {
-  return props.config.columns
-    .filter(col => col.filter)
-    .map(col => col.field);
-});
-
-// Load table data
+// ─── Data loading ────────────────────────────────────────────────────────────
 async function loadData() {
-  loading.value = true;
+  const endpoint = tableConfig.value.endpoint;
+  if (!endpoint) {
+    console.warn(`UniversalTable [${props.moduleId}]: no endpoint configured for section "${props.config.title}"`);
+    return;
+  }
+
+  loading.value  = true;
+  loadError.value = null;
+
   try {
-    const response = await apiClient.get(props.config.endpoint);
-    tableData.value = response.data.data || response.data[Object.keys(response.data)[0]] || response.data;
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load data',
-      life: 3000
-    });
+    const { data } = await apiClient.get(endpoint, { params: filterValues });
+
+    // Support multiple response shapes:
+    //   - plain array
+    //   - { data: [...] }      ← /settings/users/list
+    //   - { items: [...] }
+    //   - { success, data: [...] }
+    if (Array.isArray(data)) {
+      tableData.value = data;
+    } else if (Array.isArray(data?.data)) {
+      tableData.value = data.data;
+    } else if (Array.isArray(data?.items)) {
+      tableData.value = data.items;
+    } else {
+      tableData.value = [];
+    }
+  } catch (err) {
+    console.error(`UniversalTable [${props.moduleId}]: failed to load data`, err);
+    loadError.value = err.message || 'Laden mislukt';
   } finally {
     loading.value = false;
   }
 }
 
-// Execute global action (toolbar buttons)
+// ─── Actions ─────────────────────────────────────────────────────────────────
 async function executeGlobalAction(action) {
-  if (action.action === 'reload') {
-    await loadData();
-    return;
-  }
-
-  if (action.confirm) {
-    confirm.require({
-      message: action.confirm,
-      header: 'Confirmation',
-      icon: 'pi pi-exclamation-triangle',
-      accept: async () => {
-        await performAction(action);
-      }
-    });
-  } else {
-    await performAction(action);
-  }
-}
-
-// Execute row action (edit/delete buttons)
-async function executeRowAction(button, rowData) {
-  currentRowData.value = rowData;
-
-  // Navigate action
-  if (button.action === 'navigate') {
-    const route = replacePlaceholders(button.route, rowData);
-    window.location.href = route;
-    return;
-  }
-
-  // Dialog action (edit form)
-  if (button.action === 'dialog') {
-    await openDialog(button, rowData);
-    return;
-  }
-
-  // Endpoint action (delete, etc.)
-  if (button.action === 'endpoint') {
-    const confirmMessage = replacePlaceholders(button.confirm, rowData);
-    
-    if (button.confirm) {
-      confirm.require({
-        message: confirmMessage,
-        header: 'Confirmation',
-        icon: 'pi pi-exclamation-triangle',
-        accept: async () => {
-          await performRowAction(button, rowData);
-        }
-      });
-    } else {
-      await performRowAction(button, rowData);
-    }
-  }
-}
-
-// Open dialog for edit/add
-async function openDialog(button, rowData = null) {
-  try {
-    // Get form configuration
-    const formName = button.form;
-    const endpoint = replacePlaceholders(button.endpoint, rowData);
-
-    // If editing, load current data
-    if (rowData && button.endpoint) {
-      const { data } = await apiClient.get(endpoint);
-      Object.assign(dialogData, data);
-    } else {
-      // Clear dialog data for new entry
-      Object.keys(dialogData).forEach(key => delete dialogData[key]);
-    }
-
-    // Load form config from parent schema or make API call
-    // For now, assuming form config is passed in button
-    dialogConfig.value = {
-      title: button.title || 'Edit',
-      endpoint: endpoint,
-      method: button.method || 'PUT',
-      fields: button.fields || []
-    };
-
-    dialogVisible.value = true;
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to load form',
-      life: 3000
-    });
-  }
-}
-
-// Save dialog
-async function saveDialog() {
-  dialogLoading.value = true;
-  try {
-    await apiClient({
-      method: dialogConfig.value.method,
-      url: dialogConfig.value.endpoint,
-      data: dialogData
-    });
-
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Saved successfully',
-      life: 3000
-    });
-
-    dialogVisible.value = false;
-    await loadData();
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.error || 'Failed to save',
-      life: 3000
-    });
-  } finally {
-    dialogLoading.value = false;
-  }
-}
-
-// Perform action
-async function performAction(action) {
+  if (action.confirmMessage && !confirm(action.confirmMessage)) return;
   actionLoading[action.id] = true;
   try {
-    await apiClient({
-      method: action.method || 'POST',
-      url: action.endpoint
-    });
-
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: action.successMessage || 'Action completed',
-      life: 3000
-    });
-
-    if (action.reloadAfter !== false) {
-      await loadData();
-    }
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.error || 'Action failed',
-      life: 3000
-    });
+    await apiClient({ method: action.method || 'POST', url: action.endpoint });
+    if (action.refreshAfter !== false) await loadData();
+  } catch (err) {
+    alert('Actie mislukt: ' + err.message);
   } finally {
     actionLoading[action.id] = false;
   }
 }
 
-// Perform row action (delete, etc.)
-async function performRowAction(button, rowData) {
+async function executeRowAction(btn, row) {
+  if (btn.confirmMessage && !confirm(btn.confirmMessage)) return;
   try {
-    const endpoint = replacePlaceholders(button.endpoint, rowData);
-    
     await apiClient({
-      method: button.method || 'POST',
-      url: endpoint
+      method: btn.method || 'POST',
+      url: btn.endpoint || `${tableConfig.value.endpoint}/${btn.action}`,
+      data: row
     });
-
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: button.successMessage || 'Action completed',
-      life: 3000
-    });
-
     await loadData();
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.error || 'Action failed',
-      life: 3000
-    });
+  } catch (err) {
+    alert('Actie mislukt: ' + err.message);
   }
 }
 
-// Update field (inline editing or toggle)
-async function updateField(rowData, field, value, endpoint = null) {
-  try {
-    const dataKey = props.config.dataKey;
-    const url = endpoint
-      ? replacePlaceholders(endpoint, rowData)
-      : `${props.config.endpoint}/${rowData[dataKey]}`;
-
-    await apiClient.put(url, {
-      [field]: value
-    });
-
-    // Update local data
-    const index = tableData.value.findIndex(item => item[dataKey] === rowData[dataKey]);
-    if (index !== -1) {
-      tableData.value[index][field] = value;
-    }
-
-    toast.add({
-      severity: 'success',
-      summary: 'Success',
-      detail: 'Updated successfully',
-      life: 2000
-    });
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Failed to update',
-      life: 3000
-    });
-    // Reload to revert
-    await loadData();
-  }
-}
-
-// Replace placeholders in strings (e.g., /api/users/{id})
-function replacePlaceholders(str, data) {
-  if (!str) return str;
-  return str.replace(/\{(\w+)\}/g, (match, key) => data[key] || match);
-}
-
-// Get icon based on data
-function getIcon(iconConfig, data) {
-  if (typeof iconConfig === 'string') return iconConfig;
-  if (typeof iconConfig === 'object') {
-    return iconConfig[data.product_type] || iconConfig[data.type] || 'pi-circle';
-  }
-  return 'pi-circle';
-}
-
-// Get badge label
-function getBadgeLabel(template, value) {
-  if (template.labels && template.labels[value]) {
-    return template.labels[value];
-  }
-  return value;
-}
-
-// Get badge severity
-function getBadgeSeverity(template, value) {
-  if (template.severity && template.severity[value]) {
-    return template.severity[value];
-  }
-  return 'info';
-}
-
-// Format number
+// ─── Formatters ───────────────────────────────────────────────────────────────
 function formatNumber(value, template) {
   if (value === null || value === undefined) return '-';
-  const formatted = template.decimals !== undefined
-    ? Number(value).toFixed(template.decimals)
-    : value;
-  return `${template.prefix || ''}${formatted}${template.suffix || ''}`;
+  const val = template.decimals !== undefined ? Number(value).toFixed(template.decimals) : value;
+  return `${template.prefix || ''}${val}${template.suffix || ''}`;
 }
 
-// Format date
 function formatDate(value, format = 'relative') {
   if (!value) return '-';
-  
   const date = new Date(value);
-  
-  if (format === 'relative') {
-    const now = new Date();
-    const diff = now - date;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-    
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    if (days < 7) return `${days}d ago`;
-    return date.toLocaleDateString();
-  }
-  
-  return date.toLocaleString();
+  return format === 'relative' ? date.toLocaleDateString() : date.toLocaleString();
 }
 
-// Get visible buttons based on conditions
+function getStatusClass(value, template) {
+  const severity = template?.severity?.[value] || 'info';
+  const maps = {
+    success: 'bg-green-100 text-green-700',
+    danger:  'bg-red-100 text-red-700',
+    warning: 'bg-amber-100 text-amber-700',
+    info:    'bg-blue-100 text-blue-700'
+  };
+  return maps[severity] || maps.info;
+}
+
 function getVisibleButtons(buttons, rowData) {
   if (!buttons) return [];
-  
-  return buttons.filter(button => {
-    if (!button.condition) return true;
-    
-    const { field, operator, value } = button.condition;
-    const fieldValue = rowData[field];
-    
-    switch (operator) {
-      case '==': return fieldValue == value;
-      case '!=': return fieldValue != value;
-      case '>': return fieldValue > value;
-      case '<': return fieldValue < value;
-      case '>=': return fieldValue >= value;
-      case '<=': return fieldValue <= value;
-      default: return true;
-    }
+  return buttons.filter(b => {
+    if (!b.condition) return true;
+    const val = rowData[b.condition.field];
+    return b.condition.operator === '==' ? val == b.condition.value : val != b.condition.value;
   });
 }
 
-// Apply filters
-function applyFilters() {
-  // Implementation depends on your filter strategy
-  loadData();
+function mapIcon(icon) {
+  if (!icon) return 'fa-question';
+  return icon.replace('pi pi-', 'fa-light fa-').replace('pi-', 'fa-light fa-');
 }
 
-onMounted(() => {
-  loadData();
-});
+function applyFilters() { loadData(); }
 
-// Expose reload method
-defineExpose({
-  reload: loadData
-});
+// ─── Lifecycle ────────────────────────────────────────────────────────────────
+watch(() => props.moduleId, loadData);
+onMounted(loadData);
+defineExpose({ reload: loadData });
 </script>
-
-<style scoped>
-.universal-table {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.table-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
-}
-
-.toolbar-left {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.toolbar-right {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.filter-dropdown {
-  min-width: 200px;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-:deep(.p-datatable-sm .p-datatable-tbody > tr > td) {
-  padding: 0.5rem;
-}
-</style>

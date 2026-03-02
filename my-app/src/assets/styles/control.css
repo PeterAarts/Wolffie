@@ -1,0 +1,200 @@
+/* src/assets/control.css
+ *
+ * Shared design tokens for the Control panel and any page
+ * that uses the same visual language (buttons, form fields,
+ * range sliders, toggle switches, drawer sections, badges).
+ *
+ * Import once in the feature entry component:
+ *   import '@/assets/control.css'
+ * or add to your global stylesheet.
+ */
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.875rem;
+  background: #fff;
+  border: 1px solid #d1d5db;
+  border-radius: 0px;
+  color: #374151;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn:hover:not(:disabled) { background: #f9fafb; border-color: #9ca3af; }
+.btn:disabled              { opacity: 0.5; cursor: not-allowed; }
+
+.btn--sm  { padding: 0.3125rem 0.625rem; font-size: 0.78125rem; }
+.btn--full { width: 100%; justify-content: center; }
+.btn--busy { opacity: 0.6; pointer-events: none; }
+
+.btn--primary {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+.btn--primary:hover:not(:disabled) { background: #1f2937; border-color: #1f2937; }
+
+.btn--destructive {
+  color: #991b1b;
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+.btn--destructive:hover:not(:disabled) { background: #fee2e2; border-color: #f87171; }
+
+/* ── Icon buttons (table row actions, drawer close) ───────────────────────── */
+.icon-btn {
+  width: 26px; height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: transparent;          /* hidden until row hover – override as needed */
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-radius: 0px;
+  transition: color 0.15s, background 0.15s;
+}
+.bh-table-responsive table.bh-table-hover tbody tr:hover .icon-btn { color: #a0a1a1; }
+.bh-table-responsive table.bh-table-hover tbody tr:hover .icon-btn:hover{ color: #131313!important;font-size:125%;}
+
+.icon-btn--danger:hover { color: #991b1b !important; }
+
+/* Show row action icons on row hover */
+.table tbody tr:hover .icon-btn { color: #a0a1a1; }
+
+.row-actions { display: flex; gap: 0.25rem; }
+
+/* ── Form fields ──────────────────────────────────────────────────────────── */
+.form-field         { display: flex; flex-direction: column; gap: 0.375rem; }
+.form-field--flex   { flex: 1; }
+.form-field--port   { width: 80px; flex-shrink: 0; }
+.form-row           { display: flex; gap: 0.75rem; align-items: flex-start; }
+
+.form-label { font-size: 0.8rem; font-weight: 500; color: #374151; }
+.req        { color: #ef4444; }
+
+.input {
+  width: 100%;
+  padding: 0.4375rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 5px;
+  font-size: 0.8125rem;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.input:focus { border-color: #6b7280; }
+
+/* ── Range slider ─────────────────────────────────────────────────────────── */
+.range {
+  width: 100%;
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  background: #d1d5db;
+  outline: none;
+  cursor: pointer;
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #374151;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #9ca3af;
+  cursor: pointer;
+}
+.range::-moz-range-thumb {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  background: #374151;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #9ca3af;
+  cursor: pointer;
+}
+
+/* ── Field label + value row (used with range sliders) ────────────────────── */
+.field__label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.field__label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #374151;
+}
+.field__value {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #111827;
+  background: #e5e7eb;
+  padding: 0.1rem 0.5rem;
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+  min-width: 54px;
+  text-align: center;
+}
+.field__hints {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+/* ── Toggle switch ────────────────────────────────────────────────────────── */
+.toggle-row             {display: flex;  align-items: center;  justify-content: space-between;  gap: 0.75rem;}
+.toggle-hint            {font-size: 0.75rem;  color: #9ca3af;  margin: 0.2rem 0 0;}
+.toggle                 {width: 40px; height: 22px;  flex-shrink: 0;  border-radius: 0px;  border: none;  background: #d1d5db;  cursor: pointer;  position: relative;  transition: background 0.2s;}
+.toggle--on             {background: #374151; }
+.toggle__knob           {position: absolute;  top: 2px; left: 2px;  width: 18px; height: 18px;  border-radius: 0px;  background: #fff;  transition: left 0.2s;  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);}
+.toggle--on .toggle__knob { left: 20px; }
+
+/* ── Drawer section headings & dividers ───────────────────────────────────── */
+.drawer-section         {display: flex; flex-direction: column; gap: 0.875rem; }
+
+.drawer-section__title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.drawer-section__note {
+  font-size: 0.68rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #d1d5db;
+}
+
+.drawer-divider { height: 1px; background: #f3f4f6; }
+
+/* ── Toolbar helpers ──────────────────────────────────────────────────────── */
+.toolbar__count { font-size: 0.8rem; color: #6b7280; font-weight: 500; }
+
+.toolbar__badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: #e5e7eb;
+  color: #374151;
+  padding: 0.125rem 0.5rem;
+  border-radius: 20px;
+}
+
+/* ── Cell helpers ─────────────────────────────────────────────────────────── */
+.cell-primary   { font-size: 0.8125rem; font-weight: 600; color: #111827; }
+.cell-secondary { font-size: 0.725rem;  color: #9ca3af; margin-top: 0.1rem; }

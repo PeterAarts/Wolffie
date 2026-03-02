@@ -4,9 +4,28 @@
    Bold, minimal, data-focused
    ============================================ */
 
-/* Google Font Import */
+/* src/assets/styles/main.css */
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&display=swap');
 
+@import "@fortawesome/fontawesome-pro/css/all.css";
+@import "tailwindcss";
+
+
+@layer base {
+  html, body {
+    @apply h-full m-0 p-0 antialiased bg-slate-50;
+    font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
+  }
+  
+  /* Ensure all inputs and buttons have a base height */
+
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-slate-900 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-900 active:scale-95 transition-all;
+  }
+}
 /* --------------------- ROOT VARIABLES --------------------- */
 :root {
   /* Clean Color Palette */
@@ -52,7 +71,6 @@
   
   /* Typography */
   --font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;
   --font-size-base: 1rem;
@@ -315,164 +333,6 @@ img[src*="icon"],
   border: 1px solid var(--color-border);
 }
 
-/* --------------------- PRIMEVUE OVERRIDES --------------------- */
-
-.p-component {
-  color: var(--color-text-primary);
-  font-family: var(--font-family);
-}
-
-/* Buttons - Clean & Bold */
-.p-button {
-  background: var(--color-bg-black);
-  color: var(--color-text-white);
-  border: none;
-  padding: var(--gap-md) var(--gap-xl);
-  border-radius: var(--radius-lg);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-base);
-  transition: all 0.2s ease;
-}
-
-.p-button:hover {
-  background: var(--color-text-primary);
-  transform: translateY(-1px);
-}
-
-.p-button:active {
-  transform: translateY(0);
-}
-
-.p-button-text {
-  background: transparent;
-  color: var(--color-text-primary);
-}
-
-.p-button-text:hover {
-  background: var(--color-bg-primary);
-  color: var(--color-text-primary);
-}
-
-/* Tabs - Clean */
-.p-tabview-nav {
-  background: transparent;
-  border-bottom: 2px solid var(--color-border);
-}
-
-.p-tabview-nav-link {
-  color: var(--color-text-secondary);
-  border: none;
-  background: transparent;
-  padding: var(--gap-md) var(--gap-lg);
-  font-weight: var(--font-weight-medium);
-  transition: color 0.2s ease;
-}
-
-.p-tabview-nav-link:hover {
-  color: var(--color-text-primary);
-  background: transparent;
-}
-
-.p-tabview-nav li.p-highlight .p-tabview-nav-link {
-  color: var(--color-bg-black);
-  border-bottom: 3px solid var(--color-bg-black);
-  background: transparent;
-  font-weight: var(--font-weight-bold);
-}
-
-.p-tabview-panels {
-  background: transparent;
-  padding: var(--gap-xl) 0;
-}
-
-/* Input fields - Clean */
-.p-inputtext {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  color: var(--color-text-primary);
-  border-radius: var(--radius-md);
-  padding: var(--gap-md) var(--gap-lg);
-  font-size: var(--font-size-base);
-  transition: border-color 0.2s ease;
-}
-
-.p-inputtext:focus {
-  border-color: var(--color-bg-black);
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
-}
-
-.p-inputtext::placeholder {
-  color: var(--color-text-tertiary);
-}
-
-/* Dropdown */
-.p-dropdown {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.p-dropdown:hover {
-  border-color: var(--color-border-dark);
-}
-
-.p-dropdown-panel {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  margin-top: var(--gap-xs);
-}
-
-.p-dropdown-item {
-  color: var(--color-text-primary);
-  padding: var(--gap-md) var(--gap-lg);
-}
-
-.p-dropdown-item:hover {
-  background: var(--color-bg-primary);
-}
-
-.p-dropdown-item.p-highlight {
-  background: var(--color-bg-black);
-  color: var(--color-text-white);
-}
-
-/* Toast - Clean */
-.p-toast-message {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: var(--gap-lg);
-}
-
-.p-toast-message-content {
-  color: var(--color-text-primary);
-}
-
-/* Dialog */
-.p-dialog {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-lg);
-}
-
-.p-dialog-header {
-  background: var(--color-bg-secondary);
-  color: var(--color-text-primary);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--gap-xl);
-  font-weight: var(--font-weight-semibold);
-}
-
-.p-dialog-content {
-  background: var(--color-bg-secondary);
-  padding: var(--gap-xl);
-}
-
 /* --------------------- UTILITY CLASSES --------------------- */
 .text-center { text-align: center; }
 .text-right { text-align: right; }
@@ -566,20 +426,17 @@ img[src*="icon"],
   color: var(--color-text-secondary);
   margin-top: var(--gap-sm);
 }
+.info-section          {height : calc(100vh - 6rem )}
+.hero-card             {height : calc(100vh - 6rem )}
+.sidebar-menu          {padding-left:1.5rem;}
 
 /* --------------------- RESPONSIVE --------------------- */
 @media (max-width: 768px) {
-  .power-value {
-    font-size: var(--font-size-3xl);
-  }
-  
-  .percentage-display {
-    font-size: var(--font-size-2xl);
-  }
-  
-  .stat-card-value {
-    font-size: var(--font-size-2xl);
-  }
+  .power-value          {font-size: var(--font-size-3xl);}
+  .percentage-display   {font-size: var(--font-size-2xl);}
+  .stat-card-value      {font-size: var(--font-size-2xl);}
+  .app-section          {border-radius: 1rem;font-size: 150%;}
+  :root{--text-sm: 1.25rem;}
 }
 
 @media (max-width: 480px) {
@@ -591,3 +448,8 @@ img[src*="icon"],
     font-size: var(--font-size-2xl);
   }
 }
+
+main                          {height: calc(100vh - 6rem);overflow-y: auto;}
+.switch-toggle                {margin-top: 2rem;}
+.switch-toggle-content        {margin-left: 1rem;}
+.right-section                {min-width: 320px;}

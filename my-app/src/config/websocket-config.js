@@ -8,11 +8,17 @@
  * Get WebSocket base URL from environment variable
  */
 const getBaseUrl = () => {
-  const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:3000';
-  // Remove trailing slash if present
-  return wsUrl.replace(/\/$/, '');
+  const wsPath = import.meta.env.VITE_WS_URL || '/ws';
+  
+  // If it's already an absolute ws:// or wss:// URL, use it directly
+  if (wsPath.startsWith('ws://') || wsPath.startsWith('wss://')) {
+    return wsPath.replace(/\/$/, '');
+  }
+  
+  // Build from current browser location (works correctly behind Apache proxy)
+  const proto = window.location.protocol === 'https:' ? 'wss' : 'ws';
+  return `${proto}://${window.location.host}${wsPath}`;
 };
-
 /**
  * WebSocket configuration object
  */

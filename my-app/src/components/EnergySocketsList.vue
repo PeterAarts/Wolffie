@@ -1,15 +1,15 @@
 <template>
   <div class="energy-sockets-list">
     <!-- Header -->
-    <div class="list-header">
+<!--    <div class="list-header">
       <div class="header-left">
         <span class="header-title">Name</span>
         <button @click="toggleSort" class="sort-button">
           <i :class="sortAsc ? 'pi pi-sort-amount-up' : 'pi pi-sort-amount-down'"></i>
         </button>
       </div>
-      <span class="header-title">Current Power</span>
-    </div>
+      <span class="header-title">Current power usage</span>
+    </div>-->
 
     <!-- Loading State -->
     <div v-if="deviceStore.loading && deviceStore.devices.length === 0" class="loading-state">
@@ -34,13 +34,13 @@
         @click="selectSocket(socket)"
       >
         <div class="socket-name">
-          <i class="pi pi-bolt"></i>
+          <i class="fa-light fa-bolt text-gray-400"></i>
           <span class="device-name">{{ socket.device_name }}</span>
         </div>
         <div class="socket-power">
-          <i v-if="socket.power > 0" class="pi pi-arrow-down power-import"></i>
+          <i v-if="socket.power > 0" class="fa fa-arrow-down power-import"></i>
           <span :class="socket.power > 0 ? 'power-import' : ''">
-            {{ socket.power > 0 ? '↓ ' : '— ' }}{{ Math.abs(socket.power).toFixed(0) }} W
+            {{ Math.abs(socket.power).toFixed(0) }} W
           </span>
         </div>
       </div>
@@ -51,7 +51,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useDevicesStore } from '@/stores/devices';
-import ProgressSpinner from 'primevue/progressspinner';
+
 
 const emit = defineEmits(['socket-selected']);
 
@@ -122,7 +122,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--color-bg-primary, #ffffff);
 }
 
 /* Header */
@@ -132,7 +131,6 @@ onUnmounted(() => {
   align-items: center;
   padding: 0.875rem 1.25rem;
   border-bottom: 1px solid var(--color-border, #e5e7eb);
-  background: var(--color-bg-primary, #ffffff);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -208,7 +206,6 @@ onUnmounted(() => {
   border-bottom: 1px solid var(--color-border, #e5e7eb);
   cursor: pointer;
   transition: all 0.2s ease;
-  background: var(--color-bg-primary, #ffffff);
 }
 
 .socket-row:hover {
@@ -216,7 +213,7 @@ onUnmounted(() => {
 }
 
 .socket-row.selected {
-  background: var(--color-bg-selected, #e0f2fe);
+  background: var(--color-gray-100, #f1f5f9);
   border-left: 3px solid var(--color-accent, #0ea5e9);
 }
 

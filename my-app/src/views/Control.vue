@@ -1,290 +1,104 @@
-<!-- src/views/Control.vue -->
 <template>
-  <div class="control">
-    <h1 class="page-title">Battery Control</h1>
+  <div class="flex flex-col md:flex-row h-full w-full overflow-hidden text-gray-900 bg-white">
+    
+    <aside class="w-full md:w-72 bg-gray-100 flex-shrink-0 flex flex-col">
+<!--      <div class="p-6 border-b border-gray-200 flex-shrink-0">
+        <h4 class="text-md font-bold text-gray-900 flex items-center gap-3">
+          <span>{{ t('control.title') }}</span>
+        </h4>
+      </div>-->
 
-    <!-- Quick Actions -->
-    <div class="grid grid-cols-3 mb-4">
-      <Card>
-        <template #content>
-          <Button 
-            label="Stop Dispatch" 
-            icon="pi pi-stop" 
-            severity="danger"
-            class="w-full"
-            :disabled="!systemStore.dispatchStatus.active"
-            @click="handleStop"
-          />
-        </template>
-      </Card>
-      <Card>
-        <template #content>
-          <Button 
-            label="Prevent Discharge" 
-            icon="pi pi-lock" 
-            severity="warning"
-            class="w-full"
-            @click="handlePreventDischarge"
-          />
-        </template>
-      </Card>
-      <Card>
-        <template #content>
-          <Button 
-            label="Normal Operation" 
-            icon="pi pi-check" 
-            severity="success"
-            class="w-full"
-            @click="handleNormal"
-          />
-        </template>
-      </Card>
-    </div>
+      <nav class="flex-1 overflow-y-auto p-4 pe-0 space-y-2 controlmenu">
+        <button 
+          v-for="item in menuItems" 
+          :key="item.id"
+          @click="activeSection = item.id"
+          class="w-full flex items-center p-4 transition-all duration-200 group text-sm "
+          :class="activeSection === item.id 
+            ? 'bg-white ' 
+            : 'hover:bg-gray-200 text-gray-700'"
+        >
+          <span class="ms-3 font-medium">{{ item.label }}</span>
+        </button>
+      </nav>
+    </aside>
 
-    <!-- Charge from Grid -->
-    <Card class="mb-4">
-      <template #title>Charge from Grid</template>
-      <template #content>
-        <div class="grid grid-cols-3 gap-4">
-          <div>
-            <label class="block mb-2 font-semibold">Power (W)</label>
-            <InputNumber 
-              v-model="chargeConfig.watts" 
-              :min="0" 
-              :max="5000"
-              :step="100"
-              showButtons
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block mb-2 font-semibold">Target SOC (%)</label>
-            <Slider v-model="chargeConfig.targetSOC" :min="0" :max="100" class="w-full" />
-            <span class="text-sm">{{ chargeConfig.targetSOC }}%</span>
-          </div>
-          <div>
-            <label class="block mb-2 font-semibold">Duration (hours)</label>
-            <InputNumber 
-              v-model="chargeConfig.duration" 
-              :min="0.5" 
-              :max="24"
-              :step="0.5"
-              showButtons
-              class="w-full"
-            />
-          </div>
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
+      
+      <header class="flex-shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-6">
+        <div>
+          <h2 class="text-xl font-bold text-gray-900">{{ activeLabel }}</h2>
+          <p class="text-sm text-gray-500 mt-1">{{ activeDescription }}</p>
         </div>
-        <Button 
-          label="Start Charging" 
-          icon="pi pi-bolt" 
-          class="w-full mt-4"
-          @click="handleCharge"
-        />
-      </template>
-    </Card>
+      </header>
 
-    <!-- Discharge to Grid -->
-    <Card>
-      <template #title>Discharge to Grid</template>
-      <template #content>
-        <div class="grid grid-cols-3 gap-4">
-          <div>
-            <label class="block mb-2 font-semibold">Power (W)</label>
-            <InputNumber 
-              v-model="dischargeConfig.watts" 
-              :min="0" 
-              :max="5000"
-              :step="100"
-              showButtons
-              class="w-full"
-            />
-          </div>
-          <div>
-            <label class="block mb-2 font-semibold">Minimum SOC (%)</label>
-            <Slider v-model="dischargeConfig.minimumSOC" :min="0" :max="100" class="w-full" />
-            <span class="text-sm">{{ dischargeConfig.minimumSOC }}%</span>
-          </div>
-          <div>
-            <label class="block mb-2 font-semibold">Duration (hours)</label>
-            <InputNumber 
-              v-model="dischargeConfig.duration" 
-              :min="0.5" 
-              :max="24"
-              :step="0.5"
-              showButtons
-              class="w-full"
-            />
-          </div>
+      <div class="flex-1 overflow-y-auto p-6 lg:p-8">
+        <div class="mx-auto">
+          <transition name="fade" mode="out-in">
+            <component :is="activeComponent" />
+          </transition>
         </div>
-        <Button 
-          label="Start Discharging" 
-          icon="pi pi-arrow-up" 
-          severity="warning"
-          class="w-full mt-4"
-          @click="handleDischarge"
-        />
-      </template>
-    </Card>
+      </div>
+    </main>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useSystemStore } from '../stores/system';
-import { useToast } from 'primevue/usetoast';
-import { useConfirm } from 'primevue/useconfirm';
-import Card from 'primevue/card';
-import Button from 'primevue/button';
-import InputNumber from 'primevue/inputnumber';
-import Slider from 'primevue/slider';
+import { ref, computed, onMounted } from 'vue';
+import { useSystemStore } from '@/stores/system';
+import { useLocale } from '@/composables/useLocale';
+import { useSchemaStore } from '@/stores/schema';
 
-const systemStore = useSystemStore();
-const toast = useToast();
-const confirm = useConfirm();
+// Import sub-panels
+import StrategyPanel from '@/components/control/StrategyPanel.vue';
+import DispatchPanel  from '@/components/control/DispatchPanel.vue';
+import DevicesPanel   from '@/components/control/DevicesPanel.vue';
 
-const chargeConfig = ref({
-  watts: 2000,
-  targetSOC: 100,
-  duration: 4
+const store = useSystemStore();
+const { t } = useLocale();
+const schemaStore = useSchemaStore();
+
+const activeSection = ref('strategy');
+
+
+// Menu structure matching the pattern in Settings.vue
+const menuItems = [
+  { id: 'strategy', label: t('control.sectionStrategy'), icon: 'fa-duotone fa-chess-knight', description: t('control.sectionStrategyDesc') },
+  { id: 'dispatch', label: t('control.sectionDispatch'), icon: 'fa-duotone fa-bolt-lightning', description: t('control.sectionDispatchDesc') },
+  { id: 'devices', label: t('control.sectionDevices'), icon: 'fa-duotone fa-plug-circle-bolt', description: t('control.sectionDevicesDesc') },
+];
+
+const activeComponent = computed(() => {
+  if (activeSection.value === 'dispatch') return DispatchPanel;
+  if (activeSection.value === 'devices') return DevicesPanel;
+  return StrategyPanel;
 });
 
-const dischargeConfig = ref({
-  watts: 2000,
-  minimumSOC: 20,
-  duration: 2
+const activeLabel = computed(() => menuItems.find(i => i.id === activeSection.value)?.label);
+const activeDescription = computed(() => menuItems.find(i => i.id === activeSection.value)?.description);
+
+// System status data
+const connected    = computed(() => store.isConnected);
+const soc          = computed(() => store.status?.battery?.soc   ?? 0);
+const pvPower      = computed(() => store.status?.pv?.power      ?? 0);
+const batteryPower = computed(() => store.status?.battery?.power ?? 0);
+
+function fmtW(w) {
+  if (w == null || isNaN(w)) return '—';
+  const abs = Math.abs(w);
+  return abs >= 1000 ? `${(abs / 1000).toFixed(1)} kW` : `${Math.round(abs)} W`;
+}
+onMounted(async () => {
+  // Load schemas for active modules immediately when entering Control area
+  await schemaStore.initialize();
 });
 
-async function handleCharge() {
-  confirm.require({
-    message: `Charge at ${chargeConfig.value.watts}W to ${chargeConfig.value.targetSOC}% for ${chargeConfig.value.duration}h?`,
-    header: 'Confirm Charging',
-    icon: 'pi pi-exclamation-triangle',
-    accept: async () => {
-      try {
-        await systemStore.chargeFromGrid(
-          chargeConfig.value.watts,
-          chargeConfig.value.targetSOC,
-          chargeConfig.value.duration
-        );
-        toast.add({
-          severity: 'success',
-          summary: 'Charging Started',
-          detail: `Charging at ${chargeConfig.value.watts}W`,
-          life: 3000
-        });
-      } catch (error) {
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: error.message,
-          life: 5000
-        });
-      }
-    }
-  });
-}
 
-async function handleDischarge() {
-  confirm.require({
-    message: `Discharge at ${dischargeConfig.value.watts}W to ${dischargeConfig.value.minimumSOC}% for ${dischargeConfig.value.duration}h?`,
-    header: 'Confirm Discharging',
-    icon: 'pi pi-exclamation-triangle',
-    accept: async () => {
-      try {
-        await systemStore.dischargeToGrid(
-          dischargeConfig.value.watts,
-          dischargeConfig.value.minimumSOC,
-          dischargeConfig.value.duration
-        );
-        toast.add({
-          severity: 'success',
-          summary: 'Discharging Started',
-          detail: `Discharging at ${dischargeConfig.value.watts}W`,
-          life: 3000
-        });
-      } catch (error) {
-        toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: error.message,
-          life: 5000
-        });
-      }
-    }
-  });
-}
-
-async function handleStop() {
-  try {
-    await systemStore.stopDispatch();
-    toast.add({
-      severity: 'success',
-      summary: 'Stopped',
-      detail: 'Dispatch mode stopped',
-      life: 3000
-    });
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.message,
-      life: 5000
-    });
-  }
-}
-
-async function handlePreventDischarge() {
-  try {
-    await systemStore.preventDischarge();
-    toast.add({
-      severity: 'success',
-      summary: 'Applied',
-      detail: 'Grid discharge prevented',
-      life: 3000
-    });
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.message,
-      life: 5000
-    });
-  }
-}
-
-async function handleNormal() {
-  try {
-    await systemStore.normalOperation();
-    toast.add({
-      severity: 'success',
-      summary: 'Applied',
-      detail: 'Normal operation mode',
-      life: 3000
-    });
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.message,
-      life: 5000
-    });
-  }
-}
 </script>
 
 <style scoped>
-.page-title {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 1.5rem;
-  color: #111827;
-}
-
-.w-full {
-  width: 100%;
-}
-
-.gap-4 {
-  gap: 1rem;
-}
+/* Standard fade transition for content area */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+.controlmenu         {padding-right: 0px!important;;}
 </style>

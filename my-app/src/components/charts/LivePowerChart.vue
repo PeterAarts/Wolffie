@@ -13,14 +13,8 @@ import { CHART_COLORS } from '@/utils/constants';
 Chart.register(...registerables);
 
 const props = defineProps({
-  data: {
-    type: Array,
-    default: () => []
-  },
-  maxDataPoints: {
-    type: Number,
-    default: 60
-  }
+  data:           {type: Array,default: () => []},
+  maxDataPoints:  {type: Number,default: 60}
 });
 
 const chartCanvas = ref(null);

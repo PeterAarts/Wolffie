@@ -1,13 +1,13 @@
 <!-- src/views/Analytics.vue -->
 <template>
-  <div class="section ">
+  <div class="section bg-gray-100">
     <h1 class="page-title">Analytics</h1>
 
   </div>
 </template>
 
 <script setup>
-import Card from 'primevue/card';
+
 </script>
 
 <style scoped>
@@ -22,7 +22,6 @@ import Card from 'primevue/card';
   flex-direction: column;
   gap: 1.5rem;
   padding: 1rem;
-  background-color:#fff;
   height: calc(100vh - 6rem);
 }
 </style>

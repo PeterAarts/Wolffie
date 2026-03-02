@@ -44,15 +44,7 @@ export const useRealtimeStore = defineStore('realtime', () => {
         dailyIn: 0,
         dailyOut: 0
       },
-      solar_1: {
-        currentOut: 0,
-        dailyOut: 0
-      },
-      solar_2: {
-        currentOut: 0,
-        dailyOut: 0
-      },
-      solar_3: {
+      solar: {
         currentOut: 0,
         dailyOut: 0
       },
@@ -83,10 +75,8 @@ export const useRealtimeStore = defineStore('realtime', () => {
   });
   
   const solarPower = computed(() => {
-    const solar1 = realtimeData.value.components.solar_1?.currentOut || 0;
-    const solar2 = realtimeData.value.components.solar_2?.currentOut || 0;
-    const solar3 = realtimeData.value.components.solar_3?.currentOut || 0;
-    return solar1 + solar2 + solar3;
+    const solar = realtimeData.value.components.total?.currentOut || 0;
+    return solar;
   });
   
   const gridPower = computed(() => {
@@ -124,15 +114,7 @@ export const useRealtimeStore = defineStore('realtime', () => {
           dailyIn: 0,
           dailyOut: 0
         },
-        solar_1: {
-          currentOut: backendData.pv?.power || 0,
-          dailyOut: 0
-        },
-        solar_2: {
-          currentOut: 0,
-          dailyOut: 0
-        },
-        solar_3: {
+        solar: {
           currentOut: 0,
           dailyOut: 0
         },
@@ -230,36 +212,22 @@ async function fetchSummary() {
               battery_1: {
                 currentIn: rt.battery.power > 0 ? rt.battery.power : 0,
                 currentOut: rt.battery.power < 0 ? Math.abs(rt.battery.power) : 0,
-                dailyIn: 0,
-                dailyOut: 0
+                dailyIn: parseFloat(res.data.today.battery_charge) || 0,
+                dailyOut: parseFloat(res.data.today.battery_discharge) || 0
               },
               grid: {
                 currentIn: rt.grid.power > 0 ? rt.grid.power : 0,
                 currentOut: rt.grid.power < 0 ? Math.abs(rt.grid.power) : 0,
-                dailyIn: 0,
-                dailyOut: 0
+                dailyIn: parseFloat(res.data.today.grid_import) || 0,
+                dailyOut: parseFloat(res.data.today.grid_export) || 0
               },
-              solar_1: {
-                currentOut: rt.solar.pv1 || 0,
-                dailyOut: 0
-              },
-              solar_2: {
-                currentOut: rt.solar.pv2 || 0,
-                dailyOut: 0
-              },
-              solar_3: {
-                currentOut: rt.solar.pv3 || 0,
-                dailyOut: 0
+              solar: {
+                currentOut: rt.solar.total|| 0,
+                dailyOut: parseFloat(res.data.today.pv_generation) || 0
               },
               home_usage: {
                 currentIn: rt.home.power || 0,
-                dailyIn: 0
-              },
-              backup_unit: {
-                currentIn: 0,
-                currentOut: 0,
-                dailyIn: 0,
-                dailyOut: 0
+                dailyIn: parseFloat(res.data.today.load_consumption) || 0
               }
             }
           });

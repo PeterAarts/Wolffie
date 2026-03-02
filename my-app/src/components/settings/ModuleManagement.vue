@@ -246,19 +246,10 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import apiClient from '@/services/api';
-import { useToast } from 'primevue/usetoast';
-import { useConfirm } from 'primevue/useconfirm';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import Button from 'primevue/button';
-import InputSwitch from 'primevue/inputswitch';
-import Tag from 'primevue/tag';
-import Dialog from 'primevue/dialog';
-import Divider from 'primevue/divider';
-import ConfirmDialog from 'primevue/confirmdialog';
+
 
 const router = useRouter();
-const toast = useToast();
+
 const confirm = useConfirm();
 
 const modules = ref([]);
@@ -313,7 +304,7 @@ async function toggleModule(module, enabled) {
 async function discoverModules() {
   discovering.value = true;
   try {
-    await apiClient.post('/api/system/discover-modules');
+    await apiClient.post('/system/discover-modules');
 
     toast.add({
       severity: 'success',
@@ -338,7 +329,6 @@ async function discoverModules() {
 
 // Configure module
 function configureModule(module) {
-  // Navigate to module settings
   router.push({ 
     name: 'Settings',
     query: { tab: module.module_id }

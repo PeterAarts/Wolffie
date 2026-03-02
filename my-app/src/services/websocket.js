@@ -1,6 +1,7 @@
 // src/services/websocket.js - FIXED TO EMIT ALL MESSAGES
 import { useSystemStore } from '@/stores/system';
 import websocketConfig from '@/config/websocket-config';
+import { useStrategyStore } from '../stores/strategy';
 
 class WebSocketService {
   constructor() {
@@ -91,10 +92,10 @@ class WebSocketService {
       console.log('📨 WebSocket message:', data.type);
     }
 
-    // ✅ FIX: ALWAYS emit as 'message' first for realtime store
+    // Always emit as 'message' first for realtime store
     this.emit('message', data);
 
-    // Then handle specific types for backward compatibility
+    // Then handle specific types
     switch (data.type) {
       case 'connection_status':
         this.handleConnectionStatus(data);
@@ -106,7 +107,7 @@ class WebSocketService {
         break;
       
       case 'summary_update':
-        // Already emitted as 'message' above, no additional handling needed
+        // Already emitted as 'message' above
         break;
       
       case 'modbus_connected':
@@ -115,6 +116,14 @@ class WebSocketService {
       
       case 'modbus_disconnected':
         this.handleModbusDisconnected(data);
+        break;
+
+      case 'strategy_update':
+        this.handleStrategyUpdate(data);
+        break;
+
+      case 'forecast_update':
+        this.handleForecastUpdate(data);
         break;
       
       case 'pong':
@@ -140,7 +149,6 @@ class WebSocketService {
   handleModbusConnected(data) {
     console.log('🔄 ModBus reconnected!');
     
-    // Get system store and restart auto-refresh
     try {
       const systemStore = useSystemStore();
       if (systemStore.handleConnectionRestored) {
@@ -156,7 +164,6 @@ class WebSocketService {
   handleModbusDisconnected(data) {
     console.log('⚠️ ModBus disconnected!');
     
-    // Get system store and stop auto-refresh
     try {
       const systemStore = useSystemStore();
       if (systemStore.handleConnectionLost) {
@@ -169,6 +176,36 @@ class WebSocketService {
     this.emit('modbusDisconnected', data);
   }
 
+  handleStrategyUpdate(data) {
+    if (this.config.enableDebugLogging) {
+      console.log('📋 Strategy update received');
+    }
+    
+    try {
+      const strategyStore = useStrategyStore();
+      strategyStore.updateFromSocket(data);
+    } catch (error) {
+      console.warn('Strategy store not available:', error);
+    }
+    
+    this.emit('strategyUpdate', data);
+  }
+
+  handleForecastUpdate(data) {
+    if (this.config.enableDebugLogging) {
+      console.log('🔮 Forecast update received');
+    }
+    
+    try {
+      const strategyStore = useStrategyStore();
+      strategyStore.updateForecast(data);
+    } catch (error) {
+      console.warn('Strategy store not available:', error);
+    }
+    
+    this.emit('forecastUpdate', data);
+  }
+
   scheduleReconnect() {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
       console.error('❌ Max reconnection attempts reached');
@@ -178,7 +215,6 @@ class WebSocketService {
 
     this.reconnectAttempts++;
     
-    // Use exponential backoff from config
     const baseDelay = this.config.reconnectDelay;
     const multiplier = Math.pow(this.config.reconnectBackoffMultiplier, this.reconnectAttempts - 1);
     const delay = Math.min(baseDelay * multiplier, 30000); // Cap at 30 seconds
@@ -187,12 +223,12 @@ class WebSocketService {
 
     this.reconnectTimeout = setTimeout(() => {
       console.log('🔄 Attempting to reconnect...');
-      this.connect(); // Will use config.url
+      this.connect();
     }, delay);
   }
 
   startHeartbeat() {
-    this.stopHeartbeat(); // Clear any existing heartbeat
+    this.stopHeartbeat();
     
     this.heartbeatInterval = setInterval(() => {
       if (this.isConnected) {
@@ -223,16 +259,13 @@ class WebSocketService {
     console.log('🛑 Intentionally closing WebSocket');
     this.isIntentionalClose = true;
 
-    // Clear reconnect timeout
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
       this.reconnectTimeout = null;
     }
 
-    // Stop heartbeat
     this.stopHeartbeat();
 
-    // Close connection
     if (this.ws) {
       this.ws.close();
       this.ws = null;
