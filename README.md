@@ -3,6 +3,7 @@
 ## Project Overview
 
 Wolffie is a comprehensive, self-hosted energy monitoring and management platform designed for residential solar and battery systems. 
+https://wolffieenergy.nl
 It is created to enable management of your battery inverter and solar converter in 1 system and not to depend on public/external API's from vendors.
 It collects, stores, and visualizes real-time and historical energy data from multiple sources — including AlphaESS solar/battery inverters, HomeWizard smart devices, and SolarEdge systems — through a modern web interface. 
 The system is built for extensibility, allowing new energy sources to be integrated as modular plug-ins without changing the core application.
