@@ -1,50 +1,96 @@
 // server/core/system/routes/settings.js
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import settingsService from '../services/settingsService.js';
-import moduleLoader from '../../moduleLoader.js'; // Zorg voor het juiste pad naar je loader
+import moduleLoader from '../../moduleLoader.js'; // Adjust path to your loader as needed
 import { authorize } from '../../auth/middleware/authorize.js';
 import userService from '../../auth/services/userService.js';
+import collectorManager from '../../collectorManager.js';
+
+/**
+ * Load all locale files from a module's locales/ directory.
+ * Accepts either a full path string or a module object from moduleLoader.
+ * The module object may expose its path as module.path, module.dir,
+ * module.manifest.path, or module.manifest.dir — we try all of them.
+ * Returns an object keyed by language code: { en: {...}, nl: {...}, ... }
+ * Returns empty object if no locales directory can be found.
+ */
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = path.dirname(__filename);
+
+function loadModuleMessages(moduleOrPath) {
+  // Resolve the base directory from whatever we were given
+  let modulePath = null;
+  if (typeof moduleOrPath === 'string') {
+    modulePath = moduleOrPath;
+  } else if (moduleOrPath) {
+    modulePath =
+      moduleOrPath.modulePath ||   // set by moduleLoader.loadModule()
+      moduleOrPath.path       ||
+      moduleOrPath.dir        ||
+      moduleOrPath.manifest?.path ||
+      moduleOrPath.manifest?.dir  ||
+      null;
+  }
+  if (!modulePath) return {};
+
+  const localesDir = path.join(modulePath, 'locales');
+  if (!fs.existsSync(localesDir)) return {};
+
+  const messages = {};
+  try {
+    const files = fs.readdirSync(localesDir).filter(f => f.endsWith('.json'));
+    for (const file of files) {
+      const lang = path.basename(file, '.json');
+      const content = fs.readFileSync(path.join(localesDir, file), 'utf-8');
+      messages[lang] = JSON.parse(content);
+    }
+  } catch (err) {
+    console.warn(`Warning: could not load module locales from ${localesDir}:`, err.message);
+  }
+  return messages;
+}
 
 const router = express.Router();
 
 /**
  * GET /api/settings/modules
- * Geeft een lijst van alle ontdekte modules inclusief hun status
+ * Returns a list of all discovered modules including their status
  */
 router.get('/modules', authorize('admin'), async (req, res) => {
   const modules = moduleLoader.getAllModules().map(m => ({
-    module_id: m.manifest.id, // De frontend verwacht 'module_id'
+    module_id: m.manifest.id, // Frontend expects 'module_id'
     module_name: m.manifest.name,
     enabled: m.manifest.enabled !== false,
-    has_schema: !!m.manifest.settingsSchema // Controleer of dit klopt met je Loader
+    has_schema: !!m.manifest.settingsSchema // Verify this matches your Loader
   }));
   res.json({ success: true, modules });
 });
 /**
  * GET /api/settings/module/:moduleId
- * Haalt het JSON-schema en de huidige database-waarden op.
- * Speciale handling voor 'core' om systeem-brede instellingen te groeperen.
+ * Fetches the JSON schema and current database values.
+ * Special handling for 'core' to group system-wide settings.
  */
 router.get('/module/:moduleId', authorize('admin'), async (req, res) => {
   try {
     const { moduleId } = req.params;
-    let schema = null;
-    let values = {};
 
-    // Reguliere module handling via moduleLoader
     const module = moduleLoader.getModule(moduleId);
     if (!module) {
-      return res.status(404).json({ success: false, error: 'Module niet gevonden' });
+      return res.status(404).json({ success: false, error: 'Module not found' });
     }
-    schema = module.manifest.settingsSchema || null;
-    values = await settingsService.getCategory(moduleId);
 
+    const schema   = module.manifest.settingsSchema || null;
+    const values   = await settingsService.getCategory(moduleId);
+    // Load translations from the module's own locales/ folder.
+    // The frontend merges these into vue-i18n at runtime — no frontend
+    // changes needed when a new module is added.
+    // Pass the whole module object — loadModuleMessages tries all known path properties
+    const messages = loadModuleMessages(module);
 
-    res.json({ 
-      success: true,
-      schema,
-      values
-    });
+    res.json({ success: true, schema, values, messages });
   } catch (error) {
     console.error(`Error fetching settings for ${req.params.moduleId}:`, error);
     res.status(500).json({ success: false, error: error.message });
@@ -53,22 +99,47 @@ router.get('/module/:moduleId', authorize('admin'), async (req, res) => {
 
 /**
  * POST /api/settings/module/:moduleId
- * Slaat instellingen op. Bij 'core' moeten we de velden terugsturen naar hun originele categorie.
+ * Saves settings. Notifies collectorManager if enabled flag changed.
  */
+
 router.post('/module/:moduleId', authorize('admin'), async (req, res) => {
   try {
     const { moduleId } = req.params;
     const settings = req.body;
 
-     await settingsService.setCategory(moduleId, settings, req.user.username, 'Module update');
+    // 1. Persist to DB
+    await settingsService.setCategory(moduleId, settings, req.user.username, 'Module update');
 
-    
-    res.json({ success: true, message: 'Instellingen succesvol bijgewerkt' });
+    // 2. Let the module re-read its own fresh config
+    const module = moduleLoader.getModule(moduleId);
+    if (module && typeof module.reinitialize === 'function') {
+      try {
+        await module.reinitialize();
+      } catch (e) {
+        console.warn(`   ⚠️  reinitialize() failed for '${moduleId}': ${e.message}`);
+      }
+    }
+
+    // 3. Notify collectorManager if enabled changed
+    if ('enabled' in settings) {
+      const isEnabled = settings.enabled === true
+        || settings.enabled === 'true'
+        || settings.enabled === '1'
+        || settings.enabled === 1;
+
+      try {
+        await collectorManager.setEnabled(moduleId, isEnabled);
+        console.log(`   ${isEnabled ? '▶' : '⏹'} collectorManager.setEnabled('${moduleId}', ${isEnabled})`);
+      } catch (e) {
+        console.warn(`   ⚠️  setEnabled skipped for '${moduleId}': ${e.message}`);
+      }
+    }
+
+    res.json({ success: true, message: 'Settings updated successfully' });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message, moduleId});
+    res.status(400).json({ success: false, error: error.message, moduleId });
   }
 });
-
 /**
  * ==========================================
  * SYSTEM (CORE) SETTINGS
@@ -76,7 +147,7 @@ router.post('/module/:moduleId', authorize('admin'), async (req, res) => {
  */
 /**
  * GET /api/settings/core
- * Haalt alle systeem-brede categorieën op en bouwt een volledig schema.
+ * Fetches all system-wide categories and builds a complete schema.
  */
 router.get('/core', authorize('admin'), async (req, res) => {
   try {
@@ -91,47 +162,49 @@ router.get('/core', authorize('admin'), async (req, res) => {
     res.json({
       success: true,
       schema: {
+        i18nKeys: true,
         groups: [
           {
-            title: 'Systeem & Locatie',
+            title: 'settings.core.groups.system.title',
             sections: [{
               fields: [
-                { key: 'system_name', component: 'text', label: 'Systeem Naam', column: 2, editable: true, },
-                { key: 'location', component: 'text', label: 'Locatie', column: 2 , editable: true,},
-                { key: 'timezone', component: 'text', label: 'Tijdzone', column: 2 , editable: true,}
+                { key: 'system_name', component: 'text', label: 'settings.core.fields.system_name', column: 2, editable: true },
+                { key: 'location',    component: 'text', label: 'settings.core.fields.location',    column: 2, editable: true },
+                { key: 'timezone',    component: 'text', label: 'settings.core.fields.timezone',    column: 2, editable: true }
               ]
             }]
           },
           {
-            title: 'Data Collectie',
+            title: 'settings.core.groups.dataCollection.title',
             sections: [{
               fields: [
-                { key: 'primary_source', component: 'dropdown', label: 'Primaire Bron', column: 2, editable: true, options: [
+                { key: 'primary_source', component: 'dropdown', label: 'settings.core.fields.primary_source', column: 2, editable: true, options: [
                   { label: 'Cloud API', value: 'cloud' },
                   { label: 'ModBus TCP', value: 'modbus' }
                 ]},
-                { key: 'enable_failover', component: 'switch', label: 'Automatische Failover', column: 2, editable: true, },
-                { key: 'cache_timeout', component: 'number', label: 'Cache Timeout (ms)', column: 2, editable: true, suffix: 'ms' },
-                { key: 'failover_threshold', component: 'number', label: 'Failover Drempel', column: 2, editable: true, }
+                { key: 'enable_failover',    component: 'switch', label: 'settings.core.fields.enable_failover',    column: 2, editable: true },
+                { key: 'cache_timeout',      component: 'number', label: 'settings.core.fields.cache_timeout',      column: 2, editable: true, suffix: 'ms' },
+                { key: 'failover_threshold', component: 'number', label: 'settings.core.fields.failover_threshold', column: 2, editable: true }
               ]
             }]
           },
           {
-            title: 'Notificaties',
+            title: 'settings.core.groups.notifications.title',
             sections: [{
               fields: [
-                { key: 'email_enabled', component: 'switch', label: 'E-mail Notificaties', column: 2 , editable: true,},
-                { key: 'email_address', component: 'text', label: 'Ontvanger E-mail', column: 2, placeholder: 'voorbeeld@domein.nl', editable: true, }
+                { key: 'email_enabled', component: 'switch', label: 'settings.core.fields.email_enabled', column: 2, editable: true },
+                { key: 'email_address', component: 'text',   label: 'settings.core.fields.email_address', column: 2, editable: true,
+                  placeholder: 'settings.core.fields.email_address_placeholder' }
               ]
             }]
           },
           {
-            title: 'Data Retentie (Dagen)',
+            title: 'settings.core.groups.retention.title',
             sections: [{
               fields: [
-                { key: 'snapshots_days', component: 'number', label: 'Snapshots', column: 3, editable: true,},
-                { key: 'minutes_days', component: 'number', label: 'Minuut Data', column: 3, editable: true, },
-                { key: 'hours_days', component: 'number', label: 'Uur Data', column: 3, editable: true, }
+                { key: 'snapshots_days', component: 'number', label: 'settings.core.fields.snapshots_days', column: 3, editable: true },
+                { key: 'minutes_days',   component: 'number', label: 'settings.core.fields.minutes_days',   column: 3, editable: true },
+                { key: 'hours_days',     component: 'number', label: 'settings.core.fields.hours_days',     column: 3, editable: true }
               ]
             }]
           }
@@ -161,10 +234,10 @@ router.post('/core', authorize('admin'), async (req, res) => {
     for (const [key, value] of Object.entries(updates)) {
       const category = categoryMapping[key];
       if (category) {
-        await settingsService.set(category, key, value, req.user.username, 'Core Systeem Update');
+        await settingsService.set(category, key, value, req.user.username, 'Core system update');
       }
     }
-    res.json({ success: true, message: 'Systeeminstellingen succesvol bijgewerkt' });
+    res.json({ success: true, message: 'System settings updated successfully' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -178,15 +251,15 @@ router.get('/users', authorize('admin'), async (req, res) => {
     success: true,
     schema: {
       groups: [{
-        title: 'Gebruikersbeheer',
+        title: 'settings.users.groups.management.title',
         sections: [{
           component: 'table',
           data: {
             endpoint: '/settings/users/list',
             columns: [
-              { field: 'username', header: 'Gebruikersnaam', sortable: true },
-              { field: 'email', header: 'E-mail', sortable: true },
-              { field: 'role', header: 'Rol' }
+              { field: 'username', header: 'settings.users.columns.username', sortable: true },
+              { field: 'email', header: 'settings.users.columns.email', sortable: true },
+              { field: 'role', header: 'settings.users.columns.role' }
             ],
             rowActions: [
               { 
@@ -205,21 +278,21 @@ router.get('/users', authorize('admin'), async (req, res) => {
                 severity: 'danger',
                 endpoint: '/settings/users/{id}',
                 method: 'DELETE',
-                confirmMessage: 'Weet je zeker dat je gebruiker {username} wilt verwijderen?'
+                confirmMessage: 'settings.users.confirmDelete'
               }
             ]
           }
         }]
       }],
       globalActions: [
-        { label: 'Gebruiker Aanmaken', icon: 'pi-user-plus', type: 'drawer', endpoint: '/settings/users/create', method: 'POST' }
+        { label: 'settings.users.actions.create', icon: 'pi-user-plus', type: 'drawer', endpoint: '/settings/users/create', method: 'POST' }
       ]
     }
   });
 });
 
 /**
- * Hulproutes voor Gebruikers
+ * Helper routes for Users
  */
 router.get('/users/list', authorize('admin'), async (req, res) => {
   try {

@@ -23,10 +23,12 @@ import configRoutes from './core/system/routes/config.js';
 import dataRoutes from './core/system/routes/data.js';
 import historyRoutes from './core/system/routes/history.js';
 import strategyManager from './core/strategyManager.js';
+import collectorRoutes from './core/system/routes/collectors.js';
 import aggregatorService from './core/system/services/aggregatorService.js';
 
 
 const app = express();
+app.set('trust proxy', 1);
 const routeManager = new RouteManager(app);
 export const authenticateToken = authenticate;
 
@@ -52,6 +54,7 @@ app.use(cors({
 
 // 3. Body parsing
 app.use(express.json());
+
 
 // 4. Session middleware - MUST come before routes
 // This creates req.session which stores user data across requests
@@ -94,6 +97,7 @@ app.use('/api/setup', setupRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/system/config', configRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/collectors', collectorRoutes);
 app.use('/api/system', dataRoutes);
 
 // ============================================================================
@@ -125,7 +129,6 @@ async function initializeModules() {
      // 4. Initialize only enabled modules
     for (const module of enabledModules) {
       if (module.initialize) {
-        //console.log(`  Initializing: ${module.manifest.name}`);
         await module.initialize();
       }
       // Register collectors (only for enabled modules)

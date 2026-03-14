@@ -77,7 +77,7 @@ class CollectorManager {
   register(module) {
     const manifest = module.manifest;
     const loader='';
-
+    //console.log(`   [DEBUG] register() called: ${manifest?.id} | dataCollection=${manifest?.capabilities?.dataCollection} | collect=${typeof module.collect}`);
     if (!manifest?.capabilities?.dataCollection) {
       return; // Module doesn't do data collection — nothing to register
     }
@@ -103,7 +103,7 @@ class CollectorManager {
       paused:            false
     });
 
-    //console.log(`   • Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
+    console.log(`     - Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
   }
 
   /**
@@ -120,6 +120,7 @@ class CollectorManager {
     // Convert the entries to names and join them with a separator
 
     for (const [id, entry] of this.schedules) {
+      //console.log(`   [DEBUG] start() schedule: ${id}`);
       // Check database for enabled status
       const isEnabled = await this.isModuleEnabled(id);
       entry.enabled = isEnabled; // Update the entry with database value
@@ -212,6 +213,55 @@ class CollectorManager {
     // Immediate collect + re-arm
     await this._runCollector(moduleId);
     this._armNext(moduleId);
+  }
+  /**
+   * Enable or disable a single collector at runtime.
+   * Called by the settings route when a module is activated/deactivated.
+   * Persists nothing — the caller is responsible for writing to system_settings first.
+   *
+   * @param {string} moduleId
+   * @param {boolean} enabled
+   */
+  async setEnabled(moduleId, enabled) {
+    const entry = this.schedules.get(moduleId);
+    if (!entry) {
+      throw new Error(`CollectorManager: no collector registered as '${moduleId}'`);
+    }
+
+    // Clear any running timer regardless of direction
+    if (entry.timer) {
+      clearTimeout(entry.timer);
+      entry.timer = null;
+    }
+
+    entry.enabled = enabled;
+
+    if (enabled) {
+      // Reset error state so a freshly enabled collector starts clean
+      entry.consecutiveErrors = 0;
+      entry.paused = false;
+      entry.lastError = null;
+
+      // Re-resolve interval (settings may have changed since startup)
+      entry.interval = await this._resolveInterval(moduleId, entry.interval);
+
+      console.log(`\x1b[32m   ▶ Collector enabled: ${entry.name} (interval: ${entry.interval / 1000}s)\x1b[37m`);
+
+      // Immediate collect + arm next
+      await this._runCollector(moduleId);
+      this._armNext(moduleId);
+    } else {
+      entry.paused = false; // not paused, just disabled
+      entry.nextRun = null;
+      console.log(`\x1b[91m   ⏹ Collector disabled: ${entry.name}\x1b[37m`);
+    }
+
+    return {
+      id:      entry.id,
+      name:    entry.name,
+      enabled: entry.enabled,
+      paused:  entry.paused,
+    };
   }
 
   // ─── Internal: timing ───────────────────────────────────────────

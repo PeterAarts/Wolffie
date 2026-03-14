@@ -110,8 +110,9 @@ class ModuleLoader {
         }
       }
 
-      // Koppel manifest aan de instantie
+      // Koppel manifest en pad aan de instantie
       moduleInstance.manifest = manifest;
+      moduleInstance.modulePath = modulePath;  // Needed by settings route to load locales/
       return moduleInstance;
     } catch (error) {
       throw new Error(`Load error: ${error.message}`);

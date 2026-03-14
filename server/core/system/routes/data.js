@@ -156,7 +156,7 @@ router.get('/collector-status', async (req, res) => {
  * Current power values (W)
  */
 router.get('/realtime', async (req, res) => {
-  console.log(`  • Front-End - [${new Date().toLocaleString()}] - Collect Power measurements...`);
+  console.log(`    • Front-End - [${new Date().toLocaleString()}] - Collect Power measurements...`);
   try {
     const [snapshots] = await db.pool.query(
       `SELECT 
@@ -210,75 +210,101 @@ router.get('/realtime', async (req, res) => {
  */
 router.get('/devices', async (req, res) => {
   try {
-    console.log(`  • Front-End - [${new Date().toLocaleString()}] - Fetching device measurements...`);
-    
-    // Get latest measurement for each device
-    // Using a subquery to get the most recent measurement per device_id
+    console.log(`    • Front-End - [${new Date().toLocaleString()}] - Fetching device measurements...`);
+
     const [devices] = await db.pool.query(`
-      SELECT 
-        dm.*, ds.*
+      SELECT
+        dm.*,
+        ds.*,
+
+        -- energy_today = last energy_total today  minus  last energy_total yesterday
+        -- Falls back to NULL if either anchor is missing (new device, or day just started)
+        (
+          SELECT energy_total
+          FROM device_measurements
+          WHERE device_id = dm.device_id
+            AND DATE(timestamp) = CURDATE()
+          ORDER BY timestamp DESC
+          LIMIT 1
+        )
+        -
+        (
+          SELECT energy_total
+          FROM device_measurements
+          WHERE device_id = dm.device_id
+            AND DATE(timestamp) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+          ORDER BY timestamp DESC
+          LIMIT 1
+        )
+        AS energy_today_calc
+
       FROM device_measurements dm
         INNER JOIN (
-          SELECT 
-              device_id, MAX(timestamp) as latest_timestamp
-        FROM device_measurements
-        GROUP BY device_id
-        ) latest ON dm.device_id = latest.device_id AND dm.timestamp = latest.latest_timestamp
+          SELECT device_id, MAX(timestamp) AS latest_timestamp
+          FROM device_measurements
+          GROUP BY device_id
+        ) latest ON dm.device_id = latest.device_id
+               AND dm.timestamp  = latest.latest_timestamp
         LEFT JOIN device_settings ds ON ds.serial = dm.device_id
-      WHERE ds.enabled=1
+      WHERE ds.enabled = 1
       ORDER BY dm.power DESC
     `);
 
     console.log(`   - Found ${devices.length} devices with measurements`);
 
-    // Parse extra_metrics JSON for each device
     const devicesWithParsedMetrics = devices.map(device => {
       let extraMetrics = null;
       if (device.extra_metrics) {
         try {
-          extraMetrics = typeof device.extra_metrics === 'string' 
-            ? JSON.parse(device.extra_metrics) 
+          extraMetrics = typeof device.extra_metrics === 'string'
+            ? JSON.parse(device.extra_metrics)
             : device.extra_metrics;
         } catch (error) {
           console.warn(`Failed to parse extra_metrics for device ${device.device_id}:`, error);
         }
       }
 
+      // energy_today_calc is NULL when yesterday has no data yet (e.g. brand-new device).
+      // In that case fall back to the raw energy_today column from the measurement row,
+      // which HomeWizard resets at midnight on the device itself.
+      const energyToday = device.energy_today_calc !== null && device.energy_today_calc !== undefined
+        ? parseFloat(device.energy_today_calc)
+        : parseFloat(device.energy_today) || 0;
+
       return {
-        id: device.id,
-        timestamp: device.timestamp,
-        device_id: device.device_id,
-        device_type: device.device_type,
-        device_name: device.device_name,
-        source: device.source,
-        brightness: device.brightness,
-        switch_lock: device.switch_lock,
-        power: parseFloat(device.power) || 0,
-        voltage: parseFloat(device.voltage) || 0,
-        current: parseFloat(device.current) || 0,
-        energy_today: parseFloat(device.energy_today) || 0,
+        id:           device.id,
+        timestamp:    device.timestamp,
+        device_id:    device.device_id,
+        device_type:  device.device_type,
+        device_name:  device.device_name,
+        source:       device.source,
+        brightness:   device.brightness,
+        switch_lock:  device.switch_lock,
+        power:        parseFloat(device.power)        || 0,
+        voltage:      parseFloat(device.voltage)      || 0,
+        current:      parseFloat(device.current)      || 0,
+        energy_today: energyToday,
         energy_total: parseFloat(device.energy_total) || 0,
         extra_metrics: extraMetrics,
-        // Add computed fields for convenience
-        wifi_ssid: extraMetrics?.wifi_ssid || null,
+        wifi_ssid:    extraMetrics?.wifi_ssid    || null,
         wifi_strength: extraMetrics?.wifi_strength || null,
-        ipaddress: device.ip_address,
-        enabled:device.enabled
+        ipaddress:    device.ip_address,
+        enabled:      device.enabled
       };
     });
 
     res.json({
-      devices: devicesWithParsedMetrics,
-      count: devicesWithParsedMetrics.length,
+      devices:   devicesWithParsedMetrics,
+      count:     devicesWithParsedMetrics.length,
       timestamp: new Date().toISOString()
     });
 
   } catch (error) {
     console.error('✗ Error fetching device measurements:', error);
-    res.status(500).json({ 
-      error: 'Failed to fetch device measurements',
+    res.status(500).json({
+      error:   'Failed to fetch device measurements',
       message: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack:   process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -319,7 +345,7 @@ router.get('/schemas/active', async (req, res) => {
 router.get('/devices/:deviceId', async (req, res) => {
   try {
     const { deviceId } = req.params;
-    console.log(`  • FrontEnd - [${new Date().toLocaleString()}] - Fetching measurements for device: ${deviceId}`);
+    console.log(`    • FrontEnd - [${new Date().toLocaleString()}] - Fetching measurements for device: ${deviceId}`);
     
     // Get latest measurement for this specific device
     const [devices] = await db.pool.query(`
@@ -390,7 +416,7 @@ router.get('/devices/:deviceId', async (req, res) => {
 router.get('/devices-list', async (req, res) => {
   try {
     const now = new Date().toLocaleString();
-    console.log(`  • FrontEnd - [${now}] - Fetching aggregated device usage...`);
+    console.log(`    • FrontEnd - [${now}] - Fetching aggregated device usage...`);
 
     // The query joins device_settings with the daily aggregation table.
     // This allows support for HomeWizard, Matter, and other modules in one list.
