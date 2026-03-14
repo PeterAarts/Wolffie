@@ -2,6 +2,7 @@ import express from 'express';
 import api from '../services/api.js';
 import collector from '../services/collector.js';
 import settingsService from '../../../core/system/services/settingsService.js';
+import db from '../../../core/database.js';
 
 const router = express.Router();
 
@@ -30,31 +31,66 @@ router.get('/status', (req, res) => {
  */
 router.post('/test', async (req, res) => {
   try {
-    // 1. Get current settings (either from DB or body if unsaved)
-    const settings = await settingsService.getModuleSettings('solaredge-modbus');
-    
-    if (!settings || !settings.host) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Geen configuratie gevonden. Vul eerst de IP-gegevens in.' 
+    // 1. Load settings from DB
+    const settings = await settingsService.getCategory('solaredge-modbus');
+
+    const host = settings?.host || settings?.ip_address;
+    if (!settings || !host) {
+      return res.status(400).json({
+        success: false,
+        message: 'No configuration found. Please fill in the connection details first.'
       });
     }
 
-    // 2. Attempt connection and a quick read of the common block (Model/Serial)
-    console.log(`🔍 Testing SolarEdge connection to ${settings.host}...`);
+    // 2. Force a fresh connection (close any existing one first)
+    try { api.client.close(); } catch (_) {}
+
+    console.log(`\u{1F50D} Testing SolarEdge connection to ${host}:${settings.port}...`);
     await api.connect(settings);
+
+    // 3. Read common block for device identification (manufacturer, model, serial)
     const info = await api.readBlock('common');
 
+    // 4. Close after test so the collector reconnects on its own schedule
+    try { api.client.close(); } catch (_) {}
+
+    // 5. Persist device info as readonly rows in system_settings
+    const deviceFields = {
+      device_manufacturer: info.manufacturer || '',
+      device_model:        info.model        || '',
+      device_version:      info.version      || '',
+      device_serial:       info.serial       || '',
+    };
+    try {
+      for (const [key, value] of Object.entries(deviceFields)) {
+        await db.pool.query(
+          `INSERT INTO system_settings
+             (category, setting_key, setting_value, value_type, is_module, module_id, editable, visible)
+           VALUES (?, ?, ?, 'string', 1, 'solaredge-modbus', 0, 1)
+           ON DUPLICATE KEY UPDATE
+             setting_value = VALUES(setting_value),
+             editable      = 0,
+             updated_at    = NOW()`,
+          ['solaredge-modbus', key, value]
+        );
+      }
+      console.log('✓ SolarEdge device info saved to system_settings');
+    } catch (dbErr) {
+      console.error('❌ Failed to save device info to DB:', dbErr.message);
+    }
+
+    const label = [info.manufacturer, info.model].filter(Boolean).join(' ') || 'Unknown device';
     res.json({
       success: true,
-      message: `Verbinding geslaagd! Gevonden: ${info.manufacturer} ${info.model}`,
+      message: `Connection successful — ${label} (S/N: ${info.serial || 'unknown'})`,
       data: info
     });
   } catch (error) {
-    console.error('❌ SolarEdge Test Failed:', error.message);
-    res.status(500).json({ 
-      success: false, 
-      message: `Verbinding mislukt: ${error.message}` 
+    try { api.client.close(); } catch (_) {}
+    console.error('\u274C SolarEdge Test Failed:', error.message);
+    res.status(500).json({
+      success: false,
+      message: `Connection failed: ${error.message}`
     });
   }
 });
@@ -79,14 +115,16 @@ router.get('/latest', (req, res) => {
  */
 router.post('/curtail', async (req, res) => {
   try {
-    const { limit } = req.body; // limit in Watts, 0 = shutdown production
-    const settings = await settingsService.getModuleSettings('solaredge-modbus');
-    
-    await api.connect(settings);
-    // Write to SunSpec Power Limit Register (often 40232 or 40092 depending on model)
-    await api.writeRegister(40092, limit); 
+    const { percentage } = req.body; // 0–100, where 0 = stop production
+    if (percentage === undefined || percentage < 0 || percentage > 100) {
+      return res.status(400).json({ success: false, message: 'percentage must be 0–100' });
+    }
 
-    res.json({ success: true, message: `Productie beperkt tot ${limit}W` });
+    const settings = await settingsService.getCategory('solaredge-modbus');
+    await api.connect(settings);
+    await api.setPowerLimit(percentage);
+
+    res.json({ success: true, message: `Production limited to ${percentage}%` });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

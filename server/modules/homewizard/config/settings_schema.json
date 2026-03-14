@@ -1,66 +1,105 @@
 {
+  "i18nKeys": true,
   "groups": [
     {
-      "title": "General Settings",
+      "title": "modules.homeWizard.groups.general.title",
       "sections": [
         {
           "fields": [
-            { "key": "enabled", "component": "switch","label": "Enable HomeWizard Integration","description": "Enable data collection from HomeWizard devices"},
-            { "key": "poll_interval", "component": "number","label": "Poll Interval (seconds)","description": "How often to collect data from devices","min": 5,"max": 300,"default": 10}
+            {
+              "key": "enabled",
+              "component": "switch",
+              "label": "modules.homeWizard.fields.enabled.label",
+              "description": "modules.homeWizard.fields.enabled.description"
+            },
+            {
+              "key": "poll_interval",
+              "component": "number",
+              "label": "modules.homeWizard.fields.poll_interval.label",
+              "description": "modules.homeWizard.fields.poll_interval.description",
+              "min": 5,
+              "max": 300,
+              "default": 10
+            }
           ]
-        },
-        {
-          "component": "info-panel",
-          "title": "Collector Status",
-          "data": {
-            "endpoint": "/homewizard/collector/status",
-            "dynamic": true,
-            "items": [
-              { "label": "Status", "field": "isRunning", "template": { "type": "status-badge" } },
-              { "label": "Devices", "field": "deviceCount" },
-              { "label": "Last Collection", "field": "lastCollectionTime", "template": { "type": "datetime" } }
-            ]
-          }
         }
       ]
     },
     {
-      "title": "Devices",
+      "title": "modules.homeWizard.groups.devices.title",
       "sections": [
         {
           "component": "table",
-          "title": "Device List",
+          "title": "modules.homeWizard.sections.deviceList.title",
           "data": {
             "endpoint": "/homewizard/devices",
             "columns": [
-              { "field": "name", "header": "Device Name", "sortable": true },
-              { "field": "ip_address", "header": "IP Address", "sortable": true },
-              { "field": "product_type", "header": "Type", "sortable": true },
-              { "field": "enabled", "header": "Enabled", "template": { "type": "boolean" } }
+              {
+                "field": "name",
+                "header": "modules.homeWizard.columns.name",
+                "sortable": true
+              },
+              {
+                "field": "ip_address",
+                "header": "modules.homeWizard.columns.ip_address",
+                "sortable": true
+              },
+              {
+                "field": "product_type",
+                "header": "modules.homeWizard.columns.product_type",
+                "sortable": true
+              },
+              {
+                "field": "enabled",
+                "header": "modules.homeWizard.columns.enabled",
+                "template": {
+                  "type": "boolean"
+                }
+              }
             ],
             "globalActions": [
-              { 
-                "label": "Discover Devices", 
+              {
+                "label": "modules.homeWizard.actions.discoverDevices",
                 "icon": "pi-search",
                 "endpoint": "/homewizard/discover",
                 "method": "POST",
-                "confirmMessage": "This will scan your local network for HomeWizard devices. Continue?"
+                "confirmMessage": "modules.homeWizard.confirms.discover"
               }
             ],
             "rowActions": [
-              { "label": "Edit", "icon": "pi-pencil","action": "edit"},
-              { "label": "Delete", "icon": "pi-trash","action": "delete","confirmMessage": "Are you sure you want to delete this device?"}
+              {
+                "label": "modules.homeWizard.actions.edit",
+                "icon": "pi-pencil",
+                "action": "edit"
+              },
+              {
+                "label": "modules.homeWizard.actions.delete",
+                "icon": "pi-trash",
+                "action": "delete",
+                "confirmMessage": "modules.homeWizard.confirms.deleteDevice"
+              }
             ]
           }
         },
         {
           "component": "card-grid",
-          "title": "Statistics",
+          "title": "modules.homeWizard.sections.statistics.title",
           "data": {
             "endpoint": "/homewizard/devices/stats",
             "cards": [
-              { "title": "Total Devices", "field": "totalDevices", "icon": "pi-box","color": "primary"},
-              { "title": "Total Power", "field": "totalPower", "suffix": " W","icon": "pi-bolt","color": "warning"}
+              {
+                "title": "modules.homeWizard.stats.totalDevices",
+                "field": "totalDevices",
+                "icon": "pi-box",
+                "color": "primary"
+              },
+              {
+                "title": "modules.homeWizard.stats.totalPower",
+                "field": "totalPower",
+                "icon": "pi-bolt",
+                "color": "warning",
+                "suffix": " W"
+              }
             ]
           }
         }

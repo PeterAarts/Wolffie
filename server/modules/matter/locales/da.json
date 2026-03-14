@@ -1,0 +1,54 @@
+{
+  "modules": {
+    "matter": {
+      "groups": {
+        "controller": {
+          "title": "Matter Controller Indstillinger"
+        },
+        "devices": {
+          "title": "Idriftsatte Enheder"
+        }
+      },
+      "sections": {
+        "fabricStatus": {
+          "title": "Matter Fabric Status"
+        },
+        "nodes": {
+          "title": "Matter Noder"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Aktiver Matter Protokol",
+          "description": "Aktiver den lokale Matter Controller til smarte enheder"
+        },
+        "poll_interval": {
+          "label": "Forespørgselsinterval (sekunder)"
+        }
+      },
+      "columns": {
+        "name": "Navn",
+        "nodeId": "Node ID",
+        "deviceType": "Enhedstype",
+        "status": "Status"
+      },
+      "actions": {
+        "commission": "Idriftsæt Ny Enhed",
+        "identify": "Identificer",
+        "delete": "Slet"
+      },
+      "inputs": {
+        "pairingCode": "8-cifret Opsætningskode"
+      },
+      "confirms": {
+        "commission": "Indtast Matter-opsætningskoden på enhedens label.",
+        "unpair": "Fjern denne enhed fra WattsOn fabric?"
+      },
+      "status": {
+        "controllerStatus": "Controller Status",
+        "activeNodes": "Aktive Noder",
+        "lastDataSync": "Seneste Datasynkronisering"
+      }
+    }
+  }
+}

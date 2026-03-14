@@ -1,0 +1,54 @@
+{
+  "modules": {
+    "matter": {
+      "groups": {
+        "controller": {
+          "title": "Paramètres Contrôleur Matter"
+        },
+        "devices": {
+          "title": "Appareils Commissionnés"
+        }
+      },
+      "sections": {
+        "fabricStatus": {
+          "title": "Statut Matter Fabric"
+        },
+        "nodes": {
+          "title": "Nœuds Matter"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Activer le Protocole Matter",
+          "description": "Activer le contrôleur Matter local pour appareils connectés"
+        },
+        "poll_interval": {
+          "label": "Intervalle d'Interrogation (secondes)"
+        }
+      },
+      "columns": {
+        "name": "Nom",
+        "nodeId": "ID Nœud",
+        "deviceType": "Type d'Appareil",
+        "status": "Statut"
+      },
+      "actions": {
+        "commission": "Commissionner un Nouvel Appareil",
+        "identify": "Identifier",
+        "delete": "Supprimer"
+      },
+      "inputs": {
+        "pairingCode": "Code de Configuration à 8 Chiffres"
+      },
+      "confirms": {
+        "commission": "Entrez le code de configuration Matter figurant sur l'étiquette de l'appareil.",
+        "unpair": "Retirer cet appareil du fabric WattsOn?"
+      },
+      "status": {
+        "controllerStatus": "Statut Contrôleur",
+        "activeNodes": "Nœuds Actifs",
+        "lastDataSync": "Dernière Synchronisation"
+      }
+    }
+  }
+}

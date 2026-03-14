@@ -1,0 +1,61 @@
+{
+  "modules": {
+    "solarEdgeModbus": {
+      "groups": {
+        "modbus": {
+          "title": "SolarEdge ModBus TCP Konfiguration"
+        }
+      },
+      "sections": {
+        "network": {
+          "title": "Netzwerkeinstellungen",
+          "description": "Netzwerkdaten Ihres SolarEdge SE3000H Wechselrichters"
+        },
+        "protocol": {
+          "title": "Modbus Protokoll",
+          "description": "SunSpec Protokolleinstellungen für SolarEdge"
+        },
+        "deviceInfo": {
+          "title": "Geräteinformationen",
+          "description": "Per Modbus ausgelesen. Verbindungstest ausführen zum Befüllen."
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "ModBus TCP Aktivieren"
+        },
+        "host": {
+          "label": "IP-Adresse",
+          "placeholder": "z.B. 192.168.1.100"
+        },
+        "port": {
+          "label": "Port"
+        },
+        "unit_id": {
+          "label": "Unit ID (Slave ID)"
+        },
+        "poll_interval": {
+          "label": "Abfrageintervall (ms)"
+        },
+        "timeout": {
+          "label": "Timeout (ms)"
+        },
+        "device_manufacturer": {
+          "label": "Hersteller"
+        },
+        "device_model": {
+          "label": "Modell"
+        },
+        "device_version": {
+          "label": "Firmware-Version"
+        },
+        "device_serial": {
+          "label": "Seriennummer"
+        }
+      },
+      "actions": {
+        "testConnection": "Verbindung Testen"
+      }
+    }
+  }
+}

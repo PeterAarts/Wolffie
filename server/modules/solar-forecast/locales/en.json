@@ -1,0 +1,60 @@
+{
+  "modules": {
+    "solarForecast": {
+      "groups": {
+        "panel": {
+          "title": "Solar Panel Configuration"
+        },
+        "fetch": {
+          "title": "Fetch Settings"
+        },
+        "status": {
+          "title": "Collector Status"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Enable Solar Forecast",
+          "description": "Activate solar power forecast fetching"
+        },
+        "kwp": {
+          "label": "System Power (kWp)",
+          "description": "Total capacity of your solar panels in kilowatt-peak",
+          "placeholder": "3.56"
+        },
+        "tilt": {
+          "label": "Tilt Angle (°)",
+          "description": "Panel tilt angle (0 = flat, 90 = vertical)"
+        },
+        "latitude": {
+          "label": "Latitude",
+          "description": "Latitude of your location",
+          "placeholder": "51.34674556"
+        },
+        "longitude": {
+          "label": "Longitude",
+          "description": "Longitude of your location",
+          "placeholder": "3.7426737"
+        },
+        "azimuth": {
+          "label": "Azimuth (°)",
+          "description": "Panel direction: 0=South, 90=West, 180=North, 270=East"
+        },
+        "fetch_interval_hours": {
+          "label": "Fetch Interval (hours)",
+          "description": "How often the forecast is re-fetched. API limit: 12 requests/hour"
+        },
+        "forecast_days": {
+          "label": "Forecast Days",
+          "description": "How many days of historical accuracy to track for comparison"
+        }
+      },
+      "status": {
+        "lastFetch": "Last Fetch",
+        "lastFetchRecords": "Forecast Days Fetched",
+        "status": "Status",
+        "avgAccuracy": "Average Accuracy"
+      }
+    }
+  }
+}

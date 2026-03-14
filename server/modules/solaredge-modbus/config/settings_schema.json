@@ -1,40 +1,109 @@
 {
+  "i18nKeys": true,
   "groups": [
     {
-      "title": "SolarEdge ModBus TCP Configuratie",
-      "version":"1.0.1",
+      "title": "modules.solarEdgeModbus.groups.modbus.title",
       "sections": [
         {
+          "title": "modules.solarEdgeModbus.sections.network.title",
+          "description": "modules.solarEdgeModbus.sections.network.description",
           "fields": [
-            { "key": "enabled", "component": "boolean", "label": "ModBus TCP Inschakelen", "cols": 2 }
+            {
+              "key": "host",
+              "component": "text",
+              "label": "modules.solarEdgeModbus.fields.host.label",
+              "cols": 3,
+              "placeholder": "modules.solarEdgeModbus.fields.host.placeholder",
+              "required": true
+            },
+            {
+              "key": "port",
+              "component": "number",
+              "label": "modules.solarEdgeModbus.fields.port.label",
+              "cols": 3,
+              "default": 1502,
+              "required": true
+            },
+            {
+              "key": "enabled",
+              "component": "boolean",
+              "label": "modules.solarEdgeModbus.fields.enabled.label",
+              "cols": 2
+            }
           ]
         },
         {
-          "title": "Netwerk Instellingen",
-          "description": "De netwerkgegevens van je SolarEdge SE3000H omvormer",
+          "title": "modules.solarEdgeModbus.sections.protocol.title",
+          "description": "modules.solarEdgeModbus.sections.protocol.description",
           "fields": [
-            { "key": "host", "component": "text", "label": "IP Adres", "cols": 3, "placeholder": "e.g. 192.168.1.100", "required": true },
-            { "key": "port", "component": "number", "label": "Poort", "cols": 3, "default": 1502, "required": true }
+            {
+              "key": "unit_id",
+              "component": "number",
+              "label": "modules.solarEdgeModbus.fields.unit_id.label",
+              "cols": 2,
+              "default": 1,
+              "required": true
+            },
+            {
+              "key": "poll_interval",
+              "component": "number",
+              "label": "modules.solarEdgeModbus.fields.poll_interval.label",
+              "cols": 2,
+              "default": 10000,
+              "suffix": " ms"
+            },
+            {
+              "key": "timeout",
+              "component": "number",
+              "label": "modules.solarEdgeModbus.fields.timeout.label",
+              "cols": 2,
+              "default": 5000,
+              "suffix": " ms"
+            }
           ]
         },
         {
-          "title": "Modbus Protocol",
-          "description": "Specifieke SunSpec protocol instellingen voor SolarEdge",
-          "fields": [
-            { "key": "unit_id", "component": "number", "label": "Unit ID (Slave ID)", "cols": 2, "default": 1, "required": true },
-            { "key": "poll_interval", "component": "number", "label": "Poll Interval (ms)", "cols": 2, "default": 10000, "suffix": " ms" },
-            { "key": "timeout", "component": "number", "label": "Timeout (ms)", "cols": 2, "default": 5000, "suffix": " ms" }
+          "title": "modules.solarEdgeModbus.sections.deviceInfo.title",
+          "component": "info-panel",
+          "endpoint": "/settings/module/solaredge-modbus",
+          "dataPath": "values",
+          "items": [
+            {
+              "field": "device_manufacturer",
+              "label": "modules.solarEdgeModbus.fields.device_manufacturer.label",
+              "icon": "",
+              "cols": 2
+            },
+            {
+              "field": "device_model",
+              "label": "modules.solarEdgeModbus.fields.device_model.label",
+              "icon": "",
+              "cols": 2
+            },
+            {
+              "field": "device_version",
+              "label": "modules.solarEdgeModbus.fields.device_version.label",
+              "icon": "",
+              "cols": 2
+            },
+            {
+              "field": "device_serial",
+              "label": "modules.solarEdgeModbus.fields.device_serial.label",
+              "icon": "",
+              "cols": 2
+            }
           ]
         }
       ]
     }
   ],
   "actions": [
-    { 
-      "id": "test_modbus", 
-      "label": "Test Verbinding", 
-      "icon": "pi-refresh", 
-      "endpoint": "/api/solaredge-modbus/test" 
+    {
+      "id": "test_modbus",
+      "label": "modules.solarEdgeModbus.actions.testConnection",
+      "icon": "fa-refresh",
+      "endpoint": "/solaredge-modbus/test",
+      "sendValues": false
     }
   ]
 }

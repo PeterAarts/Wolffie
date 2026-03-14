@@ -1,5 +1,6 @@
 // modules/homewizard/routes/index.js
 import express from 'express';
+import db from '../../../core/database.js';
 import settingsService from '../../../core/system/services/settingsService.js';
 import deviceService from '../services/deviceService.js';
 import homewizardAPI from '../services/api.js';
@@ -200,21 +201,30 @@ router.put('/devices/:id/state', async (req, res) => {
     const { power_on, switch_lock, brightness } = req.body;
     const state = {};
 
-    // Map fields and ensure types match HomeWizard expectations
-    if (power_on !== undefined)   state.power_on   = Boolean(power_on);
+    if (power_on    !== undefined) state.power_on    = Boolean(power_on);
     if (switch_lock !== undefined) state.switch_lock = Boolean(switch_lock);
-    
-    // Process brightness (0-255)
-    if (brightness !== undefined) {
-      state.brightness = parseInt(brightness);
-    }
+    if (brightness  !== undefined) state.brightness  = parseInt(brightness);
 
     if (Object.keys(state).length === 0) {
       return res.status(400).json({ success: false, error: 'Must provide state data' });
     }
 
-    // Call the service (ensure validKeys is updated there too!)
+    // 1. Push to physical device
     const result = await homewizardAPI.setState(device.ip_address, device.port || 80, state);
+
+    // 2. Persist the confirmed state back to device_settings
+    const dbUpdates = {};
+    if (typeof result.power_on    === 'boolean') dbUpdates.power_on    = result.power_on    ? 1 : 0;
+    if (typeof result.switch_lock === 'boolean') dbUpdates.switch_lock = result.switch_lock ? 1 : 0;
+    if (typeof result.brightness  === 'number')  dbUpdates.brightness  = result.brightness;
+
+    if (Object.keys(dbUpdates).length > 0) {
+      const setClauses = Object.keys(dbUpdates).map(k => `${k} = ?`);
+      await db.pool.query(
+        `UPDATE device_settings SET ${setClauses.join(', ')} WHERE id = ?`,
+        [...Object.values(dbUpdates), device.id]
+      );
+    }
 
     res.json({ success: true, data: result });
   } catch (error) {

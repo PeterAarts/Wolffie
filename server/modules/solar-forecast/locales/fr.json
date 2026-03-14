@@ -1,0 +1,60 @@
+{
+  "modules": {
+    "solarForecast": {
+      "groups": {
+        "panel": {
+          "title": "Configuration Panneaux Solaires"
+        },
+        "fetch": {
+          "title": "Paramètres de Collecte"
+        },
+        "status": {
+          "title": "Statut du Collecteur"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Activer les Prévisions Solaires",
+          "description": "Activer la récupération des prévisions de production solaire"
+        },
+        "kwp": {
+          "label": "Puissance Système (kWp)",
+          "description": "Puissance totale de vos panneaux en kilowatt-crête",
+          "placeholder": "3.56"
+        },
+        "tilt": {
+          "label": "Angle d'Inclinaison (°)",
+          "description": "Angle d'inclinaison des panneaux (0 = plat, 90 = vertical)"
+        },
+        "latitude": {
+          "label": "Latitude",
+          "description": "Latitude de votre emplacement",
+          "placeholder": "51.34674556"
+        },
+        "longitude": {
+          "label": "Longitude",
+          "description": "Longitude de votre emplacement",
+          "placeholder": "3.7426737"
+        },
+        "azimuth": {
+          "label": "Azimut (°)",
+          "description": "Orientation panneaux: 0=Sud, 90=Ouest, 180=Nord, 270=Est"
+        },
+        "fetch_interval_hours": {
+          "label": "Intervalle de Récupération (h)",
+          "description": "Fréquence de récupération des prévisions. Limite API: 12 requêtes/heure"
+        },
+        "forecast_days": {
+          "label": "Jours de Prévision",
+          "description": "Combien de jours de précision historique à suivre pour comparaison"
+        }
+      },
+      "status": {
+        "lastFetch": "Dernière Récupération",
+        "lastFetchRecords": "Jours de Prévision Récupérés",
+        "status": "Statut",
+        "avgAccuracy": "Précision Moyenne"
+      }
+    }
+  }
+}

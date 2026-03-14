@@ -36,14 +36,10 @@ class HomeWizardCollector {
       const successful = results.filter(r => r.status === 'fulfilled').length;
       const failed = results.filter(r => r.status === 'rejected').length;
 
-      if (failed > 0) {
-        console.log(`⚠️ HomeWizard: ${successful} succeeded, ${failed} failed`);
-      }
-
       this.lastCollectionTime = new Date();
       this.lastError = null;
       this.consecutiveErrors = 0;
-      return failed === 0;
+      return successful > 0;
 
     } catch (error) {
       this.lastError = error.message;
@@ -67,7 +63,7 @@ class HomeWizardCollector {
     } catch (error) {
       console.error('\x1b[91m   • HomeWizard: failed to load devices:', error.message,'\x1b[97m');
       this.devices = [];
-      this.devicesLoaded = true; // Don't retry every tick — use reloadDevices() explicitly
+      this.devicesLoaded = false; // Don't retry every tick — use reloadDevices() explicitly
     }
   }
 
@@ -82,20 +78,58 @@ class HomeWizardCollector {
   /**
    * Collect from a single device
    */
-  async collectFromDevice(device) {
-    const port = device.port || 80;
-    const data = await homewizardAPI.getData(device.ip_address, port);
+/**
+ * Collect from a single device
+ */
+async collectFromDevice(device) {
+  const port = device.port || 80;
+  const data = await homewizardAPI.getData(device.ip_address, port);
 
-    if (device.product_type === 'HWE-P1') {
-      await this.storeP1Data(device, data);
-    } else if (device.product_type === 'HWE-SKT') {
-      await this.storeSocketData(device, data);
-    } else if (device.product_type === 'HWE-KWH1' || device.product_type === 'HWE-KWH3') {
-      await this.storeKwhMeterData(device, data);
-    } else {
-      await this.storeGenericData(device, data);
+  // Fetch and persist control state for devices that support it
+  await this.syncDeviceState(device, port);
+
+  if (device.product_type === 'HWE-P1') {
+    await this.storeP1Data(device, data);
+  } else if (device.product_type === 'HWE-SKT') {
+    await this.storeSocketData(device, data);
+  } else if (device.product_type === 'HWE-KWH1' || device.product_type === 'HWE-KWH3') {
+    await this.storeKwhMeterData(device, data);
+  } else {
+    await this.storeGenericData(device, data);
+  }
+}
+
+/**
+ * Fetch /api/v1/state from the device and persist power_on, switch_lock,
+ * brightness back into device_settings. Devices that don't support state
+ * (e.g. HWE-P1) return HTTP 422 — that is silently ignored.
+ */
+async syncDeviceState(device, port) {
+  try {
+    const state = await homewizardAPI.getState(device.ip_address, port);
+
+    // Only update columns that are actually present in the response
+    const updates = {};
+    if (typeof state.power_on    === 'boolean') updates.power_on    = state.power_on    ? 1 : 0;
+    if (typeof state.switch_lock === 'boolean') updates.switch_lock = state.switch_lock ? 1 : 0;
+    if (typeof state.brightness  === 'number')  updates.brightness  = state.brightness;
+
+    if (Object.keys(updates).length === 0) return;
+
+    const setClauses = Object.keys(updates).map(k => `${k} = ?`);
+    const values     = Object.values(updates);
+
+    await db.pool.query(
+      `UPDATE device_settings SET ${setClauses.join(', ')} WHERE id = ?`,
+      [...values, device.id]
+    );
+  } catch (error) {
+    // 422 = device doesn't support state (P1 meter etc.) — not an error worth logging
+    if (!error.message.includes('does not support state')) {
+      console.warn(`\x1b[93m   • HomeWizard: could not sync state for ${device.name}: ${error.message}\x1b[37m`);
     }
   }
+}
 
   // ─── Storage methods ────────────────────────────────────────────
 

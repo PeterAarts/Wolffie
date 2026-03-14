@@ -1,0 +1,54 @@
+{
+  "modules": {
+    "matter": {
+      "groups": {
+        "controller": {
+          "title": "Matter Controller Settings"
+        },
+        "devices": {
+          "title": "Commissioned Devices"
+        }
+      },
+      "sections": {
+        "fabricStatus": {
+          "title": "Matter Fabric Status"
+        },
+        "nodes": {
+          "title": "Matter Nodes"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Enable Matter Protocol",
+          "description": "Enable the local Matter Controller for smart devices"
+        },
+        "poll_interval": {
+          "label": "Poll Interval (seconds)"
+        }
+      },
+      "columns": {
+        "name": "Name",
+        "nodeId": "Node ID",
+        "deviceType": "Device Type",
+        "status": "Status"
+      },
+      "actions": {
+        "commission": "Commission New Device",
+        "identify": "Identify",
+        "delete": "Delete"
+      },
+      "inputs": {
+        "pairingCode": "8-Digit Setup Code"
+      },
+      "confirms": {
+        "commission": "Enter the Matter setup code found on your device label.",
+        "unpair": "Unpair this device from the WattsOn fabric?"
+      },
+      "status": {
+        "controllerStatus": "Controller Status",
+        "activeNodes": "Active Nodes",
+        "lastDataSync": "Last Data Sync"
+      }
+    }
+  }
+}

@@ -1,54 +1,58 @@
 {
+  "i18nKeys": true,
   "groups": [
     {
-      "title": "Zonnepaneel Configuratie",
+      "title": "modules.solarForecast.groups.panel.title",
       "sections": [
         {
           "fields": [
             {
               "key": "enabled",
               "component": "boolean",
-              "label": "Zonnevoorspelling Inschakelen",
-              "description": "Activeer het ophalen van zonnestroomvoorspellingen",
+              "label": "modules.solarForecast.fields.enabled.label",
+              "description": "modules.solarForecast.fields.enabled.description",
               "cols": 6
-            }
-          ]
-        },
-        {
-          "fields": [
+            },
             {
               "key": "kwp",
               "component": "text",
-              "label": "Systeemvermogen (kWp)",
-              "description": "Totaal vermogen van je zonnepanelen in kilowatt-piek",
-              "placeholder": "3.56",
+              "label": "modules.solarForecast.fields.kwp.label",
+              "description": "modules.solarForecast.fields.kwp.description",
+              "placeholder": "modules.solarForecast.fields.kwp.placeholder",
               "default": "3.56",
               "cols": 2
             },
-            {"key": "tilt","component": "number","label": "Hellingshoek (°)","description": "Kantelhoek van de panelen (0 = plat, 90 = verticaal)",
-              "min": 0,"max": 90,"default": 35,"cols": 2
+            {
+              "key": "tilt",
+              "component": "number",
+              "label": "modules.solarForecast.fields.tilt.label",
+              "description": "modules.solarForecast.fields.tilt.description",
+              "min": 0,
+              "max": 90,
+              "default": 35,
+              "cols": 2
             },
             {
               "key": "latitude",
               "component": "text",
-              "label": "Breedtegraad",
-              "description": "Breedtegraad van je locatie",
-              "placeholder": "51.34674556",
+              "label": "modules.solarForecast.fields.latitude.label",
+              "description": "modules.solarForecast.fields.latitude.description",
+              "placeholder": "modules.solarForecast.fields.latitude.placeholder",
               "cols": 2
             },
             {
               "key": "longitude",
               "component": "text",
-              "label": "Lengtegraad",
-              "description": "Lengtegraad van je locatie",
-              "placeholder": "3.7426737",
+              "label": "modules.solarForecast.fields.longitude.label",
+              "description": "modules.solarForecast.fields.longitude.description",
+              "placeholder": "modules.solarForecast.fields.longitude.placeholder",
               "cols": 2
             },
             {
               "key": "azimuth",
               "component": "number",
-              "label": "Azimut (°)",
-              "description": "Richting panelen: 0=Zuid, 90=West, 180=Noord, 270=Oost",
+              "label": "modules.solarForecast.fields.azimuth.label",
+              "description": "modules.solarForecast.fields.azimuth.description",
               "min": 0,
               "max": 360,
               "default": 0,
@@ -59,15 +63,15 @@
       ]
     },
     {
-      "title": "Ophaalinstellingen",
+      "title": "modules.solarForecast.groups.fetch.title",
       "sections": [
         {
           "fields": [
             {
               "key": "fetch_interval_hours",
               "component": "number",
-              "label": "Ophaalinterval (uren)",
-              "description": "Hoe vaak de voorspelling opnieuw opgehaald wordt. API limiet: 12 verzoeken/uur",
+              "label": "modules.solarForecast.fields.fetch_interval_hours.label",
+              "description": "modules.solarForecast.fields.fetch_interval_hours.description",
               "min": 1,
               "max": 24,
               "default": 15,
@@ -76,8 +80,8 @@
             {
               "key": "forecast_days",
               "component": "number",
-              "label": "Voorspellingsdagen",
-              "description": "Hoeveel dagen historische nauwkeurigheid bijhouden voor vergelijking",
+              "label": "modules.solarForecast.fields.forecast_days.label",
+              "description": "modules.solarForecast.fields.forecast_days.description",
               "min": 1,
               "max": 30,
               "default": 7,
@@ -88,7 +92,7 @@
       ]
     },
     {
-      "title": "Collector Status",
+      "title": "modules.solarForecast.groups.status.title",
       "sections": [
         {
           "component": "info-panel",
@@ -97,23 +101,29 @@
             "dynamic": true,
             "items": [
               {
-                "label": "Laatste Ophaalmoment",
+                "label": "modules.solarForecast.status.lastFetch",
                 "field": "lastFetch",
-                "template": { "type": "datetime" }
+                "template": {
+                  "type": "datetime"
+                }
               },
               {
-                "label": "Voorspellingsdagen Opgehaald",
+                "label": "modules.solarForecast.status.lastFetchRecords",
                 "field": "lastFetchRecords"
               },
               {
-                "label": "Status",
+                "label": "modules.solarForecast.status.status",
                 "field": "healthy",
-                "template": { "type": "status-badge" }
+                "template": {
+                  "type": "status-badge"
+                }
               },
               {
-                "label": "Gemiddelde Nauwkeurigheid",
+                "label": "modules.solarForecast.status.avgAccuracy",
                 "field": "avgAccuracy",
-                "template": { "type": "percentage" }
+                "template": {
+                  "type": "percentage"
+                }
               }
             ]
           }

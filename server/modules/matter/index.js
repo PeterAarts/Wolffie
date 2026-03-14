@@ -90,6 +90,24 @@ class MatterModule {
   getRoutes() {
     return this.routes;
   }
+    /**
+     * Re-reads settings from DB and re-injects into collector.
+     * Called by the core settings route after any setting change.
+     */
+    async reinitialize() {
+      console.log(`   - ♻️  ${this.manifest.id}: reinitializing with fresh settings`);
+  
+      this.config = await settingsService.getCategory(this.manifest.id);
+  
+      // Re-inject into collector so next collect() uses the new values
+      collector.config = this.config;
+  
+      // Re-check connection with potentially new host/port
+      const isAlive = await api.checkStatus(this.config.host, this.config.port);
+      this.connected = isAlive;
+  
+      console.log(`   - ${this.manifest.id}: connection ${isAlive ? '✓' : '✗'} (${this.config.host}:${this.config.port})`);
+    }
 }
 
 export default new MatterModule();

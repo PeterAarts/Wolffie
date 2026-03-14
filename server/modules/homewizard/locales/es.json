@@ -1,0 +1,51 @@
+{
+  "modules": {
+    "homeWizard": {
+      "groups": {
+        "general": {
+          "title": "Configuración General"
+        },
+        "devices": {
+          "title": "Dispositivos"
+        }
+      },
+      "sections": {
+        "deviceList": {
+          "title": "Lista de Dispositivos"
+        },
+        "statistics": {
+          "title": "Estadísticas"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Activar Integración HomeWizard",
+          "description": "Activar recopilación de datos de dispositivos HomeWizard"
+        },
+        "poll_interval": {
+          "label": "Intervalo de Sondeo (segundos)",
+          "description": "Con qué frecuencia se recopilan datos de los dispositivos"
+        }
+      },
+      "columns": {
+        "name": "Nombre del Dispositivo",
+        "ip_address": "Dirección IP",
+        "product_type": "Tipo",
+        "enabled": "Activado"
+      },
+      "actions": {
+        "discoverDevices": "Descubrir Dispositivos",
+        "edit": "Editar",
+        "delete": "Eliminar"
+      },
+      "confirms": {
+        "discover": "Esto escaneará tu red local en busca de dispositivos HomeWizard. ¿Continuar?",
+        "deleteDevice": "¿Estás seguro de que quieres eliminar este dispositivo?"
+      },
+      "stats": {
+        "totalDevices": "Total Dispositivos",
+        "totalPower": "Potencia Total"
+      }
+    }
+  }
+}

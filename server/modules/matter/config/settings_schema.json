@@ -1,68 +1,116 @@
 {
+  "i18nKeys": true,
   "groups": [
     {
-      "title": "Matter Controller Settings",
+      "title": "modules.matter.groups.controller.title",
       "sections": [
         {
           "fields": [
-            { 
-              "key": "enabled", 
+            {
+              "key": "enabled",
               "component": "switch",
-              "label": "Enable Matter Protocol",
-              "description": "Enable the local Matter Controller for smart devices"
+              "label": "modules.matter.fields.enabled.label",
+              "description": "modules.matter.fields.enabled.description"
             },
-            { 
-              "key": "poll_interval", 
+            {
+              "key": "poll_interval",
               "component": "number",
-              "label": "Poll Interval (seconds)",
-              "min": 5, "max": 60, "default": 15
+              "label": "modules.matter.fields.poll_interval.label",
+              "min": 5,
+              "max": 60,
+              "default": 15
             }
           ]
         },
         {
           "component": "info-panel",
-          "title": "Matter Fabric Status",
+          "title": "modules.matter.sections.fabricStatus.title",
           "data": {
             "endpoint": "/matter/collector/status",
             "dynamic": true,
             "items": [
-              { "label": "Controller Status", "field": "isRunning", "template": { "type": "status-badge" } },
-              { "label": "Active Nodes", "field": "deviceCount" },
-              { "label": "Last Data Sync", "field": "lastCollectionTime", "template": { "type": "datetime" } }
+              {
+                "label": "modules.matter.status.controllerStatus",
+                "field": "isRunning",
+                "template": {
+                  "type": "status-badge"
+                }
+              },
+              {
+                "label": "modules.matter.status.activeNodes",
+                "field": "deviceCount"
+              },
+              {
+                "label": "modules.matter.status.lastDataSync",
+                "field": "lastCollectionTime",
+                "template": {
+                  "type": "datetime"
+                }
+              }
             ]
           }
         }
       ]
     },
     {
-      "title": "Commissioned Devices",
+      "title": "modules.matter.groups.devices.title",
       "sections": [
         {
           "component": "table",
-          "title": "Matter Nodes",
+          "title": "modules.matter.sections.nodes.title",
           "data": {
             "endpoint": "/matter/devices",
             "columns": [
-              { "field": "name", "header": "Name", "sortable": true },
-              { "field": "serial", "header": "Node ID", "sortable": true },
-              { "field": "product_type", "header": "Device Type" },
-              { "field": "enabled", "header": "Status", "template": { "type": "boolean" } }
+              {
+                "field": "name",
+                "header": "modules.matter.columns.name",
+                "sortable": true
+              },
+              {
+                "field": "serial",
+                "header": "modules.matter.columns.nodeId",
+                "sortable": true
+              },
+              {
+                "field": "product_type",
+                "header": "modules.matter.columns.deviceType"
+              },
+              {
+                "field": "enabled",
+                "header": "modules.matter.columns.status",
+                "template": {
+                  "type": "boolean"
+                }
+              }
             ],
             "globalActions": [
-              { 
-                "label": "Commission New Device", 
+              {
+                "label": "modules.matter.actions.commission",
                 "icon": "pi-plus",
                 "endpoint": "/matter/commission",
                 "method": "POST",
                 "inputs": [
-                  { "key": "pairingCode", "label": "8-Digit Setup Code", "type": "text" }
+                  {
+                    "key": "pairingCode",
+                    "label": "modules.matter.inputs.pairingCode",
+                    "type": "text"
+                  }
                 ],
-                "confirmMessage": "Enter the Matter setup code found on your device label."
+                "confirmMessage": "modules.matter.confirms.commission"
               }
             ],
             "rowActions": [
-              { "label": "Identify", "icon": "fa-eye", "action": "identify" },
-              { "label": "Delete", "icon": "fa-trash", "action": "delete", "confirmMessage": "Unpair this device from the WattsOn fabric?" }
+              {
+                "label": "modules.matter.actions.identify",
+                "icon": "fa-eye",
+                "action": "identify"
+              },
+              {
+                "label": "modules.matter.actions.delete",
+                "icon": "fa-trash",
+                "action": "delete",
+                "confirmMessage": "modules.matter.confirms.unpair"
+              }
             ]
           }
         }
