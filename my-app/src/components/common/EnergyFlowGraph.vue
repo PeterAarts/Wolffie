@@ -25,15 +25,17 @@
     </div>
 
     <!-- Chart Area -->
-    <div class="energy-flow-graph">
+    <div class="energy-flow-graph" style="position:relative;">
       <div v-if="loading" class="loading-state">
-        <span>Data laden...</span>
+        <span>{{ t('common.loading') }}</span>
       </div>
       <div v-else-if="error" class="error-state">
         <span>{{ error }}</span>
-        <button @click="loadData" class="retry-btn">Opnieuw proberen</button>
+        <button @click="loadData" class="retry-btn">{{ t('common.retry') }}</button>
       </div>
       <canvas ref="chartCanvas"></canvas>
+      <!-- Custom HTML tooltip -->
+      <div ref="tooltipEl" style="display:none;position:absolute;pointer-events:none;background:#ffffff;border:1px solid #e4e7ec;border-radius:10px;padding:10px 14px;box-shadow:0 4px 16px rgba(0,0,0,.08);min-width:170px;z-index:100;font-family:system-ui,sans-serif;"></div>
     </div>
   </div>
 </template>
@@ -42,6 +44,9 @@
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import Chart from 'chart.js/auto';
 import { historyService } from '@/services/history';
+import { useLocale } from '@/composables/useLocale';
+
+const { t, currentLanguage } = useLocale();
 
 const props = defineProps({
   period: { type: String, default: 'today' },
@@ -54,6 +59,7 @@ const props = defineProps({
 const emit = defineEmits(['data-loaded']);
 
 const chartCanvas = ref(null);
+const tooltipEl   = ref(null);
 const chartInstance = ref(null);
 const loading = ref(false);
 const error = ref(null);
@@ -147,12 +153,17 @@ const renderChart = () => {
   const y1Max = Math.ceil(100 * (yMax / powerRange) * (1 + PAD));
   const y1Min = yMin === 0 ? 0 : -Math.ceil(100 * (Math.abs(yMin) / powerRange) * (1 + PAD));
   
-  // Format labels: time for single-day view, date for multi-day view
+  // Format labels: time for single-day view, date for multi-day view.
+  // Intraday uses plain HH:MM (ASCII colon, zero-padded) so the tick callback
+  // can reliably split on ':' regardless of locale.
   const labels = chartData.value.map(d => {
     const dt = new Date(d.timestamp || d.date);
-    return props.period === 'today' || props.period === 'date' 
-      ? dt.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' })
-      : dt.toLocaleDateString('nl-NL', { day: '2-digit', month: '2-digit' });
+    if (props.period === 'today' || props.period === 'date') {
+      const hh = String(dt.getHours()).padStart(2, '0');
+      const mm = String(dt.getMinutes()).padStart(2, '0');
+      return `${hh}:${mm}`;
+    }
+    return dt.toLocaleDateString(currentLanguage.value, { day: '2-digit', month: '2-digit' });
   });
 
   chartInstance.value = new Chart(ctx, {
@@ -160,6 +171,17 @@ const renderChart = () => {
     data: {
       labels,
       datasets: isRangeData ? [
+        {
+          label: 'Battery Discharge (kWh)',
+          data: chartData.value.map(d => d.battery_discharge || 0),
+          borderColor: '#a78bfa',
+          backgroundColor: 'rgba(167, 139, 250, 0.1)',
+          fill: false,
+          tension: 0.4,
+          pointRadius: 3,
+          borderWidth: 2,
+          yAxisID: 'y'
+        },
         {
           label: 'Solar (kWh)',
           data: chartData.value.map(d => d.solar || 0),
@@ -214,33 +236,36 @@ const renderChart = () => {
           pointRadius: 3,
           borderWidth: 2,
           yAxisID: 'y'
-        },
-        {
-          label: 'Battery Discharge (kWh)',
-          data: chartData.value.map(d => d.battery_discharge || 0),
-          borderColor: '#a78bfa',
-          backgroundColor: 'rgba(167, 139, 250, 0.1)',
-          fill: false,
-          tension: 0.4,
-          pointRadius: 3,
-          borderWidth: 2,
-          yAxisID: 'y'
         }
       ] : [
         {
-          label: 'Solar(W)',
+          label: 'SoC',
+          data: chartData.value.map(d => d.battery_soc || 0),
+          borderColor: 'rgba(107,114, 128, 1)',
+          backgroundColor: 'rgba(107, 114, 128, 0.1)',
+          fill: false,
+          yAxisID: 'y1',
+          borderDash: [10, 3],
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: 1,
+          pointHoverRadius: 4,
+          pointStyle: 'dash'
+        },
+        {
+          label: 'Solar',
           data: chartData.value.map(d => d.solar || 0),
           borderColor: '#f59e0b',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          backgroundColor: 'rgba(245, 158, 11, 0.05)',
           fill: true,
           tension: 0.4,
           yAxisID: 'y',
           pointRadius: 0,
-          borderWidth: 2,
+          borderWidth: 1,
           pointHoverRadius: 4
         },
         {
-          label: 'Home  (W)',
+          label: 'Home',
           data: chartData.value.map(d => d.home || 0),
           borderColor: '#3b82f6',
           backgroundColor: 'rgba(59, 130, 246, 0.1)',
@@ -248,11 +273,11 @@ const renderChart = () => {
           tension: 0.4,
           yAxisID: 'y',
           pointRadius: 0,
-          borderWidth: 2,
+          borderWidth: 1,
           pointHoverRadius: 4
         },
         {
-          label: 'Grid (W)',
+          label: 'Grid',
           data: chartData.value.map(d => d.grid || 0),
           borderColor: '#ef4444',
           backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -260,11 +285,11 @@ const renderChart = () => {
           tension: 0.4,
           yAxisID: 'y',
           pointRadius: 0,
-          borderWidth: 2,
+          borderWidth: 1,
           pointHoverRadius: 4
         },
         {
-          label: 'Battery (W)',
+          label: 'Battery',
           data: chartData.value.map(d => d.battery_power || 0),
           borderColor: '#10b981',
           backgroundColor: 'rgba(16,185, 129, 0.1)',
@@ -272,22 +297,10 @@ const renderChart = () => {
           tension: 0.4,
           yAxisID: 'y',
           pointRadius: 0,
-          borderWidth: 2,
-          pointHoverRadius: 4
-        },
-        {
-          label: 'Battery SoC (%)',
-          data: chartData.value.map(d => d.battery_soc || 0),
-          borderColor: '#6B7280',
-          backgroundColor: '#F2F3FA',
-          fill: true,
-          yAxisID: 'y1',
-          borderDash: [0, 0],
-          tension: 0.4,
-          pointRadius: 0,
-          borderWidth: 2,
+          borderWidth: 1,
           pointHoverRadius: 4
         }
+
       ]
     },
     options: {
@@ -302,34 +315,53 @@ const renderChart = () => {
         },
       plugins: {
         legend: { 
-          position: 'bottom',
-          labels: {usePointStyle: true,padding: 15,font: {size: 11,}}
+          display: false
         },
         tooltip: {
-          backgroundColor: 'rgba(255,255, 255, 1)',
-          bodyColor: '#111827',
-          padding: 12,
-          titleColor: '#111827',
-          boxPadding: 10,
-          titleFont: {size: 13,weight: 'bold',},
-          bodyFont: {size: 12,color: '#111827'},
-          callbacks: {
-            label: function(context) {
-              let label = context.dataset.label || '';
-              if (label) {
-                label += ': ';
-              }
-              if (context.parsed.y !== null) {
-                if (context.dataset.yAxisID === 'y1') {
-                  // Battery SoC - show percentage
-                  label += context.parsed.y.toFixed(1) + '%';
-                } else {
-                  // Power values - show watts
-                  label += context.parsed.y.toFixed(0) + ' W';
-                }
-              }
-              return label;
+          enabled: false,
+          external: (context) => {
+            const el = tooltipEl.value;
+            if (!el) return;
+
+            const { tooltip } = context;
+
+            if (tooltip.opacity === 0) {
+              el.style.display = 'none';
+              return;
             }
+
+            const title = tooltip.title?.[0] ?? '';
+            const rows = tooltip.dataPoints.map(dp => {
+              const ds = dp.dataset;
+              const isSoC = ds.yAxisID === 'y1';
+              const value = isSoC
+                ? dp.parsed.y.toFixed(1) + '%'
+                : dp.parsed.y.toFixed(0) + ' W';
+              const color = ds.borderColor;
+              const isDash = Array.isArray(ds.borderDash) && ds.borderDash.length > 0;
+              const icon = isDash
+                ? `<span style="display:inline-block;width:14px;height:2px;border-top:2px dashed ${color};vertical-align:middle;flex-shrink:0;"></span>`
+                : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0;"></span>`;
+              return `
+                <div style="display:flex;align-items:center;gap:8px;padding:2px 0;">
+                  ${icon}
+                  <span style="flex:1;font-size:13px;color:#6b7280;">${ds.label}</span>
+                  <span style="font-size:13px;font-weight:600;color:#111827;font-variant-numeric:tabular-nums;">${value}</span>
+                </div>`;
+            }).join('');
+
+            el.innerHTML = `
+              <div style="font-size:13px;font-weight:600;color:#374151;margin-bottom:8px;">${title}</div>
+              ${rows}`;
+            el.style.display = 'block';
+
+            // Position relative to chart container
+            const chartEl = context.chart.canvas;
+            const containerWidth = chartEl.parentElement.offsetWidth;
+            let left = tooltip.caretX + 14;
+            if (left + 185 > containerWidth) left = tooltip.caretX - 185 - 14;
+            el.style.left = left + 'px';
+            el.style.top  = Math.max(0, tooltip.caretY - (el.offsetHeight / 2)) + 'px';
           }
         }
       },
@@ -381,30 +413,30 @@ const renderChart = () => {
             font: { size: 10 },
             maxRotation: 0,
             minRotation: 0,
-            autoSkip: true,
-            autoSkipPadding: 50,
+            autoSkip: false,
             callback: function(value, index, ticks) {
               const label = this.getLabelForValue(value);
-              // For time-based labels (HH:MM format)
-              if (label && label.includes(':')) {
-                const [hours, minutes] = label.split(':');
-                // Only show labels at even hours (00:00, 02:00, 04:00, etc.)
-                if (parseInt(hours) % 2 === 0 && minutes === '00') {
-                  return hours + ':00';
-                }
-                return '';
+              // Intraday: label is 'HH:MM' — show only even hours on the hour
+              if (label && /^\d{2}:\d{2}$/.test(label)) {
+                const [hh, mm] = label.split(':');
+                return (mm === '00' && parseInt(hh, 10) % 2 === 0) ? label : '';
               }
-              // For date-based labels, show every other label
-              if (index % 2 === 0) {
-                return label;
-              }
-              return '';
+              // Multi-day: show every other date label
+              return index % 2 === 0 ? label : '';
             },
             color: '#9ca3af',
-            padding: 8
+            padding: 6
           },
           grid: {
-            color: 'rgba(0, 0, 0, 0.05)',
+            color: function(context) {
+              const label = context.chart.data.labels[context.index];
+              if (label && /^\d{2}:\d{2}$/.test(label)) {
+                const [hh, mm] = label.split(':');
+                return (mm === '00' && parseInt(hh, 10) % 2 === 0)
+                  ? 'rgba(0, 0, 0, 0.07)' : 'transparent';
+              }
+              return 'rgba(0, 0, 0, 0.05)';
+            },
             drawTicks: false,
             tickLength: 0
           },
@@ -428,6 +460,58 @@ onUnmounted(() => {
 
 <style scoped>
 .energy-flow-graph-container    {display: flex;flex-direction: column;width: 100%;}
+
+/* ── HTML Tooltip ─────────────────────────────── */
+.chart-html-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: #ffffff;
+  border: 1px solid #e4e7ec;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  min-width: 170px;
+  z-index: 100;
+  font-family: 'DM Sans', system-ui, sans-serif;
+}
+.tt-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+.tt-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+.tt-icon {
+  flex-shrink: 0;
+}
+.tt-dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  border-radius: 50%;
+}
+.tt-dash {
+  display: inline-block;
+  width: 14px; height: 0;
+  border-top: 2px dashed;
+  margin-bottom: 1px;
+}
+.tt-label {
+  flex: 1;
+  font-size: 13px;
+  color: #6b7280;
+}
+.tt-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
 .stats-overview                 {display: grid;grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));gap: 16px;}
 .stat-card                      {background-color: var(--color-bg-primary, #f8f9fa);padding: 20px;display: flex;flex-direction: column;gap: 8px;border-radius:0; border-width:0px;}
 .stat-card .label               {font-size: 11px;text-transform: uppercase;color: var(--color-text-secondary, #6b7280);font-weight: 600;letter-spacing: 0.5px;}

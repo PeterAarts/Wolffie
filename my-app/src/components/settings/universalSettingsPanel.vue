@@ -2,24 +2,24 @@
   <div class="universal-settings-panel text-sm">
     <div v-if="loading" class="loading-container">
       <ProgressSpinner style="width: 50px; height: 50px" strokeWidth="4" />
-      <p class="text-600 mt-3">Laden instellingen...</p>
+      <p class="text-600 mt-3">{{ t('common.loading') }}</p>
     </div>
 
     <div v-else-if="error" class="error-container">
       <Message severity="error" :closable="false">{{ error }}</Message>
-      <Button label="Opnieuw proberen" icon="pi pi-refresh" @click="loadSchema" class="mt-3" />
+      <Button :label="t('common.retry')" icon="pi pi-refresh" @click="loadSchema" class="mt-3" />
     </div>
 
     <div v-else class="settings-content">
       
       <div v-if="schema.groups" class="groups-container">
         <div v-for="(group, gIdx) in schema.groups" :key="gIdx" class="settings-group mb-3">
-          <h3 class="text-md font-medium mb-4">{{ group.title }}</h3>
+          <h3 class="text-md font-medium mb-4">{{ resolve(group.title) }}</h3>
           
           <div v-for="(section, sIdx) in group.sections" :key="sIdx" class="settings-section   ">
               <div v-if="section.title" class="section-header ">
-                <h4 class=" font-semibold m-0">{{ section.title }}</h4>
-                <p v-if="section.description" class="text-gray-400 text-xs font-normal mt-1 mb-0">{{ section.description }}</p>
+                <h4 class=" font-semibold m-0">{{ resolve(section.title) }}</h4>
+                <p v-if="section.description" class="text-gray-400 text-xs font-normal mt-1 mb-0">{{ resolve(section.description) }}</p>
               </div>
               <div v-if="section.fields?.length" class="grid bg-gray-100 p-4 gap-4 fields-container">
                 <div 
@@ -28,15 +28,14 @@
                   :class="getFieldColumnClass(field)"
                 >
                   <UniversalField 
-                    :field="field" 
-                    v-model="values[field.key]" 
-                    @update:modelValue="handleValueChange"
+                    :field="resolveField(field)" 
+                    v-model="values[field.key]"
                   />
                 </div>
               </div>
 
-              <UniversalTable v-else-if="section.component === 'table'" :config="section" :moduleId="moduleId" />
-              <UniversalInfoPanel v-else-if="section.component === 'info-panel'" :config="section" :moduleId="moduleId" />
+              <UniversalTable v-else-if="section.component === 'table'" :config="section" :moduleId="moduleId" :i18nKeys="schema.i18nKeys || false" :messagesReady="messagesReady" />
+              <UniversalInfoPanel v-else-if="section.component === 'info-panel'" :config="section" :moduleId="moduleId" :i18nKeys="schema.i18nKeys || false" :messagesReady="messagesReady" />
               <UniversalCardGrid v-else-if="section.component === 'card-grid'" :config="section" :moduleId="moduleId" />
             </div>
   
@@ -53,14 +52,13 @@
           <UniversalField 
             :field="mapAlphaField(key, fieldConfig)" 
             v-model="values[key]"
-            @update:modelValue="handleValueChange"
           />
         </div>
       </div>
 
       <div v-if="schema.globalActions?.length" class="global-actions mt-5">
         <Divider />
-        <h4 class="mb-3">Acties</h4>
+        <h4 class="mb-3">{{ t('common.actions') }}</h4>
         <div class="flex flex-wrap gap-3">
           <Button 
             v-for="action in schema.globalActions" 
@@ -75,12 +73,15 @@
       </div>
     </div>
 
-    <div class="" :class="{ 'save-bar-visible': hasChanges|| true }">
+    <div class="save-bar" :class="{ 'save-bar-visible': hasChanges }">
       <div class="save-bar-content">
         <div class="save-bar-info"></div>
         <div class="save-bar-actions">
-          <Button label="Annuleren" class="p-button-text p-button-plain mr-3" @click="resetChanges" />
-          <Button label="Opslaan" icon="pi pi-check" :loading="saving" @click="saveSettings" />
+          <button class="btn" @click="resetChanges">{{ t('common.cancel') }}</button>
+          <button class="btn btn--primary" :disabled="saving" @click="saveSettings">
+            <i v-if="saving" class="fa-duotone fa-spinner-third fa-spin mr-1"></i>
+            {{ t('common.save') }}
+          </button>
         </div>
       </div>
     </div>
@@ -88,10 +89,35 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, watch, nextTick } from 'vue';
+import '@/assets/styles/control.css';
 import apiClient from '@/services/api'; //
 import { useToastStore } from '@/stores/toast';
+import { useI18n } from 'vue-i18n';
 const toast = useToastStore();
+const { t, mergeLocaleMessage } = useI18n();
+
+// Resolve a string as an i18n key if the schema declares i18nKeys: true,
+// otherwise return it as a plain display string.
+function resolve(value) {
+  if (!value) return value;
+  return schema.value?.i18nKeys ? t(value) : value;
+}
+
+// Return a shallow copy of a field with label, placeholder, description,
+// and dropdown option labels resolved when the schema uses i18n keys.
+function resolveField(field) {
+  if (!schema.value?.i18nKeys) return field;
+  return {
+    ...field,
+    label:       field.label       ? t(field.label)       : field.label,
+    placeholder: field.placeholder ? t(field.placeholder) : field.placeholder,
+    description: field.description ? t(field.description) : field.description,
+    options: field.options
+      ? field.options.map(opt => ({ ...opt, label: t(opt.label) }))
+      : field.options,
+  };
+}
 
 // Imports
 import UniversalField from './Universalfield.vue';
@@ -110,8 +136,11 @@ const loading = ref(true);
 const saving = ref(false);
 const hasChanges = ref(false);
 const error = ref(null);
+// Flips to true after module messages have been merged into vue-i18n,
+// used to delay child components that depend on those keys.
+const messagesReady = ref(false);
 
-// Hulpmiddelen
+// Helpers
 function getFieldColumnClass(field) {
 
   const cols = field.cols || 12; 
@@ -138,22 +167,76 @@ const sortedProperties = computed(() => {
     .reduce((acc, [key, val]) => ({ ...acc, [key]: val }), {});
 });
 
-// Logica voor laden
+// Load logic
+// Coerce values that belong to switch/boolean fields from the string
+// "true"/"false" (how MySQL stores them) to actual JS booleans.
+// Without this, !!modelValue treats the string "false" as truthy.
+function coerceBooleans(schema, values) {
+  const booleanComponents = new Set(['switch', 'boolean']);
+
+  // Collect all keys that are switch/boolean fields
+  const boolKeys = new Set();
+
+  // groups → sections → fields layout
+  if (schema.groups) {
+    for (const group of schema.groups) {
+      for (const section of group.sections || []) {
+        for (const field of section.fields || []) {
+          if (booleanComponents.has(field.component)) boolKeys.add(field.key);
+        }
+      }
+    }
+  }
+
+  // flat properties layout
+  if (schema.properties) {
+    for (const [key, config] of Object.entries(schema.properties)) {
+      const widget = config.ui?.widget;
+      if (booleanComponents.has(widget)) boolKeys.add(key);
+    }
+  }
+
+  // Apply coercion
+  for (const key of boolKeys) {
+    if (key in values) {
+      const v = values[key];
+      values[key] = v === true || v === 'true' || v === 1 || v === '1';
+    }
+  }
+
+  return values;
+}
+
 async function loadSchema() {
   loading.value = true;
   try {
-    // Gebruik de dedicated routes voor core en users, anders de generieke module route
+    // Use dedicated routes for core/users, generic module route otherwise
     const endpoint = (props.moduleId === 'core' || props.moduleId === 'users')
       ? `/settings/${props.moduleId}`
       : `/settings/module/${props.moduleId}`;
 
     const { data } = await apiClient.get(endpoint);
     schema.value = data.schema || {};
-    values.value = data.values || {};
+    values.value = coerceBooleans(schema.value, data.values || {});
     originalValues.value = JSON.parse(JSON.stringify(values.value));
+
+    // Merge module-level translations into vue-i18n at runtime.
+    // Each module ships its own locales/ folder; the backend reads them
+    // and returns { messages: { en: {...}, nl: {...}, ... } }.
+    // This means no frontend changes are needed when a new module is added.
+    if (data.messages && typeof data.messages === 'object') {
+      for (const [lang, msgs] of Object.entries(data.messages)) {
+        mergeLocaleMessage(lang, msgs);
+      }
+    }
   } catch (err) {
     error.value = err.message;
   } finally {
+    // Defer loading=false to the next tick so the template renders AFTER
+    // mergeLocaleMessage has populated vue-i18n — otherwise t() calls in
+    // resolve() / resolveField() evaluate before the keys are available.
+    await nextTick();
+    messagesReady.value = true;
     loading.value = false;
   }
 }
@@ -167,17 +250,18 @@ async function saveSettings() {
     await apiClient.post(endpoint, values.value);
     originalValues.value = JSON.parse(JSON.stringify(values.value));
     hasChanges.value = false;
-    toast.add({ severity: 'success', summary: 'Opgeslagen', detail: 'Instellingen bijgewerkt' });
+    toast.add({ severity: 'success', summary: t('common.saved'), detail: t('settings.savedDetail') });
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Fout', detail: err.message });
+    toast.add({ severity: 'error', summary: t('common.error'), detail: err.message });
   } finally {
     saving.value = false;
   }
 }
 
-function handleValueChange() {
+// Watch values deeply so any field change (including switch/boolean) triggers dirty check
+watch(values, () => {
   hasChanges.value = JSON.stringify(values.value) !== JSON.stringify(originalValues.value);
-}
+}, { deep: true });
 
 function resetChanges() {
   values.value = JSON.parse(JSON.stringify(originalValues.value));
@@ -187,9 +271,9 @@ function resetChanges() {
 async function handleAction(action) {
   try {
     const res = await apiClient({ method: action.method || 'POST', url: action.endpoint, data: values.value });
-    if (res.data.success) toast.add({ severity: 'success', summary: 'Klaar', detail: action.label });
+    if (res.data.success) toast.add({ severity: 'success', summary: t('common.done'), detail: action.label });
   } catch (err) {
-    toast.add({ severity: 'error', summary: 'Fout', detail: err.message });
+    toast.add({ severity: 'error', summary: t('common.error'), detail: err.message });
   }
 }
 

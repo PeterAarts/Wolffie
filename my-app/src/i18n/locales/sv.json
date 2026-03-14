@@ -1,0 +1,475 @@
+{
+  "app": {
+    "name": "WattsOn",
+    "loading": "Laddar WattsOn...",
+    "loadingConfig": "Laddar konfiguration...",
+    "loadingSetup": "Kontrollerar installationsstatus...",
+    "loadingConnect": "Ansluter till systemet...",
+    "loadingDashboard": "Laddar instrumentpanel..."
+  },
+  "nav": {
+    "dashboard": "Instrumentpanel",
+    "history": "Historik",
+    "control": "Styrning",
+    "analytics": "Analys",
+    "events": "Händelser",
+    "settings": "Inställningar",
+    "myProfile": "Min profil"
+  },
+  "header": {
+    "connected": "Ansluten",
+    "disconnected": "Frånkopplad",
+    "refreshData": "Uppdatera data",
+    "userMenu": "Användarmeny",
+    "logout": "Logga ut"
+  },
+  "userMenu": {
+    "administrator": "Administratör",
+    "settings": "Inställningar",
+    "setupWizard": "Kör installationsguide",
+    "reloadConfig": "Ladda om konfiguration",
+    "logout": "Logga ut"
+  },
+  "dashboard": {
+    "title": "Instrumentpanel",
+    "daily": "Daglig",
+    "total": "Totalt",
+    "liveData": "Livedata",
+    "historicalOnly": "Endast historiska data",
+    "powerGraph": "Effektgraf",
+    "energyDiagram": "Energidiagram",
+    "periodDay": "dag",
+    "periodWeek": "vecka",
+    "periodMonth": "månad",
+    "periodYear": "år",
+    "totalConsumed": "Totalt förbrukat",
+    "produced": "Producerat",
+    "exported": "Exporterat",
+    "batteryLabel": "Batteri",
+    "currentPower": "Aktuell effekt",
+    "sourceCloud": "Moln-API",
+    "sourceModbus": "Lokal ModBus",
+    "targetBuffer": "Målbuffert",
+    "home": "Hem",
+    "clickForDetails": "klicka för detaljer"
+  },
+  "cards": {
+    "homeSolar": "Hem & Sol",
+    "battery": "Batteri",
+    "grid": "Elnät",
+    "economic": "Ekonomisk",
+    "green": "Grön"
+  },
+  "stats": {
+    "consumed": "Förbrukat",
+    "generation": "Produktion",
+    "charged": "Laddat",
+    "discharge": "Urladdning",
+    "feedIn": "Inmatning",
+    "gridConsumed": "Förbrukat",
+    "selfConsumed": "Egenförbrukat",
+    "selfSufficiency": "Självförsörjning",
+    "treesPlanted": "Planterade träd",
+    "co2Reduction": "CO₂-reduktion"
+  },
+  "energy": {
+    "solarGeneration": "Solproduktion",
+    "totalConsumption": "Total förbrukning",
+    "batteryCharged": "Batteri laddat",
+    "gridFeedIn": "Inmatning till nät",
+    "gridImport": "Import",
+    "gridExport": "Export",
+    "loadConsumption": "Förbrukning",
+    "batteryCharge": "Laddning",
+    "batteryDischarge": "Urladdning",
+    "pvGeneration": "PV-produktion"
+  },
+  "status": {
+    "charging": "Laddar",
+    "discharging": "Urladdar",
+    "idle": "Inaktiv",
+    "consuming": "Förbrukar",
+    "exporting": "Exporterar",
+    "importing": "Importerar",
+    "fault": "Fel"
+  },
+  "units": {
+    "watt": "W",
+    "kilowatt": "kW",
+    "wattHour": "Wh",
+    "kilowattHour": "kWh",
+    "megawattHour": "MWh",
+    "percent": "%",
+    "degreeCelsius": "°C",
+    "volt": "V",
+    "ampere": "A",
+    "hertz": "Hz"
+  },
+  "time": {
+    "today": "Idag",
+    "yesterday": "Igår",
+    "thisWeek": "Denna vecka",
+    "thisMonth": "Denna månad",
+    "thisYear": "Detta år",
+    "last24h": "Senaste 24 timmarna",
+    "last7d": "Senaste 7 dagarna",
+    "last30d": "Senaste 30 dagarna"
+  },
+  "settings": {
+    "title": "Systeminställningar",
+    "system": "System",
+    "modules": "Moduler",
+    "general": "Allmänt",
+    "usermanagement": "Användare",
+    "cloudApi": "Moln-API",
+    "modbus": "ModBus",
+    "display": "Visning",
+    "notifications": "Aviseringar",
+    "tariffs": "Tariffer",
+    "language": "Språk",
+    "theme": "Tema",
+    "dateFormat": "Datumformat",
+    "timeFormat": "Tidsformat",
+    "temperatureUnit": "Temperaturenhet",
+    "save": "Spara alla ändringar",
+    "reload": "Ladda om",
+    "testConnection": "Testa anslutning",
+    "connectionSuccess": "Anslutning lyckades",
+    "connectionFailed": "Anslutning misslyckades",
+    "collectors": "Insamlare",
+    "savedDetail": "Inställningar uppdaterade",
+    "core": {
+      "subtitle": "Systemkonfiguration",
+      "description": "Hantera grundinställningarna för Wolffie-plattformen.",
+      "restartSystem": "Starta om systemet",
+      "groups": {
+        "system": {
+          "title": "System & Plats"
+        },
+        "dataCollection": {
+          "title": "Datainsamling"
+        },
+        "notifications": {
+          "title": "Aviseringar"
+        },
+        "retention": {
+          "title": "Datalagring (dagar)"
+        }
+      },
+      "fields": {
+        "system_name": "Systemnamn",
+        "location": "Plats",
+        "timezone": "Tidszon",
+        "primary_source": "Primär källa",
+        "enable_failover": "Automatisk failover",
+        "cache_timeout": "Cache-timeout (ms)",
+        "failover_threshold": "Failover-tröskel",
+        "email_enabled": "E-postaviseringar",
+        "email_address": "Mottagarens e-post",
+        "email_address_placeholder": "exempel@domän.se",
+        "snapshots_days": "Ögonblicksbilder",
+        "minutes_days": "Minutdata",
+        "hours_days": "Timdata"
+      }
+    },
+    "users": {
+      "title": "Användarhantering",
+      "description": "Hantera konton och behörighetsnivåer för detta system.",
+      "addUser": "Lägg till användare",
+      "total": "Totalt antal användare",
+      "name": "Användarnamn",
+      "namePlaceholder": "t.ex. Peter",
+      "email": "E-post",
+      "role": "Roll",
+      "password": "Lösenord",
+      "addTitle": "Registrera ny användare",
+      "editTitle": "Redigera användare",
+      "lastPasswordUpdate": "Senaste lösenordsändring",
+      "confirmRemove": "Är du säker på att du vill ta bort användare {name}?",
+      "full_name": "Fullständigt namn",
+      "is_active": "Aktiv",
+      "last_password_update": "Senaste lösenordsändring",
+      "sectionAccount": "Konto",
+      "sectionPassword": "Lösenord",
+      "passwordLeaveBlank": "lämna tomt för att behålla nuvarande",
+      "active": "aktiv",
+      "empty": "Inga användare konfigurerade",
+      "deleted": "Användare borttagen",
+      "userCount": "användare",
+      "groups": {
+        "management": {
+          "title": "Användarhantering"
+        }
+      },
+      "columns": {
+        "username": "Användarnamn",
+        "email": "E-post",
+        "role": "Roll"
+      },
+      "actions": {
+        "create": "Skapa användare"
+      },
+      "confirmDelete": "Är du säker på att du vill ta bort användare {username}?"
+    }
+  },
+  "setup": {
+    "welcome": "Välkommen till WattsOn",
+    "subtitle": "Låt oss konfigurera ditt system i några enkla steg",
+    "selectModel": "Välj modell",
+    "configureModbus": "Konfigurera ModBus",
+    "cloudApiSetup": "Moln-API",
+    "review": "Granska",
+    "complete": "Installation slutförd",
+    "completeMessage": "Ditt system är konfigurerat och redo att användas"
+  },
+  "common": {
+    "save": "Spara",
+    "cancel": "Avbryt",
+    "close": "Stäng",
+    "confirm": "Bekräfta",
+    "delete": "Ta bort",
+    "edit": "Redigera",
+    "search": "Sök",
+    "retry": "Försök igen",
+    "loading": "Laddar...",
+    "error": "Fel",
+    "success": "Klart",
+    "warning": "Varning",
+    "info": "Info",
+    "yes": "Ja",
+    "no": "Nej",
+    "actions": "Åtgärder",
+    "enabled": "Aktiverad",
+    "disabled": "Inaktiverad",
+    "refreshed": "Uppdaterad",
+    "systemDataUpdated": "Systemdata uppdaterad",
+    "noData": "Ingen data tillgänglig",
+    "back": "Tillbaka",
+    "next": "Nästa",
+    "finish": "Slutför",
+    "skip": "Hoppa över",
+    "noItems": "Inga objekt hittades",
+    "updated": "Uppdaterad",
+    "created": "Skapad",
+    "saved": "Sparad",
+    "done": "Klar"
+  },
+  "events": {
+    "title": "Systemhändelser",
+    "description": "Granskningslogg över alla automatiserade och manuella åtgärder.",
+    "total": "händelser",
+    "drawerTitle": "Händelsedetaljer",
+    "logicReason": "Strategilogik",
+    "rawPayload": "Rå körningsdata",
+    "colTime": "Tid",
+    "colType": "Typ",
+    "colAction": "Åtgärd",
+    "colUser": "Utförd av",
+    "colStatus": "Status"
+  },
+  "control": {
+    "title": "Kontrollcentral",
+    "description": "Hantera dina energistrategier, manuell styrning och smarta enheter.",
+    "live": "Live",
+    "offline": "Offline",
+    "solar": "Sol",
+    "battery": "Batteri",
+    "grid": "Elnät",
+    "charging": "Laddar",
+    "discharging": "Urladdar",
+    "importing": "Importerar",
+    "exporting": "Exporterar",
+    "active": "Aktiv",
+    "sectionStrategy": "Driftstrategi",
+    "sectionStrategyDesc": "Välj hur systemet ska prioritera energianvändning och battericykler.",
+    "sectionDispatch": "Manuell styrning",
+    "sectionDispatchDesc": "Åsidosätt automatisk logik för att tvinga specifika ladd- eller urladdningshändelser.",
+    "sectionDevices": "Smarta enheter",
+    "sectionDevicesDesc": "Hantera HomeWizard-energiuttag och annan integrerad hårdvara.",
+    "chargingActive": "Laddar från elnät",
+    "dischargingActive": "Urladdar till elnät",
+    "stop": "Stoppa",
+    "chargeFromGrid": "Ladda från elnät",
+    "chargeFromGridDesc": "Fyll batteriet från elnätet under lågtarifftider.",
+    "power": "Effekt",
+    "targetSOC": "Mål-SOC",
+    "duration": "Varaktighet",
+    "hours": "timmar",
+    "startCharging": "Starta laddning",
+    "chargingStarted": "Laddningssekvens startad",
+    "confirmCharge": "Ladda batteri vid {watts}W till {targetSOC}% i {durationHours} timmar?",
+    "dischargeToGrid": "Urladda till elnät",
+    "dischargeToGridDesc": "Exportera batterienergi till elnätet (användbart för högtariffsexport).",
+    "minimumSOC": "Minsta SOC",
+    "startDischarging": "Starta urladdning",
+    "dischargingStarted": "Urladdningssekvens startad",
+    "confirmDischarge": "Urladda batteri vid {watts}W till {minimumSOC}% i {durationHours} timmar?",
+    "dispatchStopped": "Manuell styrning stoppad",
+    "quickActions": "Snabbåtgärder",
+    "normal": "Normalläge",
+    "actions": "Åtgärder",
+    "preventDischarge": "Förhindra urladdning",
+    "stopDispatch": "Stoppa styrning",
+    "normalRestored": "Normal drift återställd",
+    "dischargeBlocked": "Batteriurladdning blockerad",
+    "strategyUpdated": "Strategi uppdaterad",
+    "strategy": {
+      "smartEco": {
+        "name": "Smart Eko",
+        "desc": "Optimera för lägsta kostnad med hjälp av prisprognoser."
+      },
+      "selfSufficient": {
+        "name": "Självförsörjande",
+        "desc": "Prioritera solenergi och batteri för hushållslaster."
+      },
+      "peakShaving": {
+        "name": "Topplastavskärning",
+        "desc": "Begränsa nätanvändning under perioder med hög efterfrågan."
+      },
+      "manual": {
+        "name": "Manuell",
+        "desc": "Följ användardefinerade scheman och inställningar."
+      },
+      "targetTime": "Morgonmåltid",
+      "priceCap": "Maximal laddningspris",
+      "blockExport": "Blockera nätexport",
+      "shadowMode": "Skuggläge (Test)"
+    },
+    "forecast": {
+      "title": "Energiöversikt",
+      "price": "Day-ahead-pris",
+      "solar": "Solprognos",
+      "noData": "Inga prognosdata tillgängliga för idag",
+      "now": "Nu",
+      "today": "idag",
+      "tomorrow": "imorgon",
+      "prevDay": "Föregående dag",
+      "nextDay": "Nästa dag",
+      "soc": "Batteri SoC",
+      "gridChargeZone": "Rekommenderad nätladdningszon",
+      "batteryCapacity": "Batterikapacitet",
+      "minSoc": "Min. SoC"
+    },
+    "triggeredBy": "Utlöst av",
+    "modbusRequired": "ModBus-anslutning krävs för styrningsoperationer",
+    "fields": {
+      "brightness": "Ljusstyrka",
+      "power_on": "På-läge",
+      "switch_lock": "Brytarlås"
+    },
+    "devices": {
+      "device": "enhet | enheter",
+      "brand": "Märke",
+      "usage24h": "Förbrukning idag",
+      "priority": "Prioritet",
+      "active": "aktiv",
+      "discover": "Upptäck",
+      "product": "Produkt",
+      "discoverDone": "Identifiering klar",
+      "refresh": "Uppdatera",
+      "add": "Lägg till enhet",
+      "addTitle": "Registrera ny enhet",
+      "editTitle": "Redigera enhet",
+      "empty": "Inga smarta enheter hittades.",
+      "name": "Namn",
+      "namePlaceholder": "t.ex. Tvättmaskin",
+      "address": "IP-adress",
+      "ipAddress": "IP-adress",
+      "port": "Port",
+      "registerNew": "Registrera ny enhet",
+      "statusLight": "LED",
+      "switchLock": "Brytarlås",
+      "switchLockHint": "Förhindra manuell omkoppling av den fysiska knappen.",
+      "todayUsage": "Förbrukning idag",
+      "enabled": "Aktiverad",
+      "disabled": "Inaktiverad",
+      "locked": "Låst",
+      "unlocked": "Olåst",
+      "usage_today": "idag",
+      "identify": "Identifiera",
+      "identifying": "Identifierar enhet (blinkar LED)...",
+      "sectionRegistration": "Nätverksregistrering",
+      "sectionDevice": "Enhetsinställningar",
+      "pushedOnSave": "inställningar skickas till enheten vid sparande",
+      "ledBrightness": "Status-LED-ljusstyrka",
+      "off": "Av",
+      "full": "Full",
+      "confirmRemove": "Är du säker på att du vill ta bort {name}?",
+      "validationRequired": "Namn och IP-adress krävs.",
+      "added": "Enhet tillagd",
+      "updated": "Enhet uppdaterad",
+      "removed": "Enhet borttagen"
+    }
+  },
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": "Prisinställningar",
+        "fetchSettings": "Hämtningsinställningar",
+        "collectorStatus": "Insamlarstatus"
+      },
+      "fields": {
+        "enabled": {
+          "label": "Aktivera day-ahead-priser",
+          "description": "Aktivera daglig hämtning av elpriser"
+        },
+        "bidding_zone": {
+          "label": "Budzon",
+          "description": "Välj elbudzon för din region"
+        },
+        "country_code": {
+          "label": "Landskod",
+          "description": "Tvåbokstavs landskod (valfritt)",
+          "placeholder": "SE"
+        },
+        "fetch_days": {
+          "label": "Dagar att hämta",
+          "description": "Hur många dagar med historiska priser som hämtas per körning"
+        },
+        "fetch_interval_hours": {
+          "label": "Hämtningsintervall (timmar)",
+          "description": "Hur ofta priser hämtas om (i timmar). Standard: 4 timmar"
+        },
+        "retry_max": {
+          "label": "Max försök",
+          "description": "Maximalt antal återförsök när morgondagens priser saknas"
+        }
+      },
+      "status": {
+        "lastFetch": "Senaste hämtning",
+        "lastFetchRecords": "Hämtade poster",
+        "status": "Status",
+        "retrying": "Återförsök aktivt",
+        "retryCount": "Återförsök"
+      },
+      "biddingZones": {
+        "NL": "Nederländerna (NL)",
+        "DE": "Tyskland (DE)",
+        "DE-LU": "Tyskland-Luxemburg (DE-LU)",
+        "BE": "Belgien (BE)",
+        "FR": "Frankrike (FR)",
+        "CH": "Schweiz (CH)",
+        "AT": "Österrike (AT)",
+        "DK1": "Danmark Väst (DK1)",
+        "DK2": "Danmark Öst (DK2)",
+        "NO1": "Norge 1 (NO1)",
+        "NO2": "Norge 2 (NO2)",
+        "SE1": "Sverige 1 (SE1)",
+        "SE2": "Sverige 2 (SE2)",
+        "SE3": "Sverige 3 (SE3)",
+        "SE4": "Sverige 4 (SE4)"
+      }
+    }
+  },
+  "profile": {
+    "title": "Min profil",
+    "subtitle": "Visa dina kontouppgifter och ändra ditt lösenord.",
+    "changePassword": "Ändra lösenord",
+    "currentPassword": "Nuvarande lösenord",
+    "newPassword": "Nytt lösenord",
+    "confirmPassword": "Bekräfta nytt lösenord",
+    "passwordMismatch": "Lösenorden stämmer inte överens",
+    "savePassword": "Spara lösenord",
+    "passwordChanged": "Lösenord ändrat. Vänligen logga in igen."
+  }
+}

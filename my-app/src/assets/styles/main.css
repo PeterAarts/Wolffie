@@ -428,7 +428,7 @@ img[src*="icon"],
 }
 .info-section          {height : calc(100vh - 6rem )}
 .hero-card             {height : calc(100vh - 6rem )}
-.sidebar-menu          {padding-left:1.5rem;}
+.sidebar-menu          {}
 
 /* --------------------- RESPONSIVE --------------------- */
 @media (max-width: 768px) {
@@ -453,3 +453,5 @@ main                          {height: calc(100vh - 6rem);overflow-y: auto;}
 .switch-toggle                {margin-top: 2rem;}
 .switch-toggle-content        {margin-left: 1rem;}
 .right-section                {min-width: 320px;}
+.bh-table-responsive table.bh-table-hover tbody tr:hover 
+                              {background-color: var(--color-gray-200);}

@@ -34,7 +34,7 @@ const routes = [
       { path: 'analytics', name: 'Analytics', component: Analytics },
       { path: 'history',   name: 'History',   component: History   },
       { path: 'control',   name: 'Control',   component: Control   },
-      { path: 'settings',  name: 'Settings',  component: Settings  },
+      { path: 'settings',  name: 'Settings',  component: Settings,  meta: { requiresAdmin: true } },
       { path: 'events',    name: 'Events',    component: Events    }
     ]
   }
@@ -55,6 +55,12 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     next({ name: 'Login' });
+    return;
+  }
+
+  // Settings (and any future admin-only routes) redirect non-admins to dashboard
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    next({ name: 'Dashboard' });
     return;
   }
 

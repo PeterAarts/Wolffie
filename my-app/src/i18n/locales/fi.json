@@ -1,0 +1,475 @@
+{
+  "app": {
+    "name": "WattsOn",
+    "loading": "Ladataan WattsOn...",
+    "loadingConfig": "Ladataan kokoonpanoa...",
+    "loadingSetup": "Tarkistetaan asennustilaa...",
+    "loadingConnect": "Yhdistetään järjestelmään...",
+    "loadingDashboard": "Ladataan kojelautaa..."
+  },
+  "nav": {
+    "dashboard": "Kojelauta",
+    "history": "Historia",
+    "control": "Ohjaus",
+    "analytics": "Analytiikka",
+    "events": "Tapahtumat",
+    "settings": "Asetukset",
+    "myProfile": "Oma profiili"
+  },
+  "header": {
+    "connected": "Yhdistetty",
+    "disconnected": "Ei yhteyttä",
+    "refreshData": "Päivitä tiedot",
+    "userMenu": "Käyttäjävalikko",
+    "logout": "Kirjaudu ulos"
+  },
+  "userMenu": {
+    "administrator": "Järjestelmänvalvoja",
+    "settings": "Asetukset",
+    "setupWizard": "Suorita asennusohjaaja",
+    "reloadConfig": "Lataa kokoonpano uudelleen",
+    "logout": "Kirjaudu ulos"
+  },
+  "dashboard": {
+    "title": "Kojelauta",
+    "daily": "Päivittäinen",
+    "total": "Yhteensä",
+    "liveData": "Reaaliaikaiset tiedot",
+    "historicalOnly": "Vain historialliset tiedot",
+    "powerGraph": "Tehokaavio",
+    "energyDiagram": "Energiakaavio",
+    "periodDay": "päivä",
+    "periodWeek": "viikko",
+    "periodMonth": "kuukausi",
+    "periodYear": "vuosi",
+    "totalConsumed": "Kokonaiskulutus",
+    "produced": "Tuotettu",
+    "exported": "Viety",
+    "batteryLabel": "Akku",
+    "currentPower": "Nykyinen teho",
+    "sourceCloud": "Pilvi-API",
+    "sourceModbus": "Paikallinen ModBus",
+    "targetBuffer": "Tavoitepuskuri",
+    "home": "Koti",
+    "clickForDetails": "napsauta lisätietoja varten"
+  },
+  "cards": {
+    "homeSolar": "Koti & Aurinko",
+    "battery": "Akku",
+    "grid": "Verkko",
+    "economic": "Taloudellinen",
+    "green": "Vihreä"
+  },
+  "stats": {
+    "consumed": "Kulutettu",
+    "generation": "Tuotanto",
+    "charged": "Ladattu",
+    "discharge": "Purkaus",
+    "feedIn": "Syöttö verkkoon",
+    "gridConsumed": "Kulutettu",
+    "selfConsumed": "Omakulutus",
+    "selfSufficiency": "Omavaraiscuus",
+    "treesPlanted": "Istutetut puut",
+    "co2Reduction": "CO₂-vähennys"
+  },
+  "energy": {
+    "solarGeneration": "Aurinkoenergia",
+    "totalConsumption": "Kokonaiskulutus",
+    "batteryCharged": "Akku ladattu",
+    "gridFeedIn": "Syöttö verkkoon",
+    "gridImport": "Tuonti",
+    "gridExport": "Vienti",
+    "loadConsumption": "Kulutus",
+    "batteryCharge": "Lataus",
+    "batteryDischarge": "Purkaus",
+    "pvGeneration": "PV-tuotanto"
+  },
+  "status": {
+    "charging": "Ladataan",
+    "discharging": "Puretaan",
+    "idle": "Ei käytössä",
+    "consuming": "Kuluttaa",
+    "exporting": "Viedään",
+    "importing": "Tuodaan",
+    "fault": "Vika"
+  },
+  "units": {
+    "watt": "W",
+    "kilowatt": "kW",
+    "wattHour": "Wh",
+    "kilowattHour": "kWh",
+    "megawattHour": "MWh",
+    "percent": "%",
+    "degreeCelsius": "°C",
+    "volt": "V",
+    "ampere": "A",
+    "hertz": "Hz"
+  },
+  "time": {
+    "today": "Tänään",
+    "yesterday": "Eilen",
+    "thisWeek": "Tällä viikolla",
+    "thisMonth": "Tässä kuussa",
+    "thisYear": "Tänä vuonna",
+    "last24h": "Viimeiset 24 tuntia",
+    "last7d": "Viimeiset 7 päivää",
+    "last30d": "Viimeiset 30 päivää"
+  },
+  "settings": {
+    "title": "Järjestelmäasetukset",
+    "system": "Järjestelmä",
+    "modules": "Moduulit",
+    "general": "Yleiset",
+    "usermanagement": "Käyttäjät",
+    "cloudApi": "Pilvi-API",
+    "modbus": "ModBus",
+    "display": "Näyttö",
+    "notifications": "Ilmoitukset",
+    "tariffs": "Tariffit",
+    "language": "Kieli",
+    "theme": "Teema",
+    "dateFormat": "Päivämäärämuoto",
+    "timeFormat": "Aikamuoto",
+    "temperatureUnit": "Lämpötilayksikkö",
+    "save": "Tallenna kaikki muutokset",
+    "reload": "Lataa uudelleen",
+    "testConnection": "Testaa yhteys",
+    "connectionSuccess": "Yhteys onnistui",
+    "connectionFailed": "Yhteys epäonnistui",
+    "collectors": "Kerääjät",
+    "savedDetail": "Asetukset päivitetty",
+    "core": {
+      "subtitle": "Järjestelmäkokoonpano",
+      "description": "Hallinnoi Wolffie-alustan perusasetuksia.",
+      "restartSystem": "Käynnistä järjestelmä uudelleen",
+      "groups": {
+        "system": {
+          "title": "Järjestelmä & Sijainti"
+        },
+        "dataCollection": {
+          "title": "Tiedonkeruu"
+        },
+        "notifications": {
+          "title": "Ilmoitukset"
+        },
+        "retention": {
+          "title": "Tietojen säilytys (päiviä)"
+        }
+      },
+      "fields": {
+        "system_name": "Järjestelmän nimi",
+        "location": "Sijainti",
+        "timezone": "Aikavyöhyke",
+        "primary_source": "Ensisijainen lähde",
+        "enable_failover": "Automaattinen vikasietoisuus",
+        "cache_timeout": "Välimuistin aikakatkaisu (ms)",
+        "failover_threshold": "Vikasietoisuuden kynnys",
+        "email_enabled": "Sähköposti-ilmoitukset",
+        "email_address": "Vastaanottajan sähköposti",
+        "email_address_placeholder": "esimerkki@verkkotunnus.fi",
+        "snapshots_days": "Tilannevedokset",
+        "minutes_days": "Minuuttitiedot",
+        "hours_days": "Tuntitiedot"
+      }
+    },
+    "users": {
+      "title": "Käyttäjähallinta",
+      "description": "Hallinnoi tämän järjestelmän tilejä ja käyttöoikeustasoja.",
+      "addUser": "Lisää käyttäjä",
+      "total": "Käyttäjiä yhteensä",
+      "name": "Käyttäjänimi",
+      "namePlaceholder": "esim. Pekka",
+      "email": "Sähköposti",
+      "role": "Rooli",
+      "password": "Salasana",
+      "addTitle": "Rekisteröi uusi käyttäjä",
+      "editTitle": "Muokkaa käyttäjää",
+      "lastPasswordUpdate": "Viimeisin salasanan muutos",
+      "confirmRemove": "Haluatko varmasti poistaa käyttäjän {name}?",
+      "full_name": "Koko nimi",
+      "is_active": "Aktiivinen",
+      "last_password_update": "Viimeisin salasanan muutos",
+      "sectionAccount": "Tili",
+      "sectionPassword": "Salasana",
+      "passwordLeaveBlank": "jätä tyhjäksi pitääksesi nykyisen",
+      "active": "aktiivinen",
+      "empty": "Ei määritettyjä käyttäjiä",
+      "deleted": "Käyttäjä poistettu",
+      "userCount": "käyttäjää",
+      "groups": {
+        "management": {
+          "title": "Käyttäjähallinta"
+        }
+      },
+      "columns": {
+        "username": "Käyttäjänimi",
+        "email": "Sähköposti",
+        "role": "Rooli"
+      },
+      "actions": {
+        "create": "Luo käyttäjä"
+      },
+      "confirmDelete": "Haluatko varmasti poistaa käyttäjän {username}?"
+    }
+  },
+  "setup": {
+    "welcome": "Tervetuloa WattsOniin",
+    "subtitle": "Määritetään järjestelmäsi muutamassa yksinkertaisessa vaiheessa",
+    "selectModel": "Valitse malli",
+    "configureModbus": "Määritä ModBus",
+    "cloudApiSetup": "Pilvi-API",
+    "review": "Tarkista",
+    "complete": "Asennus valmis",
+    "completeMessage": "Järjestelmäsi on määritetty ja valmis käytettäväksi"
+  },
+  "common": {
+    "save": "Tallenna",
+    "cancel": "Peruuta",
+    "close": "Sulje",
+    "confirm": "Vahvista",
+    "delete": "Poista",
+    "edit": "Muokkaa",
+    "search": "Hae",
+    "retry": "Yritä uudelleen",
+    "loading": "Ladataan...",
+    "error": "Virhe",
+    "success": "Onnistui",
+    "warning": "Varoitus",
+    "info": "Tiedot",
+    "yes": "Kyllä",
+    "no": "Ei",
+    "actions": "Toiminnot",
+    "enabled": "Käytössä",
+    "disabled": "Pois käytöstä",
+    "refreshed": "Päivitetty",
+    "systemDataUpdated": "Järjestelmätiedot päivitetty",
+    "noData": "Ei tietoja saatavilla",
+    "back": "Takaisin",
+    "next": "Seuraava",
+    "finish": "Valmis",
+    "skip": "Ohita",
+    "noItems": "Kohteita ei löydy",
+    "updated": "Päivitetty",
+    "created": "Luotu",
+    "saved": "Tallennettu",
+    "done": "Valmis"
+  },
+  "events": {
+    "title": "Järjestelmätapahtumat",
+    "description": "Tarkastusloki kaikista automaattisista ja manuaalisista toiminnoista.",
+    "total": "tapahtumaa",
+    "drawerTitle": "Tapahtuman tiedot",
+    "logicReason": "Strategialogiikka",
+    "rawPayload": "Raakasuoritustiedot",
+    "colTime": "Aika",
+    "colType": "Tyyppi",
+    "colAction": "Toiminto",
+    "colUser": "Suorittaja",
+    "colStatus": "Tila"
+  },
+  "control": {
+    "title": "Ohjausnäkymä",
+    "description": "Hallinnoi energiastrategioita, manuaalista ohjausta ja älykkäitä laitteita.",
+    "live": "Reaaliaikainen",
+    "offline": "Offline",
+    "solar": "Aurinko",
+    "battery": "Akku",
+    "grid": "Verkko",
+    "charging": "Ladataan",
+    "discharging": "Puretaan",
+    "importing": "Tuodaan",
+    "exporting": "Viedään",
+    "active": "Aktiivinen",
+    "sectionStrategy": "Käyttöstrategia",
+    "sectionStrategyDesc": "Valitse, miten järjestelmä priorisoi energiankäytön ja akkusyklit.",
+    "sectionDispatch": "Manuaalinen ohjaus",
+    "sectionDispatchDesc": "Ohita automaattinen logiikka pakottaaksesi tiettyjä lataus- tai purkaustapahtumia.",
+    "sectionDevices": "Älykkäät laitteet",
+    "sectionDevicesDesc": "Hallinnoi HomeWizard-energiapistokkeita ja muuta integroitua laitteistoa.",
+    "chargingActive": "Ladataan verkosta",
+    "dischargingActive": "Puretaan verkkoon",
+    "stop": "Pysäytä",
+    "chargeFromGrid": "Lataa verkosta",
+    "chargeFromGridDesc": "Täytä akku sähköverkosta edullisen hinnan aikoina.",
+    "power": "Teho",
+    "targetSOC": "Tavoite-SOC",
+    "duration": "Kesto",
+    "hours": "tuntia",
+    "startCharging": "Aloita lataus",
+    "chargingStarted": "Latausjakso aloitettu",
+    "confirmCharge": "Ladataanko akkua {watts}W:lla {targetSOC}%:iin {durationHours} tunnin ajan?",
+    "dischargeToGrid": "Pura verkkoon",
+    "dischargeToGridDesc": "Vie akkuenergiaa verkkoon (hyödyllistä huipputuntien vientiin).",
+    "minimumSOC": "Vähimmäis-SOC",
+    "startDischarging": "Aloita purkaus",
+    "dischargingStarted": "Purkausjakso aloitettu",
+    "confirmDischarge": "Puretaanko akkua {watts}W:lla {minimumSOC}%:iin {durationHours} tunnin ajan?",
+    "dispatchStopped": "Manuaalinen ohjaus pysäytetty",
+    "quickActions": "Pikätoiminnot",
+    "normal": "Normaalitila",
+    "actions": "Toiminnot",
+    "preventDischarge": "Estä purkaus",
+    "stopDispatch": "Pysäytä ohjaus",
+    "normalRestored": "Normaali toiminta palautettu",
+    "dischargeBlocked": "Akun purkaus estetty",
+    "strategyUpdated": "Strategia päivitetty",
+    "strategy": {
+      "smartEco": {
+        "name": "Älykäs Eko",
+        "desc": "Optimoi alhaisimmat kustannukset hintaennusteiden avulla."
+      },
+      "selfSufficient": {
+        "name": "Omavarainen",
+        "desc": "Priorisoi aurinkoenergia ja akku kotikuormille."
+      },
+      "peakShaving": {
+        "name": "Huipputehon leikkaus",
+        "desc": "Rajoita verkon käyttöä korkean kysynnän aikoina."
+      },
+      "manual": {
+        "name": "Manuaalinen",
+        "desc": "Noudata käyttäjän määrittämiä aikatauluja ja asetuksia."
+      },
+      "targetTime": "Aamukohdekellonaika",
+      "priceCap": "Enimmäislataushinta",
+      "blockExport": "Estä verkkovienti",
+      "shadowMode": "Varjotila (Testi)"
+    },
+    "forecast": {
+      "title": "Energianäkymä",
+      "price": "Day-ahead-hinta",
+      "solar": "Aurinkoennuste",
+      "noData": "Ei ennustetietoja tänään saatavilla",
+      "now": "Nyt",
+      "today": "tänään",
+      "tomorrow": "huomenna",
+      "prevDay": "Edellinen päivä",
+      "nextDay": "Seuraava päivä",
+      "soc": "Akun SoC",
+      "gridChargeZone": "Suositeltu verkkolatausalue",
+      "batteryCapacity": "Akun kapasiteetti",
+      "minSoc": "Vähimmäis-SoC"
+    },
+    "triggeredBy": "Laukaissut",
+    "modbusRequired": "ModBus-yhteys vaaditaan ohjaustoimintoihin",
+    "fields": {
+      "brightness": "Kirkkaus",
+      "power_on": "Käynnistystila",
+      "switch_lock": "Kytkinlukko"
+    },
+    "devices": {
+      "device": "laite | laitteet",
+      "brand": "Merkki",
+      "usage24h": "Kulutus tänään",
+      "priority": "Prioriteetti",
+      "active": "aktiivinen",
+      "discover": "Etsi",
+      "product": "Tuote",
+      "discoverDone": "Etsintä valmis",
+      "refresh": "Päivitä",
+      "add": "Lisää laite",
+      "addTitle": "Rekisteröi uusi laite",
+      "editTitle": "Muokkaa laitetta",
+      "empty": "Älykkäitä laitteita ei löydy.",
+      "name": "Nimi",
+      "namePlaceholder": "esim. Pesukone",
+      "address": "IP-osoite",
+      "ipAddress": "IP-osoite",
+      "port": "Portti",
+      "registerNew": "Rekisteröi uusi laite",
+      "statusLight": "LED",
+      "switchLock": "Kytkinlukko",
+      "switchLockHint": "Estä fyysisen painikkeen manuaalinen kytkentä.",
+      "todayUsage": "Kulutus tänään",
+      "enabled": "Käytössä",
+      "disabled": "Pois käytöstä",
+      "locked": "Lukittu",
+      "unlocked": "Lukitsematon",
+      "usage_today": "tänään",
+      "identify": "Tunnista",
+      "identifying": "Tunnistetaan laitetta (LED vilkkuu)...",
+      "sectionRegistration": "Verkkorekisteröinti",
+      "sectionDevice": "Laiteasetukset",
+      "pushedOnSave": "asetukset lähetetään laitteelle tallennettaessa",
+      "ledBrightness": "Tila-LED:n kirkkaus",
+      "off": "Pois",
+      "full": "Täysi",
+      "confirmRemove": "Haluatko varmasti poistaa {name}?",
+      "validationRequired": "Nimi ja IP-osoite ovat pakollisia.",
+      "added": "Laite lisätty",
+      "updated": "Laite päivitetty",
+      "removed": "Laite poistettu"
+    }
+  },
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": "Hinta-asetukset",
+        "fetchSettings": "Hakuasetukset",
+        "collectorStatus": "Kerääjän tila"
+      },
+      "fields": {
+        "enabled": {
+          "label": "Ota day-ahead-hinnat käyttöön",
+          "description": "Aktivoi päivittäinen sähköhintojen haku"
+        },
+        "bidding_zone": {
+          "label": "Tarjousalue",
+          "description": "Valitse sähkön tarjousalue alueellesi"
+        },
+        "country_code": {
+          "label": "Maakoodi",
+          "description": "Kaksikirjaiminen maakoodi (valinnainen)",
+          "placeholder": "FI"
+        },
+        "fetch_days": {
+          "label": "Haettavat päivät",
+          "description": "Kuinka monen päivän historialliset hinnat haetaan per ajo"
+        },
+        "fetch_interval_hours": {
+          "label": "Hakuväli (tuntia)",
+          "description": "Kuinka usein hinnat haetaan uudelleen (tunneissa). Oletus: 4 tuntia"
+        },
+        "retry_max": {
+          "label": "Enimmäisyritykset",
+          "description": "Enimmäismäärä uudelleenyrityksiä kun huomisen hinnat puuttuvat"
+        }
+      },
+      "status": {
+        "lastFetch": "Viimeisin haku",
+        "lastFetchRecords": "Haetut tietueet",
+        "status": "Tila",
+        "retrying": "Uudelleenyritys aktiivinen",
+        "retryCount": "Uudelleenyritykset"
+      },
+      "biddingZones": {
+        "NL": "Alankomaat (NL)",
+        "DE": "Saksa (DE)",
+        "DE-LU": "Saksa-Luxemburg (DE-LU)",
+        "BE": "Belgia (BE)",
+        "FR": "Ranska (FR)",
+        "CH": "Sveitsi (CH)",
+        "AT": "Itävalta (AT)",
+        "DK1": "Tanska Länsi (DK1)",
+        "DK2": "Tanska Itä (DK2)",
+        "NO1": "Norja 1 (NO1)",
+        "NO2": "Norja 2 (NO2)",
+        "SE1": "Ruotsi 1 (SE1)",
+        "SE2": "Ruotsi 2 (SE2)",
+        "SE3": "Ruotsi 3 (SE3)",
+        "SE4": "Ruotsi 4 (SE4)"
+      }
+    }
+  },
+  "profile": {
+    "title": "Oma profiili",
+    "subtitle": "Tarkastele tilitietojasi ja vaihda salasanasi.",
+    "changePassword": "Vaihda salasana",
+    "currentPassword": "Nykyinen salasana",
+    "newPassword": "Uusi salasana",
+    "confirmPassword": "Vahvista uusi salasana",
+    "passwordMismatch": "Salasanat eivät täsmää",
+    "savePassword": "Tallenna salasana",
+    "passwordChanged": "Salasana vaihdettu. Kirjaudu uudelleen sisään."
+  }
+}

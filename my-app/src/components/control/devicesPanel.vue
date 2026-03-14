@@ -59,7 +59,7 @@
       </template>
 
       <template #_actions="{ value }">
-        <div class="row-actions">
+        <div class="row-actions" :class="{ 'row-actions--always-visible': isMobile }">
           <button class="icon-btn" @click="openEdit(value)"><i class="fa-light fa-pen"></i></button>
           <button class="icon-btn" @click="identify(value)"><i class="fa-light fa-lightbulb"></i></button>
           <button class="icon-btn icon-btn--danger" @click="askRemove(value)"><i class="fa-light fa-trash"></i></button>
@@ -194,7 +194,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import apiClient from '@/services/api';
 import { useToastStore } from '@/stores/toast';
 import { useSchemaStore } from '@/stores/schema';
@@ -222,18 +222,27 @@ const editTarget = ref(null);
 const deviceHistory = ref([]);
 const drawer = ref({ visible: false, mode: 'add', id: null });
 const immediateUpdating = ref(null);
+const isMobile = ref(false);
 
-// Computed logic for Table and Count
-const columns = computed(() => [
-  { field: '_status', title: '', width: '2rem', slotMode: true },
-  { field: 'name', title: t('control.devices.name'), slotMode: true },
-  { field: '_product', title: t('control.devices.product'), slotMode: true },
-  { field: 'ip_address', title: t('control.devices.address'), slotMode: true },
-  { field: '_led', title: t('control.devices.statusLight'), slotMode: true },
-  { field: '_lock', title: t('control.devices.switchLock'), slotMode: true },
-  { field: '_usage', title: t('control.devices.usage_today'), slotMode: true },
-  { field: '_actions', title: t('common.actions'), width: '7.5rem', slotMode: true },
+// Desktop: all columns. Mobile: status + name + actions only.
+const desktopColumns = computed(() => [
+  { field: '_status',  title: '',                                  width: '2rem',   slotMode: true },
+  { field: 'name',     title: t('control.devices.name'),                            slotMode: true },
+  { field: '_product', title: t('control.devices.product'),                         slotMode: true },
+  { field: 'ip_address', title: t('control.devices.address'),                       slotMode: true },
+  { field: '_led',     title: t('control.devices.statusLight'),                     slotMode: true },
+  { field: '_lock',    title: t('control.devices.switchLock'),                      slotMode: true },
+  { field: '_usage',   title: t('control.devices.usage_today'),                     slotMode: true },
+  { field: '_actions', title: t('common.actions'),                width: '7.5rem', slotMode: true },
 ]);
+
+const mobileColumns = computed(() => [
+  { field: '_status',  title: '',                         width: '1rem',   slotMode: true },
+  { field: 'name',     title: t('control.devices.name'),                   slotMode: true },
+  { field: '_actions', title: '',                         width: '7rem',   slotMode: true },
+]);
+
+const columns = computed(() => isMobile.value ? mobileColumns.value : desktopColumns.value);
 
 const enabledCount = computed(() => devices.value.filter(d => d.enabled).length);
 const activeForm = computed(() => drawer.value.mode === 'add' ? form.value : editTarget.value);
@@ -379,9 +388,20 @@ async function identify(d) {
   } catch (e) { toast.add({ severity: 'error', summary: t('common.error'), detail: e.message }); }
 }
 
+let mq = null;
+function onMqChange(e) { isMobile.value = e.matches; }
+
 onMounted(async () => {
+  mq = window.matchMedia('(max-width: 639px)');
+  isMobile.value = mq.matches;
+  mq.addEventListener('change', onMqChange);
+
   await schemaStore.initialize();
   await load();
+});
+
+onUnmounted(() => {
+  mq?.removeEventListener('change', onMqChange);
 });
 </script>
 
@@ -401,4 +421,11 @@ onMounted(async () => {
 .req                      { color: #ef4444; margin-left: 2px; }
 .dynamic-field-wrapper    { border-left: 2px solid #f3f4f6; padding-left: 1rem; }
 .toggle--busy             { opacity: 0.5; pointer-events: none; }
+
+/* On mobile, action buttons are always visible (no hover needed on touch) */
+.row-actions--always-visible {
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
 </style>

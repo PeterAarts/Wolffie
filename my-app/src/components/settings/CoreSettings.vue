@@ -1,8 +1,7 @@
 <template>
   <div class="core-settings">
     <div class="section-header mb-4">
-      <h3>Systeemconfiguratie</h3>
-      <p class="text-secondary text-xs text-gray-400">Beheer de basisinstellingen van het Wolffie platform.</p>
+
     </div>
     
     <UniversalSettingsPanel module-id="core" />

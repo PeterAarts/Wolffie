@@ -13,7 +13,8 @@
     "control": "Control",
     "analytics": "Analytics",
     "events": "Events",
-    "settings": "Settings"
+    "settings": "Settings",
+    "myProfile": "My Profile"
   },
   "header": {
     "connected": "Connected",
@@ -40,7 +41,17 @@
     "periodDay": "day",
     "periodWeek": "week",
     "periodMonth": "month",
-    "periodYear": "year"
+    "periodYear": "year",
+    "totalConsumed": "Total Consumed",
+    "produced": "Produced",
+    "exported": "Exported",
+    "batteryLabel": "Battery",
+    "currentPower": "Current Power",
+    "sourceCloud": "Cloud API",
+    "sourceModbus": "Local ModBus",
+    "targetBuffer": "Target buffer",
+    "home": "Home",
+    "clickForDetails": "click for details"
   },
   "cards": {
     "homeSolar": "Home & Solar",
@@ -65,12 +76,12 @@
     "solarGeneration": "Solar Generation",
     "totalConsumption": "Total Consumption",
     "batteryCharged": "Battery Charged",
-    "gridFeedIn": "Grid Feed-in",
-    "gridImport": "Grid Import",
-    "gridExport": "Grid Export",
-    "loadConsumption": "Load Consumption",
-    "batteryCharge": "Battery Charge",
-    "batteryDischarge": "Battery Discharge",
+    "gridFeedIn": "Feed-in",
+    "gridImport": "Import",
+    "gridExport": "Export",
+    "loadConsumption": "Consumption",
+    "batteryCharge": "Charge",
+    "batteryDischarge": "Discharge",
     "pvGeneration": "PV Generation"
   },
   "status": {
@@ -125,6 +136,7 @@
     "testConnection": "Test Connection",
     "connectionSuccess": "Connection successful",
     "connectionFailed": "Connection failed",
+    "collectors": "Collectors",
     "users": {
       "title": "User Management",
       "description": "Manage accounts and authorization levels for this system.",
@@ -141,8 +153,64 @@
       "confirmRemove": "Are you sure you want to remove user {name}?",
       "full_name": "Full Name",
       "is_active": "Active",
-      "last_password_update": "Last Password Update"
-    }
+      "last_password_update": "Last Password Update",
+      "sectionAccount": "Account",
+      "sectionPassword": "Password",
+      "passwordLeaveBlank": "leave blank to keep current",
+      "active": "active",
+      "empty": "No users configured",
+      "deleted": "User deleted",
+      "userCount": "users",
+      "groups": {
+        "management": {
+          "title": "User Management"
+        }
+      },
+      "columns": {
+        "username": "Username",
+        "email": "Email",
+        "role": "Role"
+      },
+      "actions": {
+        "create": "Create User"
+      },
+      "confirmDelete": "Are you sure you want to delete user {username}?"
+    },
+    "core": {
+      "subtitle": "System Configuration",
+      "description": "Manage the base settings of the Wolffie platform.",
+      "restartSystem": "Restart System",
+      "groups": {
+        "system": {
+          "title": "System & Location"
+        },
+        "dataCollection": {
+          "title": "Data Collection"
+        },
+        "notifications": {
+          "title": "Notifications"
+        },
+        "retention": {
+          "title": "Data Retention (Days)"
+        }
+      },
+      "fields": {
+        "system_name": "System Name",
+        "location": "Location",
+        "timezone": "Timezone",
+        "primary_source": "Primary Source",
+        "enable_failover": "Automatic Failover",
+        "cache_timeout": "Cache Timeout (ms)",
+        "failover_threshold": "Failover Threshold",
+        "email_enabled": "Email Notifications",
+        "email_address": "Recipient Email",
+        "email_address_placeholder": "example@domain.com",
+        "snapshots_days": "Snapshots",
+        "minutes_days": "Minute Data",
+        "hours_days": "Hour Data"
+      }
+    },
+    "savedDetail": "Settings updated"
   },
   "setup": {
     "welcome": "Welcome to WattsOn",
@@ -182,7 +250,9 @@
     "skip": "Skip",
     "noItems": "No items found",
     "updated": "Updated",
-    "created": "Created"
+    "created": "Created",
+    "saved": "Saved",
+    "done": "Done"
   },
   "events": {
     "title": "System Events",
@@ -390,5 +460,16 @@
         "SE4": "Sweden 4 (SE4)"
       }
     }
+  },
+  "profile": {
+    "title": "My Profile",
+    "subtitle": "View your account details and change your password.",
+    "changePassword": "Change Password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm new password",
+    "passwordMismatch": "Passwords do not match",
+    "savePassword": "Save password",
+    "passwordChanged": "Password changed. Please log in again."
   }
 }

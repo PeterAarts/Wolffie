@@ -10,10 +10,12 @@
         </button>
 
         <div class="flex items-center gap-3">
+        <router-link to="/" class="flex items-center gap-3 no-underline text-inherit">
           <img src="@/assets/wolffie.svg" alt="Wolffie Logo" class="w-8 h-8 drop-shadow-sm" />
           <span class="text-3xl font-black tracking-tight  uppercase">
             Wolffie
           </span>
+        </router-link>
           
           <div class="flex items-center ml-2">
             <span class="relative flex h-2.5 w-2.5">
@@ -38,28 +40,92 @@
       <div class="flex items-center gap-3 relative">
         <button 
           @click="toggleUserMenu"
-          class="flex items-center gap-2 px-3 py-1.5 transition-all"
+          class="flex items-center gap-2 p-2 bg-gray-200 transition-all"
         >
-          <div class="w-7 h-7 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold uppercase">
+          <div class="w-6 h-5 bg-gray-900 text-white flex items-center justify-center text-[10px] font-bold uppercase">
             {{ authStore.user?.username?.substring(0,2) || 'me' }}
           </div>
           <span class="text-sm font-bold text-gray-700 hidden sm:block">{{ authStore.user?.username }}</span>
           <i class="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
         </button>
 
-        <div v-if="userMenuOpen" class="absolute top-12 right-0 w-56 bg-white border border-gray-200  shadow-xl z-50 overflow-hidden">
-          <div class="p-4 bg-gray-50 border-b border-gray-100 text-xs text-left">
-            <div class="font-bold uppercase text-gray-900">{{ authStore.user?.username }}</div>
-            <div class="text-gray-400 lowercase tracking-widest mt-0.5">{{ authStore.user?.role }}</div>
-          </div>
-          <div class="p-2">
-            <button @click="handleLogout" class="w-full text-left p-2 text-sm font-bold text-gray-600 hover:bg-gray-100  flex items-center gap-3">
-              <i class="fa-light fa-right-from-bracket"></i> {{t('header.logout')}}
+        <div v-if="userMenuOpen" class="absolute top-12 right-0 w-44 bg-white border border-gray-100 shadow-xl z-50 overflow-hidden">
+          <div class="p-4">
+            <button @click="openProfile" class="w-full text-left p-2 text-sm text-gray-500 hover:bg-gray-200 flex items-center gap-3">
+              <i class="fa-light fa-user-pen"></i> {{ t('nav.myProfile') }}
+            </button>
+            <button @click="handleLogout" class="w-full text-left p-2 text-sm text-gray-500 hover:bg-gray-200 flex items-center gap-3">
+              <i class="fa-light fa-right-from-bracket"></i> {{ t('header.logout') }}
             </button>
           </div>
         </div>
       </div>
     </header>
+
+    <!-- ── Profile drawer (available on every page) ──────────────────────── -->
+    <AppDrawer v-model:visible="profileDrawerOpen" :title="t('nav.myProfile')">
+      <div v-if="profileDrawerOpen">
+
+        <div class="profile-meta">
+          <div class="profile-meta__avatar">
+            {{ authStore.user?.username?.substring(0,2)?.toUpperCase() || '??' }}
+          </div>
+          <div class="profile-meta__name">{{ authStore.user?.full_name || authStore.user?.username }}</div>
+          <div class="profile-meta__sub">
+            <span :class="['role-badge', `role-badge--${authStore.user?.role}`]">{{ authStore.user?.role }}</span>
+          </div>
+        </div>
+
+        <div class="profile-fields">
+          <div class="profile-field">
+            <span class="profile-field__label">{{ t('settings.users.name') }}</span>
+            <span class="profile-field__value">{{ authStore.user?.username }}</span>
+          </div>
+          <div class="profile-field">
+            <span class="profile-field__label">{{ t('settings.users.full_name') }}</span>
+            <span class="profile-field__value">{{ authStore.user?.full_name || '—' }}</span>
+          </div>
+          <div v-if="authStore.user?.email" class="profile-field">
+            <span class="profile-field__label">{{ t('settings.users.email') }}</span>
+            <span class="profile-field__value">{{ authStore.user?.email }}</span>
+          </div>
+        </div>
+
+        <div class="drawer-divider" />
+
+        <div class="drawer-section">
+          <div class="drawer-section__title mt-4">{{ t('profile.changePassword') }}</div>
+
+          <div class="form-field">
+            <label class="form-label">{{ t('profile.currentPassword') }} <span class="req">*</span></label>
+            <input v-model="profileForm.oldPassword" type="password" class="input" autocomplete="current-password" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">{{ t('profile.newPassword') }} <span class="req">*</span></label>
+            <input v-model="profileForm.newPassword" type="password" class="input" autocomplete="new-password" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label">{{ t('profile.confirmPassword') }} <span class="req">*</span></label>
+            <input v-model="profileForm.confirmPassword" type="password" class="input" autocomplete="new-password" />
+            <span v-if="passwordMismatch" class="field-error">{{ t('profile.passwordMismatch') }}</span>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <button class="btn btn--sm" @click="profileDrawerOpen = false">{{ t('common.cancel') }}</button>
+        <button
+          class="btn btn--sm btn--primary"
+          :class="{ 'btn--busy': savingPassword }"
+          :disabled="savingPassword || passwordMismatch || !profileForm.oldPassword || !profileForm.newPassword"
+          @click="savePassword"
+        >
+          {{ t('profile.savePassword') }}
+        </button>
+      </template>
+    </AppDrawer>
 
     <div class=" flex flex-1 overflow-hidden relative">
 
@@ -72,25 +138,25 @@
 
       <aside 
         :class="[
-          'absolute inset-y-0 left-0 w-50 bg-white  z-40 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:block flex-shrink-0 flex flex-col',
+          'absolute inset-y-0 left-0 w-64 bg-white  z-40 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:block flex-shrink-0 flex flex-col',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         ]"
       >
-        <nav class="flex-1 overflow-y-auto p-3 space-y-4 sidebar-menu">
+        <nav class="flex-1 overflow-y-auto p-4 gap-4 sidebar-menu">
           <router-link 
             v-for="item in navItems" 
             :key="item.id" 
             :to="item.to"
             @click="sidebarOpen = false"
-            class="flex items-center p-4 transition-all font-bold group"
-            :active-class="item.to === '/' ? '' : 'bg-gray-100 text-gray-900'"
-            :exact-active-class="item.to === '/' ? 'bg-gray-100 text-gray-900' : ''"
-            :class="item.disabled ? 'opacity-50 pointer-events-none' : 'text-gray-700 hover:bg-gray-200'"
+            class="flex items-center p-2 transition-all group font-medium"
+            :active-class="item.to === '/' ? '' : 'bg-gray-900 text-white '"
+            :exact-active-class="item.to === '/' ? 'bg-gray-900 text-white ' : ''"
+            :class="item.disabled ? 'opacity-50 pointer-events-none' : 'text-gray-700 hover:bg-gray-200 hover:text-gray-900 '"
           >
             <div class="w-12 flex justify-center">
-              <i :class="[item.icon, 'text-md', isActive(item.to) ? 'text-gray-500 font-light' : 'text-gray-400 group-hover:text-gray-900 transition-colors']"></i>
+              <i :class="[item.icon, 'text-md', isActive(item.to) ? 'text-gray-300 font-light' : 'text-gray-400 group-hover:text-gray-900 transition-colors']"></i>
             </div>
-            <span class="ml-4 text-sm font-semibold tracking-tight group-hover:text-gray-900">{{ item.label }}</span>
+            <span class="p-2 text-sm  tracking-tight group-hover:text-gray-900">{{ item.label }}</span>
           </router-link>
         </nav>
       </aside>
@@ -108,17 +174,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useRealtimeStore } from '@/stores/realtime';
+import { useToastStore } from '@/stores/toast';
 import ConnectionStatusBanner from '@/components/ConnectionStatusBanner.vue';
+import AppDrawer from '@/components/common/AppDrawer.vue';
 import { useLocale } from '../composables/useLocale';
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const realtimeStore = useRealtimeStore();
+const toast = useToastStore();
 const { t } = useLocale();
 
 // Exact match for '/', prefix match for everything else
@@ -127,17 +196,51 @@ const isActive = (path) => {
   return route.path.startsWith(path);
 };
 
-const sidebarOpen = ref(false);
-const userMenuOpen = ref(false);
+const sidebarOpen    = ref(false);
+const userMenuOpen   = ref(false);
+const profileDrawerOpen = ref(false);
+const savingPassword = ref(false);
+const profileForm    = ref({ oldPassword: '', newPassword: '', confirmPassword: '' });
 
-const navItems = [
-  { id: 'dashboard', label: t('nav.dashboard'), to: '/', icon: 'fa-light fa-house-signal' },
-  { id: 'history', label: t('nav.history'), to: '/history', icon: 'fa-light fa-chart-line' },
-  { id: 'analytics', label: t('nav.analytics'), to: '/analytics', icon: 'fa-light fa-chart-mixed' },
-  { id: 'events', label: t('nav.events'), to: '/events', icon: 'fa-light fa-bell-on' },
-  { id: 'control', label: t('nav.control'), to: '/control', icon: 'fa-light fa-solar-panel' },
-  { id: 'settings', label: t('nav.settings'), to: '/settings', icon: 'fa-light fa-gears' }
+const passwordMismatch = computed(() =>
+  profileForm.value.confirmPassword.length > 0 &&
+  profileForm.value.newPassword !== profileForm.value.confirmPassword
+);
+
+function openProfile() {
+  userMenuOpen.value = false;
+  profileForm.value  = { oldPassword: '', newPassword: '', confirmPassword: '' };
+  profileDrawerOpen.value = true;
+}
+
+async function savePassword() {
+  if (passwordMismatch.value || !profileForm.value.oldPassword || !profileForm.value.newPassword) return;
+  savingPassword.value = true;
+  try {
+    const ok = await authStore.changePassword(profileForm.value.oldPassword, profileForm.value.newPassword);
+    if (ok) {
+      toast.add({ severity: 'success', summary: t('common.success'), detail: t('profile.passwordChanged') });
+      profileDrawerOpen.value = false;
+      // changePassword() calls logout() internally — auth guard will redirect to /login
+    } else {
+      toast.add({ severity: 'error', summary: t('common.error'), detail: authStore.error || t('common.error') });
+    }
+  } finally {
+    savingPassword.value = false;
+  }
+}
+
+const allNavItems = [
+  { id: 'dashboard', label: t('nav.dashboard'), to: '/',         icon: 'fa-light fa-table-cells-large', roles: null },
+  { id: 'history',   label: t('nav.history'),   to: '/history',  icon: 'fa-light fa-chart-line',   roles: null },
+  { id: 'control',   label: t('nav.control'),   to: '/control',  icon: 'fa-light fa-bolt',  roles: null },
+  { id: 'settings',  label: t('nav.settings'),  to: '/settings', icon: 'fa-light fa-gear',        roles: ['admin', 'user'] },
 ];
+
+// roles: null = visible to everyone, otherwise restricted to listed roles
+const navItems = computed(() =>
+  allNavItems.filter(item => !item.roles || item.roles.includes(authStore.user?.role))
+);
 
 const toggleUserMenu = () => { userMenuOpen.value = !userMenuOpen.value; };
 
@@ -145,6 +248,35 @@ const handleLogout = async () => {
   await authStore.logout();
   router.push('/login');
 };
+
+// ─── Realtime connection — global lifecycle ───────────────────────────────────
+// MainLayout mounts once and lives for the whole session, making it the right
+// place to own the realtimeStore connection so the indicator stays accurate on
+// every page, not just the Dashboard.
+onMounted(async () => {
+  await realtimeStore.initialize();
+  startPolling();
+});
+
+let _pollInterval = null;
+
+const startPolling = () => {
+  if (_pollInterval) return;
+  _pollInterval = setInterval(async () => {
+    if (realtimeStore.isConnected) {
+      // Already connected — let the store refresh its data
+      realtimeStore.fetchData?.();
+    } else {
+      // Not connected — try to re-establish
+      await realtimeStore.initialize();
+    }
+  }, 10000);
+};
+
+onUnmounted(() => {
+  if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+});
+// ─────────────────────────────────────────────────────────────────────────────
 </script>
 
 <style scoped>
@@ -156,4 +288,23 @@ const handleLogout = async () => {
 .fade-leave-to {
   opacity: 0;
 }
+
+/* Profile drawer */
+.profile-meta               { display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem 1.25rem; text-align: center; }
+.profile-meta__avatar       { width: 3.5rem; height: 3.5rem; border-radius: 50%; background: #111827; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+.profile-meta__name         { font-size: 1rem; font-weight: 700; color: #111827; }
+.profile-meta__sub          { margin-top: 0.35rem; }
+
+.profile-fields             { border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; margin-bottom: 0; }
+.profile-field              { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; border-bottom: 1px solid #f9fafb; }
+.profile-field:last-child   { border-bottom: none; }
+.profile-field__label       { font-size: 0.75rem; color: #9ca3af; font-weight: 400; text-transform: lowercase; letter-spacing: 0.04em; }
+.profile-field__value       { font-size: 0.85rem; font-weight: 600; color: #374151; }
+
+.role-badge          { display: inline-block; padding: 0.125rem 0.5rem; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 2px; background: #f3f4f6; color: #374151; }
+.role-badge--admin   { background: #111827; color: #fff; }
+.role-badge--user    { background: #e5e7eb; color: #374151; }
+.role-badge--viewer  { background: #f3f4f6; color: #9ca3af; }
+.req                 { color: #ef4444; margin-left: 2px; }
+.field-error         { font-size: 0.72rem; color: #ef4444; margin-top: 0.25rem; display: block; }
 </style>

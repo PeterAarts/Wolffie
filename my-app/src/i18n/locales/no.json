@@ -1,0 +1,475 @@
+{
+  "app": {
+    "name": "WattsOn",
+    "loading": "Laster WattsOn...",
+    "loadingConfig": "Laster konfigurasjon...",
+    "loadingSetup": "Kontrollerer oppsettsstatus...",
+    "loadingConnect": "Kobler til system...",
+    "loadingDashboard": "Laster instrumentbord..."
+  },
+  "nav": {
+    "dashboard": "Instrumentbord",
+    "history": "Historikk",
+    "control": "Styring",
+    "analytics": "Analyse",
+    "events": "Hendelser",
+    "settings": "Innstillinger",
+    "myProfile": "Min profil"
+  },
+  "header": {
+    "connected": "Tilkoblet",
+    "disconnected": "Frakoblet",
+    "refreshData": "Oppdater data",
+    "userMenu": "Brukermeny",
+    "logout": "Logg ut"
+  },
+  "userMenu": {
+    "administrator": "Administrator",
+    "settings": "Innstillinger",
+    "setupWizard": "Kjør oppsettveiviser",
+    "reloadConfig": "Last inn konfigurasjon på nytt",
+    "logout": "Logg ut"
+  },
+  "dashboard": {
+    "title": "Instrumentbord",
+    "daily": "Daglig",
+    "total": "Totalt",
+    "liveData": "Livedata",
+    "historicalOnly": "Kun historiske data",
+    "powerGraph": "Effektgraf",
+    "energyDiagram": "Energidiagram",
+    "periodDay": "dag",
+    "periodWeek": "uke",
+    "periodMonth": "måned",
+    "periodYear": "år",
+    "totalConsumed": "Totalt forbrukt",
+    "produced": "Produsert",
+    "exported": "Eksportert",
+    "batteryLabel": "Batteri",
+    "currentPower": "Gjeldende effekt",
+    "sourceCloud": "Sky-API",
+    "sourceModbus": "Lokal ModBus",
+    "targetBuffer": "Målbuffer",
+    "home": "Hjem",
+    "clickForDetails": "klikk for detaljer"
+  },
+  "cards": {
+    "homeSolar": "Hjem & Sol",
+    "battery": "Batteri",
+    "grid": "Nett",
+    "economic": "Økonomisk",
+    "green": "Grønn"
+  },
+  "stats": {
+    "consumed": "Forbrukt",
+    "generation": "Produksjon",
+    "charged": "Ladet",
+    "discharge": "Utlading",
+    "feedIn": "Tilbakelevering",
+    "gridConsumed": "Forbrukt",
+    "selfConsumed": "Egenforbrukt",
+    "selfSufficiency": "Selvforsyning",
+    "treesPlanted": "Plantede trær",
+    "co2Reduction": "CO₂-reduksjon"
+  },
+  "energy": {
+    "solarGeneration": "Solproduksjon",
+    "totalConsumption": "Totalt forbruk",
+    "batteryCharged": "Batteri ladet",
+    "gridFeedIn": "Tilbakelevering til nett",
+    "gridImport": "Import",
+    "gridExport": "Eksport",
+    "loadConsumption": "Forbruk",
+    "batteryCharge": "Lading",
+    "batteryDischarge": "Utlading",
+    "pvGeneration": "PV-produksjon"
+  },
+  "status": {
+    "charging": "Lader",
+    "discharging": "Lader ut",
+    "idle": "Inaktiv",
+    "consuming": "Forbruker",
+    "exporting": "Eksporterer",
+    "importing": "Importerer",
+    "fault": "Feil"
+  },
+  "units": {
+    "watt": "W",
+    "kilowatt": "kW",
+    "wattHour": "Wh",
+    "kilowattHour": "kWh",
+    "megawattHour": "MWh",
+    "percent": "%",
+    "degreeCelsius": "°C",
+    "volt": "V",
+    "ampere": "A",
+    "hertz": "Hz"
+  },
+  "time": {
+    "today": "I dag",
+    "yesterday": "I går",
+    "thisWeek": "Denne uken",
+    "thisMonth": "Denne måneden",
+    "thisYear": "Dette året",
+    "last24h": "Siste 24 timer",
+    "last7d": "Siste 7 dager",
+    "last30d": "Siste 30 dager"
+  },
+  "settings": {
+    "title": "Systeminnstillinger",
+    "system": "System",
+    "modules": "Moduler",
+    "general": "Generelt",
+    "usermanagement": "Brukere",
+    "cloudApi": "Sky-API",
+    "modbus": "ModBus",
+    "display": "Visning",
+    "notifications": "Varsler",
+    "tariffs": "Tariffer",
+    "language": "Språk",
+    "theme": "Tema",
+    "dateFormat": "Datoformat",
+    "timeFormat": "Tidsformat",
+    "temperatureUnit": "Temperaturenhet",
+    "save": "Lagre alle endringer",
+    "reload": "Last inn på nytt",
+    "testConnection": "Test tilkobling",
+    "connectionSuccess": "Tilkobling vellykket",
+    "connectionFailed": "Tilkobling mislyktes",
+    "collectors": "Samlere",
+    "savedDetail": "Innstillinger oppdatert",
+    "core": {
+      "subtitle": "Systemkonfigurasjon",
+      "description": "Administrer grunninnstillingene for Wolffie-plattformen.",
+      "restartSystem": "Start system på nytt",
+      "groups": {
+        "system": {
+          "title": "System & Plassering"
+        },
+        "dataCollection": {
+          "title": "Datainnsamling"
+        },
+        "notifications": {
+          "title": "Varsler"
+        },
+        "retention": {
+          "title": "Datalagring (dager)"
+        }
+      },
+      "fields": {
+        "system_name": "Systemnavn",
+        "location": "Plassering",
+        "timezone": "Tidssone",
+        "primary_source": "Primærkilde",
+        "enable_failover": "Automatisk failover",
+        "cache_timeout": "Cache-tidsavbrudd (ms)",
+        "failover_threshold": "Failover-terskel",
+        "email_enabled": "E-postvarsler",
+        "email_address": "Mottaker-e-post",
+        "email_address_placeholder": "eksempel@domene.no",
+        "snapshots_days": "Øyeblikksbilder",
+        "minutes_days": "Minuttdata",
+        "hours_days": "Timedata"
+      }
+    },
+    "users": {
+      "title": "Brukeradministrasjon",
+      "description": "Administrer kontoer og autorisasjonsnivåer for dette systemet.",
+      "addUser": "Legg til bruker",
+      "total": "Totalt antall brukere",
+      "name": "Brukernavn",
+      "namePlaceholder": "f.eks. Peter",
+      "email": "E-post",
+      "role": "Rolle",
+      "password": "Passord",
+      "addTitle": "Registrer ny bruker",
+      "editTitle": "Rediger bruker",
+      "lastPasswordUpdate": "Siste passordendring",
+      "confirmRemove": "Er du sikker på at du vil fjerne bruker {name}?",
+      "full_name": "Fullt navn",
+      "is_active": "Aktiv",
+      "last_password_update": "Siste passordendring",
+      "sectionAccount": "Konto",
+      "sectionPassword": "Passord",
+      "passwordLeaveBlank": "la stå tomt for å beholde gjeldende",
+      "active": "aktiv",
+      "empty": "Ingen brukere konfigurert",
+      "deleted": "Bruker slettet",
+      "userCount": "brukere",
+      "groups": {
+        "management": {
+          "title": "Brukeradministrasjon"
+        }
+      },
+      "columns": {
+        "username": "Brukernavn",
+        "email": "E-post",
+        "role": "Rolle"
+      },
+      "actions": {
+        "create": "Opprett bruker"
+      },
+      "confirmDelete": "Er du sikker på at du vil slette bruker {username}?"
+    }
+  },
+  "setup": {
+    "welcome": "Velkommen til WattsOn",
+    "subtitle": "La oss konfigurere systemet ditt i noen enkle trinn",
+    "selectModel": "Velg modell",
+    "configureModbus": "Konfigurer ModBus",
+    "cloudApiSetup": "Sky-API",
+    "review": "Gjennomgå",
+    "complete": "Oppsett fullført",
+    "completeMessage": "Systemet ditt er konfigurert og klart til bruk"
+  },
+  "common": {
+    "save": "Lagre",
+    "cancel": "Avbryt",
+    "close": "Lukk",
+    "confirm": "Bekreft",
+    "delete": "Slett",
+    "edit": "Rediger",
+    "search": "Søk",
+    "retry": "Prøv igjen",
+    "loading": "Laster...",
+    "error": "Feil",
+    "success": "Vellykket",
+    "warning": "Advarsel",
+    "info": "Info",
+    "yes": "Ja",
+    "no": "Nei",
+    "actions": "Handlinger",
+    "enabled": "Aktivert",
+    "disabled": "Deaktivert",
+    "refreshed": "Oppdatert",
+    "systemDataUpdated": "Systemdata oppdatert",
+    "noData": "Ingen data tilgjengelig",
+    "back": "Tilbake",
+    "next": "Neste",
+    "finish": "Fullfør",
+    "skip": "Hopp over",
+    "noItems": "Ingen elementer funnet",
+    "updated": "Oppdatert",
+    "created": "Opprettet",
+    "saved": "Lagret",
+    "done": "Ferdig"
+  },
+  "events": {
+    "title": "Systemhendelser",
+    "description": "Revisjonslogg over alle automatiserte og manuelle handlinger.",
+    "total": "hendelser",
+    "drawerTitle": "Hendelsesdetaljer",
+    "logicReason": "Strategilogikk",
+    "rawPayload": "Rå kjøringsdata",
+    "colTime": "Tid",
+    "colType": "Type",
+    "colAction": "Handling",
+    "colUser": "Utført av",
+    "colStatus": "Status"
+  },
+  "control": {
+    "title": "Kontrollsenter",
+    "description": "Administrer energistrategier, manuell styring og smarte enheter.",
+    "live": "Live",
+    "offline": "Frakoblet",
+    "solar": "Sol",
+    "battery": "Batteri",
+    "grid": "Nett",
+    "charging": "Lader",
+    "discharging": "Lader ut",
+    "importing": "Importerer",
+    "exporting": "Eksporterer",
+    "active": "Aktiv",
+    "sectionStrategy": "Driftsstrategi",
+    "sectionStrategyDesc": "Velg hvordan systemet skal prioritere energibruk og batterisykluser.",
+    "sectionDispatch": "Manuell styring",
+    "sectionDispatchDesc": "Overstyr automatisk logikk for å tvinge spesifikke lade- eller utladingshendelser.",
+    "sectionDevices": "Smarte enheter",
+    "sectionDevicesDesc": "Administrer HomeWizard-energistikkontakter og annen integrert maskinvare.",
+    "chargingActive": "Lader fra nett",
+    "dischargingActive": "Lader ut til nett",
+    "stop": "Stopp",
+    "chargeFromGrid": "Lad fra nett",
+    "chargeFromGridDesc": "Fyll batteriet fra strømnettet i perioder med lave tariffer.",
+    "power": "Effekt",
+    "targetSOC": "Mål-SOC",
+    "duration": "Varighet",
+    "hours": "timer",
+    "startCharging": "Start lading",
+    "chargingStarted": "Ladesekvens startet",
+    "confirmCharge": "Lad batteri ved {watts}W til {targetSOC}% i {durationHours} timer?",
+    "dischargeToGrid": "Lad ut til nett",
+    "dischargeToGridDesc": "Eksporter batterienergi til nettet (nyttig for eksport i høytariffperioder).",
+    "minimumSOC": "Minimum SOC",
+    "startDischarging": "Start utlading",
+    "dischargingStarted": "Utladingssekvens startet",
+    "confirmDischarge": "Lad ut batteri ved {watts}W til {minimumSOC}% i {durationHours} timer?",
+    "dispatchStopped": "Manuell styring stoppet",
+    "quickActions": "Hurtighandlinger",
+    "normal": "Normalmodus",
+    "actions": "Handlinger",
+    "preventDischarge": "Forhindre utlading",
+    "stopDispatch": "Stopp styring",
+    "normalRestored": "Normal drift gjenopprettet",
+    "dischargeBlocked": "Batteriutlading blokkert",
+    "strategyUpdated": "Strategi oppdatert",
+    "strategy": {
+      "smartEco": {
+        "name": "Smart Øko",
+        "desc": "Optimaliser for laveste kostnad ved hjelp av prisprognoser."
+      },
+      "selfSufficient": {
+        "name": "Selvforsynende",
+        "desc": "Prioriter solenergi og batteri for hjemmelaster."
+      },
+      "peakShaving": {
+        "name": "Toppavskjæring",
+        "desc": "Begrens nettbruk i perioder med høy etterspørsel."
+      },
+      "manual": {
+        "name": "Manuell",
+        "desc": "Følg brukerdefinerte tidsplaner og innstillinger."
+      },
+      "targetTime": "Morgenmåltid",
+      "priceCap": "Maks ladepris",
+      "blockExport": "Blokker netteksport",
+      "shadowMode": "Skyggmodus (Test)"
+    },
+    "forecast": {
+      "title": "Energioversikt",
+      "price": "Day-ahead-pris",
+      "solar": "Solprognose",
+      "noData": "Ingen prognosedata tilgjengelig for i dag",
+      "now": "Nå",
+      "today": "i dag",
+      "tomorrow": "i morgen",
+      "prevDay": "Forrige dag",
+      "nextDay": "Neste dag",
+      "soc": "Batteri SoC",
+      "gridChargeZone": "Anbefalt nettladesone",
+      "batteryCapacity": "Batterikapasitet",
+      "minSoc": "Min. SoC"
+    },
+    "triggeredBy": "Utløst av",
+    "modbusRequired": "ModBus-tilkobling kreves for styringsoperasjoner",
+    "fields": {
+      "brightness": "Lysstyrke",
+      "power_on": "På-tilstand",
+      "switch_lock": "Bryterlas"
+    },
+    "devices": {
+      "device": "enhet | enheter",
+      "brand": "Merke",
+      "usage24h": "Forbruk i dag",
+      "priority": "Prioritet",
+      "active": "aktiv",
+      "discover": "Oppdag",
+      "product": "Produkt",
+      "discoverDone": "Oppdagelse fullført",
+      "refresh": "Oppdater",
+      "add": "Legg til enhet",
+      "addTitle": "Registrer ny enhet",
+      "editTitle": "Rediger enhet",
+      "empty": "Ingen smarte enheter funnet.",
+      "name": "Navn",
+      "namePlaceholder": "f.eks. Vaskemaskin",
+      "address": "IP-adresse",
+      "ipAddress": "IP-adresse",
+      "port": "Port",
+      "registerNew": "Registrer ny enhet",
+      "statusLight": "LED",
+      "switchLock": "Bryterlas",
+      "switchLockHint": "Forhindre manuell veksling av den fysiske knappen.",
+      "todayUsage": "Forbruk i dag",
+      "enabled": "Aktivert",
+      "disabled": "Deaktivert",
+      "locked": "Låst",
+      "unlocked": "Ulåst",
+      "usage_today": "i dag",
+      "identify": "Identifiser",
+      "identifying": "Identifiserer enhet (blinker LED)...",
+      "sectionRegistration": "Nettverksregistrering",
+      "sectionDevice": "Enhetsinnstillinger",
+      "pushedOnSave": "innstillinger sendes til enheten ved lagring",
+      "ledBrightness": "Status-LED-lysstyrke",
+      "off": "Av",
+      "full": "Full",
+      "confirmRemove": "Er du sikker på at du vil fjerne {name}?",
+      "validationRequired": "Navn og IP-adresse er påkrevd.",
+      "added": "Enhet lagt til",
+      "updated": "Enhet oppdatert",
+      "removed": "Enhet fjernet"
+    }
+  },
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": "Prisinnstillinger",
+        "fetchSettings": "Hentingsinnstillinger",
+        "collectorStatus": "Samlerstatus"
+      },
+      "fields": {
+        "enabled": {
+          "label": "Aktiver day-ahead-priser",
+          "description": "Aktiver daglig henting av strømpriser"
+        },
+        "bidding_zone": {
+          "label": "Budsone",
+          "description": "Velg strømbudsone for din region"
+        },
+        "country_code": {
+          "label": "Landskode",
+          "description": "Tobokstavs landskode (valgfritt)",
+          "placeholder": "NO"
+        },
+        "fetch_days": {
+          "label": "Dager å hente",
+          "description": "Hvor mange dager med historiske priser som hentes per kjøring"
+        },
+        "fetch_interval_hours": {
+          "label": "Hentingsintervall (timer)",
+          "description": "Hvor ofte priser hentes på nytt (i timer). Standard: 4 timer"
+        },
+        "retry_max": {
+          "label": "Maks forsøk",
+          "description": "Maksimalt antall forsøk når morgendagens priser mangler"
+        }
+      },
+      "status": {
+        "lastFetch": "Siste henting",
+        "lastFetchRecords": "Hentede poster",
+        "status": "Status",
+        "retrying": "Nytt forsøk aktivt",
+        "retryCount": "Forsøk"
+      },
+      "biddingZones": {
+        "NL": "Nederland (NL)",
+        "DE": "Tyskland (DE)",
+        "DE-LU": "Tyskland-Luxemburg (DE-LU)",
+        "BE": "Belgia (BE)",
+        "FR": "Frankrike (FR)",
+        "CH": "Sveits (CH)",
+        "AT": "Østerrike (AT)",
+        "DK1": "Danmark Vest (DK1)",
+        "DK2": "Danmark Øst (DK2)",
+        "NO1": "Norge 1 (NO1)",
+        "NO2": "Norge 2 (NO2)",
+        "SE1": "Sverige 1 (SE1)",
+        "SE2": "Sverige 2 (SE2)",
+        "SE3": "Sverige 3 (SE3)",
+        "SE4": "Sverige 4 (SE4)"
+      }
+    }
+  },
+  "profile": {
+    "title": "Min profil",
+    "subtitle": "Se kontodetaljer og endre passord.",
+    "changePassword": "Endre passord",
+    "currentPassword": "Gjeldende passord",
+    "newPassword": "Nytt passord",
+    "confirmPassword": "Bekreft nytt passord",
+    "passwordMismatch": "Passordene stemmer ikke overens",
+    "savePassword": "Lagre passord",
+    "passwordChanged": "Passord endret. Vennligst logg inn igjen."
+  }
+}

@@ -12,7 +12,7 @@
         >
           <i v-if="actionLoading[action.id]" class="fa-light fa-spinner-third fa-spin text-slate-500"></i>
           <i v-else :class="['fa-light', mapIcon(action.icon), 'text-blue-700']"></i>
-          {{ action.label }}
+          {{ r(action.label) }}
         </button>
       </div>
 
@@ -35,7 +35,7 @@
     <!-- Loading state -->
     <div v-if="loading" class="flex items-center justify-center py-12 text-gray-400 text-sm gap-2">
       <i class="fa-duotone fa-spinner-third fa-spin"></i>
-      Laden...
+      {{ t('common.loading') }}
     </div>
 
     <!-- Error state -->
@@ -47,26 +47,26 @@
     <!-- Empty state -->
     <div v-else-if="!tableData.length" class="flex flex-col items-center justify-center py-12 text-gray-400 text-sm gap-2">
       <i class="fa-duotone fa-table text-2xl"></i>
-      Geen gegevens beschikbaar
+      {{ t('common.noData') }}
     </div>
 
     <!-- Table -->
     <div v-else class="overflow-hidden  overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-200">
         <thead class="bg-gray-50/50">
-          <tr>
+          <tr :key="headerKey">
             <th
               v-for="col in tableConfig.columns"
               :key="col.field"
               class="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-widest"
             >
-              {{ col.header }}
+              {{ r(col.header) }}
             </th>
             <th
               v-if="tableConfig.rowActions?.length"
               class="p-4text-right text-xs font-extrabold text-gray-400 uppercase tracking-widest"
             >
-              Acties
+              {{ t('common.actions') }}
             </th>
           </tr>
         </thead>
@@ -123,12 +123,33 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import apiClient from '@/services/api';
 
 const props = defineProps({
-  config:   { type: Object, required: true },
-  moduleId: { type: String, required: true }
+  config:        { type: Object, required: true },
+  moduleId:      { type: String, required: true },
+  i18nKeys:      { type: Boolean, default: false },
+  // When the parent uses i18nKeys it merges translations asynchronously.
+  // Watch this flag to force header re-render once messages are ready.
+  messagesReady: { type: Boolean, default: true }
 });
+
+// Incrementing this key forces Vue to re-evaluate r(col.header) calls
+// in the thead after module translations have been merged.
+const headerKey = ref(0);
+watch(() => props.messagesReady, (ready) => {
+  if (ready) headerKey.value++;
+});
+
+const { t } = useI18n();
+
+// Resolve a string as an i18n key when the parent schema uses i18nKeys,
+// otherwise return it as a plain display string.
+function r(value) {
+  if (!value) return value;
+  return props.i18nKeys ? t(value) : value;
+}
 
 // ─── Normalise config ────────────────────────────────────────────────────────
 // The schema may nest the table config inside a `data` property (legacy format)
@@ -173,7 +194,7 @@ async function loadData() {
     }
   } catch (err) {
     console.error(`UniversalTable [${props.moduleId}]: failed to load data`, err);
-    loadError.value = err.message || 'Laden mislukt';
+    loadError.value = err.message || t('common.loadFailed');
   } finally {
     loading.value = false;
   }
@@ -181,20 +202,20 @@ async function loadData() {
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
 async function executeGlobalAction(action) {
-  if (action.confirmMessage && !confirm(action.confirmMessage)) return;
+  if (action.confirmMessage && !confirm(r(action.confirmMessage))) return;
   actionLoading[action.id] = true;
   try {
     await apiClient({ method: action.method || 'POST', url: action.endpoint });
     if (action.refreshAfter !== false) await loadData();
   } catch (err) {
-    alert('Actie mislukt: ' + err.message);
+    alert(t('common.actionFailed') + ': ' + err.message);
   } finally {
     actionLoading[action.id] = false;
   }
 }
 
 async function executeRowAction(btn, row) {
-  if (btn.confirmMessage && !confirm(btn.confirmMessage)) return;
+  if (btn.confirmMessage && !confirm(r(btn.confirmMessage))) return;
   try {
     await apiClient({
       method: btn.method || 'POST',
@@ -203,7 +224,7 @@ async function executeRowAction(btn, row) {
     });
     await loadData();
   } catch (err) {
-    alert('Actie mislukt: ' + err.message);
+    alert(t('common.actionFailed') + ': ' + err.message);
   }
 }
 

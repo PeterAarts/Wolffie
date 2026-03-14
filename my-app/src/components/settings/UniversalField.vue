@@ -1,7 +1,7 @@
 <template>
   <div v-if="field.visible !== false" class="flex flex-col gap-1.5 w-full">
-    <label 
-      v-if="field.label && !['checkbox', 'switch'].includes(field.component)" 
+  <label 
+      v-if="field.label && !['checkbox', 'boolean','switch'].includes(field.component)" 
       :for="field.key" 
       class="text-xs  text-gray-500  tracking-wider ml-1"
     >
@@ -13,7 +13,7 @@
       <template v-if="['text', 'password', 'email', 'number', 'url'].includes(field.component)">
         <div class="relative flex items-center">
           <div v-if="field.icon" class="absolute left-4 text-gray-400 group-focus-within:text-blue-500 transition-colors">
-            <i :class="['fa-duotone', field.icon]"></i>
+            <i :class="['fa-light', field.icon]"></i>
           </div>
 
           <input
@@ -59,30 +59,20 @@
       </select>
 
       <div v-else-if="['switch', 'boolean'].includes(field.component)">
-        <div class="flex flex-col gap-1 py-1 pt-4">
-          <label class="inline-flex switch-toggle items-center cursor-pointer group">
-            <div class="relative">
-              <input 
-                type="checkbox" 
-                :id="field.key"
-                :checked="!!modelValue" 
-                @change="emit('update:modelValue', $event.target.checked)"
-                :disabled="field.editable === false || disabled"
-                class="sr-only peer"
-              >
-              <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-0 peer-focus:ring-brand-soft rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gray-700"></div>
-            </div>
-            <div class="flex flex-col switch-toggle-content">
-              <span class="select-none text-sm font-normal text-gray-700 group-hover:text-gray-900 transition-colors">
-                {{ field.label }}
-              </span>
-            </div>
-          </label>
-          
-          <p v-if="field.description" class="text-xs text-gray-400 italic ml-12">
-            <i class="fa-duotone fa-circle-info mr-1"></i>
-            {{ field.description }}
-          </p>
+        <div class="toggle-row">
+
+          <button
+            type="button"
+            class="toggle"
+            :class="{ 'toggle--on': !!modelValue }"
+            :disabled="field.editable === false || disabled"
+            @click="emit('update:modelValue', !modelValue)"
+          >
+            <span class="toggle__knob" />
+          </button>
+          <div class="flex flex-col">
+            <span class="select-none text-sm font-normal text-gray-700">{{ field.label }}</span>
+          </div>
         </div>
       </div>
       <div v-else-if="field.component === 'color'" class="flex items-center gap-3 p-2 bg-white border border-gray-200  shadow-sm">
@@ -97,13 +87,13 @@
 
       <div v-if="field.description && field.component !== 'switch'" class="mt-1.5 px-1">
         <p class="text-xs text-gray-400 italic">
-          <i class="fa-duotone fa-circle-info mr-1"></i>
+          
           {{ field.description }}
         </p>
       </div>
 
       <div v-if="validationError" class="mt-1 px-1 flex items-center gap-1.5 text-red-600">
-        <i class="fa-duotone fa-triangle-exclamation text-[10px]"></i>
+        <i class="fa-light fa-triangle-exclamation text-[10px]"></i>
         <small class="text-[11px] font-bold tracking-wide uppercase">{{ validationError }}</small>
       </div>
     </div>

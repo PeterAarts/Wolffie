@@ -1,20 +1,20 @@
 <!-- src/components/settings/UniversalInfoPanel.vue -->
 <template>
-  <div class="universal-info-panel">
+  <div class="grid bg-gray-100 p-4 gap-4 fields-container">
     <div 
       v-for="item in displayItems" 
       :key="item.label"
-      class="info-item"
+      :class="['info-item', getColClass(item)]"
     >
       <div class="info-icon" v-if="item.icon">
-        <i :class="`pi ${item.icon}`" :style="{ color: item.iconColor }"></i>
+        <i :class="`fa-light ${item.icon}`" :style="{ color: item.iconColor }"></i>
       </div>
       
       <div class="info-content">
-        <span class="info-label">{{ item.label }}</span>
+        <label :key="labelKey" class="text-xs text-gray-500 tracking-wider ml-1">{{ r(item.label) }}</label>
         
         <!-- Simple Value -->
-        <span v-if="!item.template" class="info-value">
+        <span v-if="!item.template" class="select-none text-sm font-normal bg-white p-2 text-gray-700 group-hover:text-gray-900 transition-colors">
           {{ getValue(item) }}
         </span>
 
@@ -79,25 +79,42 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { useI18n } from 'vue-i18n';
 import apiClient from '@/services/api';
 
 
 const props = defineProps({
-  config: {
-    type: Object,
-    required: true
-  }
+  config:     { type: Object, required: true },
+  moduleId:   { type: String, default: '' },
+  i18nKeys:   { type: Boolean, default: false },
+  staticData:     { type: Object, default: null },
+  messagesReady:  { type: Boolean, default: true },
 });
+
+const { t } = useI18n();
+function r(value) {
+  if (!value) return value;
+  return props.i18nKeys ? t(value) : value;
+}
+
+// Re-render labels once i18n messages are merged by parent
+watch(() => props.messagesReady, (ready) => {
+  if (ready) labelKey.value++;
+});
+const labelKey = ref(0);
 
 const data = ref({});
 const loading = ref(false);
 let refreshInterval = null;
 
+// Normalise config: support both flat { endpoint, items } and nested { data: { endpoint, items } }
+const panelConfig = computed(() => props.config.data ?? props.config);
+
 const displayItems = computed(() => {
-  if (!props.config.items) return [];
-  
-  return props.config.items.map(item => ({
+  if (!panelConfig.value.items) return [];
+
+  return panelConfig.value.items.map(item => ({
     ...item,
     value: item.value !== undefined ? item.value : data.value[item.field]
   }));
@@ -105,21 +122,38 @@ const displayItems = computed(() => {
 
 // Load data
 async function loadData() {
-  if (!props.config.endpoint) {
-    // Static data
-    data.value = props.config.data || {};
+  // staticData from parent takes priority (avoids redundant API call)
+  if (props.staticData) {
+    data.value = props.staticData;
+    return;
+  }
+
+  const cfg = panelConfig.value;
+
+  if (!cfg.endpoint) {
+    data.value = {};
     return;
   }
 
   loading.value = true;
   try {
-    const response = await apiClient.get(props.config.endpoint);
-    data.value = response.data.data || response.data;
+    const response = await apiClient.get(cfg.endpoint);
+    const raw = response.data || response;
+    const path = cfg.dataPath;
+    data.value = path ? (raw[path] ?? raw) : (raw.data ?? raw);
   } catch (error) {
     console.error('Failed to load info panel data:', error);
   } finally {
     loading.value = false;
   }
+}
+
+// Column class — mirrors the field grid used in universalSettingsPanel
+function getColClass(item) {
+  const cols = item.cols ?? props.config.defaultCols ?? null;
+  if (!cols) return '';
+  const map = { 1: 'col-1', 2: 'col-2', 3: 'col-3', 4: 'col-4', 6: 'col-6', 12: 'col-12' };
+  return map[cols] || '';
 }
 
 // Get value from item
@@ -195,10 +229,11 @@ function formatDate(value, format = 'relative') {
 
 // Setup auto-refresh
 function setupRefresh() {
-  if (props.config.dynamic && props.config.refreshInterval) {
+  const cfg = panelConfig.value;
+  if (cfg.dynamic && cfg.refreshInterval) {
     refreshInterval = setInterval(() => {
       loadData();
-    }, props.config.refreshInterval);
+    }, cfg.refreshInterval);
   }
 }
 
@@ -221,13 +256,23 @@ defineExpose({
 
 <style scoped>
 .universal-info-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
   padding: 1rem;
   background: #f9fafb;
   border-radius: 8px;
 }
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 1rem;
+}
+.col-1  { grid-column: span 1; }
+.col-2  { grid-column: span 2; }
+.col-3  { grid-column: span 3; }
+.col-4  { grid-column: span 4; }
+.col-6  { grid-column: span 6; }
+.col-12 { grid-column: span 12; }
+/* Fallback: no cols specified = full width */
+.info-item:not([class*="col-"]) { grid-column: span 12; }
 
 .info-item {
   display: flex;

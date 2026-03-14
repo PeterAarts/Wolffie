@@ -10,10 +10,11 @@
   "nav": {
     "dashboard": "Dashboard",
     "history": "Geschiedenis",
-    "control": "Bediening",
+    "control": "Beheer",
     "analytics": "Analyse",
     "events": "Gebeurtenissen",
-    "settings": "Instellingen"
+    "settings": "Instellingen",
+    "myProfile": "Mijn Profiel"
   },
   "header": {
     "connected": "Verbonden",
@@ -40,12 +41,22 @@
     "periodDay": "dag",
     "periodWeek": "week",
     "periodMonth": "maand",
-    "periodYear": "jaar"
+    "periodYear": "jaar",
+    "totalConsumed": "Totaal verbruikt",
+    "produced": "Geproduceerd",
+    "exported": "Geëxporteerd",
+    "batteryLabel": "Batterij",
+    "currentPower": "Huidig vermogen",
+    "sourceCloud": "Cloud API",
+    "sourceModbus": "Lokale ModBus",
+    "targetBuffer": "Doelbuffer",
+    "home": "Thuis",
+    "clickForDetails": "klik voor details"
   },
   "cards": {
-    "homeSolar": "Huis & Zonne-energie",
+    "homeSolar": "Thuis & Zonne-energie",
     "battery": "Batterij",
-    "grid": "Stroomnet",
+    "grid": "Net",
     "economic": "Economisch",
     "green": "Groen"
   },
@@ -53,24 +64,24 @@
     "consumed": "Verbruikt",
     "generation": "Opwekking",
     "charged": "Geladen",
-    "discharge": "Ontladen",
+    "discharge": "Ontlading",
     "feedIn": "Teruglevering",
     "gridConsumed": "Verbruikt",
-    "selfConsumed": "Eigen verbruik",
-    "selfSufficiency": "Zelfvoorzienend",
-    "treesPlanted": "Bomen geplant",
+    "selfConsumed": "Zelfverbruikt",
+    "selfSufficiency": "Zelfvoorzienendheid",
+    "treesPlanted": "Geplante bomen",
     "co2Reduction": "CO₂-reductie"
   },
   "energy": {
     "solarGeneration": "Zonne-opwekking",
-    "totalConsumption": "Totaal verbruik",
+    "totalConsumption": "Totaalverbruik",
     "batteryCharged": "Batterij geladen",
-    "gridFeedIn": "Teruglevering net",
-    "gridImport": "Netafname",
-    "gridExport": "Teruglevering",
+    "gridFeedIn": "Teruglevering",
+    "gridImport": "Import",
+    "gridExport": "Export",
     "loadConsumption": "Verbruik",
-    "batteryCharge": "Batterij laden",
-    "batteryDischarge": "Batterij ontladen",
+    "batteryCharge": "Laden",
+    "batteryDischarge": "Ontladen",
     "pvGeneration": "PV-opwekking"
   },
   "status": {
@@ -78,8 +89,8 @@
     "discharging": "Ontladen",
     "idle": "Inactief",
     "consuming": "Verbruikend",
-    "exporting": "Terugleveren",
-    "importing": "Afnemen",
+    "exporting": "Exporterend",
+    "importing": "Importerend",
     "fault": "Storing"
   },
   "units": {
@@ -106,14 +117,14 @@
   },
   "settings": {
     "title": "Systeeminstellingen",
-    "system": "Systeem",
-    "modules": "Modules",
+    "system": "systeem",
+    "modules": "modules",
     "general": "Algemeen",
-    "usermanagement": "Gebruikersbeheer",
+    "usermanagement": "Gebruikers",
     "cloudApi": "Cloud API",
     "modbus": "ModBus",
     "display": "Weergave",
-    "notifications": "Meldingen",
+    "notifications": "Notificaties",
     "tariffs": "Tarieven",
     "language": "Taal",
     "theme": "Thema",
@@ -125,27 +136,85 @@
     "testConnection": "Verbinding testen",
     "connectionSuccess": "Verbinding geslaagd",
     "connectionFailed": "Verbinding mislukt",
+    "collectors": "Collectors",
+    "savedDetail": "Instellingen bijgewerkt",
+    "core": {
+      "subtitle": "Systeemconfiguratie",
+      "description": "Beheer de basisinstellingen van het Wolffie platform.",
+      "restartSystem": "Systeem herstarten",
+      "groups": {
+        "system": {
+          "title": "Systeem & Locatie"
+        },
+        "dataCollection": {
+          "title": "Data Collectie"
+        },
+        "notifications": {
+          "title": "Notificaties"
+        },
+        "retention": {
+          "title": "Data Retentie (Dagen)"
+        }
+      },
+      "fields": {
+        "system_name": "Systeem Naam",
+        "location": "Locatie",
+        "timezone": "Tijdzone",
+        "primary_source": "Primaire Bron",
+        "enable_failover": "Automatische Failover",
+        "cache_timeout": "Cache Timeout (ms)",
+        "failover_threshold": "Failover Drempel",
+        "email_enabled": "E-mail Notificaties",
+        "email_address": "Ontvanger E-mail",
+        "email_address_placeholder": "voorbeeld@domein.nl",
+        "snapshots_days": "Snapshots",
+        "minutes_days": "Minuut Data",
+        "hours_days": "Uur Data"
+      }
+    },
     "users": {
       "title": "Gebruikersbeheer",
       "description": "Beheer accounts en autorisatieniveaus voor dit systeem.",
       "addUser": "Gebruiker toevoegen",
-      "total": "Totaal aantal gebruikers",
+      "total": "Totaal gebruikers",
       "name": "Gebruikersnaam",
-      "namePlaceholder": "e.g. Peter",
+      "namePlaceholder": "bijv. Peter",
       "email": "E-mail",
       "role": "Rol",
       "password": "Wachtwoord",
       "addTitle": "Nieuwe gebruiker registreren",
       "editTitle": "Gebruiker bewerken",
+      "lastPasswordUpdate": "Laatste wachtwoordwijziging",
+      "confirmRemove": "Weet je zeker dat je gebruiker {name} wilt verwijderen?",
       "full_name": "Volledige naam",
       "is_active": "Actief",
-      "last_password_update": "Laatste wachtwoordupdate",
-      "confirmRemove": "Weet je zeker dat je gebruiker {name} wilt verwijderen?"
+      "last_password_update": "Laatste wachtwoordwijziging",
+      "sectionAccount": "Account",
+      "sectionPassword": "Wachtwoord",
+      "passwordLeaveBlank": "leeg laten om huidig te bewaren",
+      "active": "actief",
+      "empty": "Geen gebruikers geconfigureerd",
+      "deleted": "Gebruiker verwijderd",
+      "userCount": "gebruikers",
+      "groups": {
+        "management": {
+          "title": "Gebruikersbeheer"
+        }
+      },
+      "columns": {
+        "username": "Gebruikersnaam",
+        "email": "E-mail",
+        "role": "Rol"
+      },
+      "actions": {
+        "create": "Gebruiker aanmaken"
+      },
+      "confirmDelete": "Weet je zeker dat je gebruiker {username} wilt verwijderen?"
     }
   },
   "setup": {
     "welcome": "Welkom bij WattsOn",
-    "subtitle": "Laten we je systeem instellen in een paar eenvoudige stappen",
+    "subtitle": "Laten we je systeem in een paar eenvoudige stappen instellen",
     "selectModel": "Model selecteren",
     "configureModbus": "ModBus configureren",
     "cloudApiSetup": "Cloud API",
@@ -164,12 +233,12 @@
     "retry": "Opnieuw proberen",
     "loading": "Laden...",
     "error": "Fout",
-    "success": "Gelukt",
+    "success": "Geslaagd",
     "warning": "Waarschuwing",
     "info": "Info",
     "yes": "Ja",
     "no": "Nee",
-    "actions": "",
+    "actions": "acties",
     "enabled": "Ingeschakeld",
     "disabled": "Uitgeschakeld",
     "refreshed": "Vernieuwd",
@@ -180,144 +249,151 @@
     "finish": "Voltooien",
     "skip": "Overslaan",
     "noItems": "Geen items gevonden",
-    "items": "item | items"
+    "updated": "Bijgewerkt",
+    "created": "Aangemaakt",
+    "saved": "Opgeslagen",
+    "done": "Klaar"
   },
   "events": {
     "title": "Systeemgebeurtenissen",
-    "description": "Logboek van alle automatische en handmatige acties.",
+    "description": "Auditlog van alle geautomatiseerde en handmatige acties.",
     "total": "gebeurtenissen",
-    "drawerTitle": "Details Gebeurtenis",
-    "logicReason": "Strategie Logica",
-    "rawPayload": "Ruwe Uitvoeringsgegevens",
-    "colTime": "Tijdstip",
+    "drawerTitle": "Gebeurtenisdetails",
+    "logicReason": "Strategie-logica",
+    "rawPayload": "Ruwe uitvoeringsdata",
+    "colTime": "Tijd",
     "colType": "Type",
     "colAction": "Actie",
-    "colUser": "Uitgevoerd Door",
-    "colStatus": "Status",
-    "details": "Bekijk details van deze gebeurtenis"
+    "colUser": "Uitgevoerd door",
+    "colStatus": "Status"
   },
   "control": {
-    "title": "Bediening",
-    "description": "Beheer je energiestrategieën, handmatige aansturing en slimme apparaten.",
+    "title": "Beheerscentrum",
+    "description": "Beheer je energiestrategieën, handmatige dispatching en slimme apparaten.",
     "live": "Live",
     "offline": "Offline",
     "solar": "Zonne-energie",
     "battery": "Batterij",
-    "grid": "Stroomnet",
+    "grid": "Net",
     "charging": "Laden",
     "discharging": "Ontladen",
-    "importing": "Afnemen",
-    "exporting": "Terugleveren",
+    "importing": "Importerend",
+    "exporting": "Exporterend",
     "active": "Actief",
     "sectionStrategy": "Bedrijfsstrategie",
-    "sectionStrategyDesc": "Selecteer hoe het systeem energieverbruik en batterijcycli prioriteert.",
-    "sectionDispatch": "Handmatige Aansturing",
-    "sectionDispatchDesc": "Overschrijf de automatische logica voor specifieke laad- of ontlaadacties.",
-    "sectionDevices": "Slimme Apparaten",
-    "sectionDevicesDesc": "Beheer HomeWizard-stopcontacten en andere gekoppelde hardware.",
+    "sectionStrategyDesc": "Selecteer hoe het systeem energiegebruik en batterijcycli moet prioriteren.",
+    "sectionDispatch": "Handmatige dispatching",
+    "sectionDispatchDesc": "Overschrijf automatische logica om specifieke laad- of ontlaadgebeurtenissen af te dwingen.",
+    "sectionDevices": "Slimme apparaten",
+    "sectionDevicesDesc": "Beheer HomeWizard energiecontactdozen en andere geïntegreerde hardware.",
     "chargingActive": "Laden vanuit net",
     "dischargingActive": "Ontladen naar net",
     "stop": "Stoppen",
-    "chargeFromGrid": "Laden vanuit Net",
-    "chargeFromGridDesc": "Laad de batterij op via het stroomnet tijdens goedkope uren.",
+    "chargeFromGrid": "Laden vanuit net",
+    "chargeFromGridDesc": "Vul de batterij op vanuit het elektriciteitsnet tijdens dalurenprijzen.",
     "power": "Vermogen",
     "targetSOC": "Doel SOC",
     "duration": "Duur",
     "hours": "uur",
     "startCharging": "Laden starten",
-    "chargingStarted": "Laadreeks gestart",
-    "confirmCharge": "Batterij laden met {watts}W tot {targetSOC}% gedurende {durationHours} uur?",
-    "dischargeToGrid": "Ontladen naar Net",
-    "dischargeToGridDesc": "Exporteer batterijenergie naar het net (nuttig bij hoge tarieven).",
-    "minimumSOC": "Minimale SOC",
+    "chargingStarted": "Laadsequentie gestart",
+    "confirmCharge": "Batterij laden op {watts}W tot {targetSOC}% gedurende {durationHours} uur?",
+    "dischargeToGrid": "Ontladen naar net",
+    "dischargeToGridDesc": "Exporteer batterijenergie naar het net (handig voor piekuurtarieven).",
+    "minimumSOC": "Minimum SOC",
     "startDischarging": "Ontladen starten",
-    "dischargingStarted": "Ontlaadreeks gestart",
-    "confirmDischarge": "Batterij ontladen met {watts}W tot {minimumSOC}% gedurende {durationHours} uur?",
-    "dispatchStopped": "Handmatige aansturing gestopt",
+    "dischargingStarted": "Ontlaadsequentie gestart",
+    "confirmDischarge": "Batterij ontladen op {watts}W tot {minimumSOC}% gedurende {durationHours} uur?",
+    "dispatchStopped": "Handmatige dispatching gestopt",
     "quickActions": "Snelle acties",
     "normal": "Normale modus",
-    "actions": "",
-    "preventDischarge": "Ontladen voorkomen",
-    "stopDispatch": "Aansturing stoppen",
+    "actions": "acties",
+    "preventDischarge": "Ontladen blokkeren",
+    "stopDispatch": "Dispatching stoppen",
     "normalRestored": "Normale werking hersteld",
     "dischargeBlocked": "Batterijontlading geblokkeerd",
     "strategyUpdated": "Strategie bijgewerkt",
-    "triggeredBy": "Geactiveerd door",
-    "modbusRequired": "ModBus-verbinding vereist voor bedieningsacties",
     "strategy": {
       "smartEco": {
-        "name": "Smart Eco",
-        "desc": "Optimaliseer voor de laagste kosten via prijsprognoses."
+        "name": "Slim Eco",
+        "desc": "Optimaliseer voor laagste kosten op basis van prijsvoorspellingen."
       },
       "selfSufficient": {
         "name": "Zelfvoorzienend",
-        "desc": "Prioriteit voor zonne-energie en batterij voor thuisverbruik."
+        "desc": "Prioriteer zonne-energie en batterij voor thuisverbruik."
       },
       "peakShaving": {
         "name": "Piekafvlakking",
-        "desc": "Beperk netafname tijdens perioden van hoge vraag."
+        "desc": "Beperk netgebruik tijdens perioden met hoge vraag."
       },
       "manual": {
         "name": "Handmatig",
         "desc": "Volg door de gebruiker ingestelde schema's en instellingen."
       },
-      "targetTime": "Ochtend Doeltijd",
-      "priceCap": "Max. Laadprijs",
-      "blockExport": "Export blokkeren",
+      "targetTime": "Doelochtendtijd",
+      "priceCap": "Max. laadprijs",
+      "blockExport": "Netexport blokkeren",
       "shadowMode": "Schaduwmodus (Test)"
     },
     "forecast": {
-      "title": "Energie-vooruitzicht",
+      "title": "Energieoverzicht",
       "price": "Day-ahead prijs",
-      "solar": "Zonne-energie prognose",
-      "noData": "Geen prognosegegevens beschikbaar",
+      "solar": "Zonneprognose",
+      "noData": "Geen prognosegegevens beschikbaar voor vandaag",
       "now": "Nu",
       "today": "vandaag",
       "tomorrow": "morgen",
       "prevDay": "Vorige dag",
       "nextDay": "Volgende dag",
       "soc": "Batterij SoC",
-      "gridChargeZone": "Aanbevolen netlaadzone",
+      "gridChargeZone": "Aanbevolen netlaadziode",
       "batteryCapacity": "Batterijcapaciteit",
       "minSoc": "Min. SoC"
     },
+    "triggeredBy": "Geactiveerd door",
+    "modbusRequired": "ModBus-verbinding vereist voor beheerbewerkingen",
+    "fields": {
+      "brightness": "Helderheid",
+      "power_on": "Inschakelstatus",
+      "switch_lock": "Schakelaarblok"
+    },
     "devices": {
       "device": "apparaat | apparaten",
-      "active": "actief",
-      "discover": "Zoeken",
-      "discoverDone": "Zoeken voltooid",
-      "product": "Product",
       "brand": "Merk",
+      "usage24h": "Gebruik vandaag",
       "priority": "Prioriteit",
+      "active": "actief",
+      "discover": "Ontdekken",
+      "product": "Product",
+      "discoverDone": "Detectie voltooid",
       "refresh": "Vernieuwen",
-      "add": "Nieuw apparaat toevoegen",
+      "add": "Apparaat toevoegen",
       "addTitle": "Nieuw apparaat registreren",
       "editTitle": "Apparaat bewerken",
-      "registerNew": "Nieuw apparaat registreren",
       "empty": "Geen slimme apparaten gevonden.",
       "name": "Naam",
       "namePlaceholder": "bijv. Wasmachine",
       "address": "IP-adres",
       "ipAddress": "IP-adres",
       "port": "Poort",
+      "registerNew": "Nieuw apparaat registreren",
       "statusLight": "LED",
-      "switchLock": "Schakelslot",
-      "switchLockHint": "Voorkomt handmatig schakelen via de fysieke knop.",
-      "todayUsage": "Verbruik vandaag",
-      "usage24h": "vandaag",
-      "usage_today": "vandaag",
+      "switchLock": "Schakelaarblok",
+      "switchLockHint": "Voorkom handmatig schakelen van de fysieke knop.",
+      "todayUsage": "Gebruik vandaag",
       "enabled": "Ingeschakeld",
       "disabled": "Uitgeschakeld",
       "locked": "Vergrendeld",
       "unlocked": "Ontgrendeld",
+      "usage_today": "vandaag",
       "identify": "Identificeren",
-      "identifying": "Apparaat identificeren (LED knippert)...",
+      "identifying": "Apparaat identificeren (knipperende LED)...",
       "sectionRegistration": "Netwerkregistratie",
       "sectionDevice": "Apparaatinstellingen",
-      "pushedOnSave": "instellingen worden bij opslaan naar het apparaat gestuurd",
-      "ledBrightness": "Status-LED helderheid",
+      "pushedOnSave": "instellingen worden bij opslaan naar apparaat gestuurd",
+      "ledBrightness": "Status LED helderheid",
       "off": "Uit",
-      "full": "Max",
+      "full": "Volledig",
       "confirmRemove": "Weet je zeker dat je {name} wilt verwijderen?",
       "validationRequired": "Naam en IP-adres zijn verplicht.",
       "added": "Apparaat succesvol toegevoegd",
@@ -330,16 +406,16 @@
       "groups": {
         "priceSettings": "Prijsinstellingen",
         "fetchSettings": "Ophaalinstellingen",
-        "collectorStatus": "Collector Status"
+        "collectorStatus": "Collector status"
       },
       "fields": {
         "enabled": {
-          "label": "Day-Ahead Prijzen Inschakelen",
-          "description": "Activeer het ophalen van de dagelijkse stroomprijzen"
+          "label": "Day-ahead prijzen inschakelen",
+          "description": "Activeer dagelijks ophalen van elektriciteitsprijzen"
         },
         "bidding_zone": {
-          "label": "Biedingszone",
-          "description": "Selecteer de elektriciteitszone voor jouw regio"
+          "label": "Biedzone",
+          "description": "Selecteer de elektriciteitsbiedzone voor jouw regio"
         },
         "country_code": {
           "label": "Landcode",
@@ -347,24 +423,24 @@
           "placeholder": "NL"
         },
         "fetch_days": {
-          "label": "Dagen Ophalen",
-          "description": "Hoeveel dagen historische prijzen ophalen bij elke collectie"
+          "label": "Dagen op te halen",
+          "description": "Hoeveel dagen historische prijzen per ophaalronde worden opgehaald"
         },
         "fetch_interval_hours": {
           "label": "Ophaalinterval (uren)",
-          "description": "Hoe vaak de prijzen opnieuw opgehaald worden (in uren). Standaard: 4 uur"
+          "description": "Hoe vaak prijzen opnieuw worden opgehaald (in uren). Standaard: 4 uur"
         },
         "retry_max": {
-          "label": "Max. Retries",
-          "description": "Maximum aantal pogingen als morgen-prijzen ontbreken"
+          "label": "Max. pogingen",
+          "description": "Maximaal aantal herpogingen wanneer prijzen van morgen ontbreken"
         }
       },
       "status": {
-        "lastFetch": "Laatste Ophaalmoment",
-        "lastFetchRecords": "Opgehaalde Records",
+        "lastFetch": "Laatste ophaling",
+        "lastFetchRecords": "Opgehaalde records",
         "status": "Status",
-        "retrying": "Retry Actief",
-        "retryCount": "Retry Pogingen"
+        "retrying": "Herpoging actief",
+        "retryCount": "Herpogingen"
       },
       "biddingZones": {
         "NL": "Nederland (NL)",
@@ -384,5 +460,16 @@
         "SE4": "Zweden 4 (SE4)"
       }
     }
+  },
+  "profile": {
+    "title": "Mijn Profiel",
+    "subtitle": "Bekijk je accountgegevens en wijzig je wachtwoord.",
+    "changePassword": "Wachtwoord wijzigen",
+    "currentPassword": "Huidig wachtwoord",
+    "newPassword": "Nieuw wachtwoord",
+    "confirmPassword": "Nieuw wachtwoord bevestigen",
+    "passwordMismatch": "Wachtwoorden komen niet overeen",
+    "savePassword": "Wachtwoord opslaan",
+    "passwordChanged": "Wachtwoord gewijzigd. Log opnieuw in."
   }
 }

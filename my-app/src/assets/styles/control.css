@@ -152,7 +152,7 @@
 }
 
 /* ── Toggle switch ────────────────────────────────────────────────────────── */
-.toggle-row             {display: flex;  align-items: center;  justify-content: space-between;  gap: 0.75rem;}
+.toggle-row             {display: flex;  align-items: center;  justify-content: space-between;  gap: 0.75rem;position: relative;top:2rem;}
 .toggle-hint            {font-size: 0.75rem;  color: #9ca3af;  margin: 0.2rem 0 0;}
 .toggle                 {width: 40px; height: 22px;  flex-shrink: 0;  border-radius: 0px;  border: none;  background: #d1d5db;  cursor: pointer;  position: relative;  transition: background 0.2s;}
 .toggle--on             {background: #374151; }

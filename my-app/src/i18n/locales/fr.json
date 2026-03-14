@@ -3,7 +3,7 @@
     "name": "WattsOn",
     "loading": "Chargement de WattsOn...",
     "loadingConfig": "Chargement de la configuration...",
-    "loadingSetup": "Vérification de l'état d'installation...",
+    "loadingSetup": "Vérification de l'état de configuration...",
     "loadingConnect": "Connexion au système...",
     "loadingDashboard": "Chargement du tableau de bord..."
   },
@@ -13,18 +13,20 @@
     "control": "Contrôle",
     "analytics": "Analyse",
     "events": "Événements",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "myProfile": "Mon profil"
   },
   "header": {
     "connected": "Connecté",
     "disconnected": "Déconnecté",
     "refreshData": "Actualiser les données",
-    "userMenu": "Menu utilisateur"
+    "userMenu": "Menu utilisateur",
+    "logout": "Déconnexion"
   },
   "userMenu": {
     "administrator": "Administrateur",
     "settings": "Paramètres",
-    "setupWizard": "Lancer l'assistant d'installation",
+    "setupWizard": "Lancer l'assistant de configuration",
     "reloadConfig": "Recharger la configuration",
     "logout": "Déconnexion"
   },
@@ -35,7 +37,21 @@
     "liveData": "Données en direct",
     "historicalOnly": "Données historiques uniquement",
     "powerGraph": "Graphique de puissance",
-    "energyDiagram": "Diagramme d'énergie"
+    "energyDiagram": "Diagramme énergétique",
+    "periodDay": "jour",
+    "periodWeek": "semaine",
+    "periodMonth": "mois",
+    "periodYear": "année",
+    "totalConsumed": "Total consommé",
+    "produced": "Produit",
+    "exported": "Exporté",
+    "batteryLabel": "Batterie",
+    "currentPower": "Puissance actuelle",
+    "sourceCloud": "API Cloud",
+    "sourceModbus": "ModBus local",
+    "targetBuffer": "Tampon cible",
+    "home": "Domicile",
+    "clickForDetails": "cliquer pour les détails"
   },
   "cards": {
     "homeSolar": "Maison & Solaire",
@@ -48,11 +64,11 @@
     "consumed": "Consommé",
     "generation": "Production",
     "charged": "Chargé",
-    "discharge": "Déchargé",
+    "discharge": "Décharge",
     "feedIn": "Injection",
     "gridConsumed": "Consommé",
-    "selfConsumed": "Autoconsommation",
-    "selfSufficiency": "Autosuffisance",
+    "selfConsumed": "Auto-consommé",
+    "selfSufficiency": "Autonomie",
     "treesPlanted": "Arbres plantés",
     "co2Reduction": "Réduction CO₂"
   },
@@ -61,11 +77,11 @@
     "totalConsumption": "Consommation totale",
     "batteryCharged": "Batterie chargée",
     "gridFeedIn": "Injection réseau",
-    "gridImport": "Soutirage réseau",
-    "gridExport": "Injection réseau",
+    "gridImport": "Import",
+    "gridExport": "Export",
     "loadConsumption": "Consommation",
-    "batteryCharge": "Charge batterie",
-    "batteryDischarge": "Décharge batterie",
+    "batteryCharge": "Charge",
+    "batteryDischarge": "Décharge",
     "pvGeneration": "Production PV"
   },
   "status": {
@@ -73,8 +89,8 @@
     "discharging": "En décharge",
     "idle": "Inactif",
     "consuming": "En consommation",
-    "exporting": "En injection",
-    "importing": "En soutirage",
+    "exporting": "En exportation",
+    "importing": "En importation",
     "fault": "Défaut"
   },
   "units": {
@@ -104,8 +120,8 @@
     "system": "Système",
     "modules": "Modules",
     "general": "Général",
-    "usermanagement": "Gestion des utilisateurs",
-    "cloudApi": "Cloud API",
+    "usermanagement": "Utilisateurs",
+    "cloudApi": "API Cloud",
     "modbus": "ModBus",
     "display": "Affichage",
     "notifications": "Notifications",
@@ -119,23 +135,81 @@
     "reload": "Recharger",
     "testConnection": "Tester la connexion",
     "connectionSuccess": "Connexion réussie",
-    "connectionFailed": "Échec de la connexion",
+    "connectionFailed": "Connexion échouée",
+    "collectors": "Collecteurs",
+    "savedDetail": "Paramètres mis à jour",
+    "core": {
+      "subtitle": "Configuration système",
+      "description": "Gérez les paramètres de base de la plateforme Wolffie.",
+      "restartSystem": "Redémarrer le système",
+      "groups": {
+        "system": {
+          "title": "Système & Localisation"
+        },
+        "dataCollection": {
+          "title": "Collecte de données"
+        },
+        "notifications": {
+          "title": "Notifications"
+        },
+        "retention": {
+          "title": "Rétention des données (jours)"
+        }
+      },
+      "fields": {
+        "system_name": "Nom du système",
+        "location": "Localisation",
+        "timezone": "Fuseau horaire",
+        "primary_source": "Source principale",
+        "enable_failover": "Basculement automatique",
+        "cache_timeout": "Délai de cache (ms)",
+        "failover_threshold": "Seuil de basculement",
+        "email_enabled": "Notifications par e-mail",
+        "email_address": "E-mail du destinataire",
+        "email_address_placeholder": "exemple@domaine.fr",
+        "snapshots_days": "Instantanés",
+        "minutes_days": "Données à la minute",
+        "hours_days": "Données horaires"
+      }
+    },
     "users": {
       "title": "Gestion des utilisateurs",
-      "description": "Gérer les comptes et les niveaux d'autorisation pour ce système.",
+      "description": "Gérez les comptes et niveaux d'autorisation de ce système.",
       "addUser": "Ajouter un utilisateur",
-      "total": "Total des utilisateurs",
+      "total": "Total utilisateurs",
       "name": "Nom d'utilisateur",
-      "namePlaceholder": "e.g. Peter",
+      "namePlaceholder": "ex. Pierre",
       "email": "E-mail",
-      "role": "rôle",
+      "role": "Rôle",
       "password": "Mot de passe",
       "addTitle": "Enregistrer un nouvel utilisateur",
       "editTitle": "Modifier l'utilisateur",
+      "lastPasswordUpdate": "Dernière modification du mot de passe",
+      "confirmRemove": "Voulez-vous vraiment supprimer l'utilisateur {name} ?",
       "full_name": "Nom complet",
       "is_active": "Actif",
-      "last_password_update": "Dernière mise à jour du mot de passe",
-      "confirmRemove": "Êtes-vous sûr de vouloir supprimer l'utilisateur {name} ?"
+      "last_password_update": "Dernière modification du mot de passe",
+      "sectionAccount": "Compte",
+      "sectionPassword": "Mot de passe",
+      "passwordLeaveBlank": "laisser vide pour conserver l'actuel",
+      "active": "actif",
+      "empty": "Aucun utilisateur configuré",
+      "deleted": "Utilisateur supprimé",
+      "userCount": "utilisateurs",
+      "groups": {
+        "management": {
+          "title": "Gestion des utilisateurs"
+        }
+      },
+      "columns": {
+        "username": "Nom d'utilisateur",
+        "email": "E-mail",
+        "role": "Rôle"
+      },
+      "actions": {
+        "create": "Créer un utilisateur"
+      },
+      "confirmDelete": "Voulez-vous vraiment supprimer l'utilisateur {username} ?"
     }
   },
   "setup": {
@@ -143,9 +217,9 @@
     "subtitle": "Configurons votre système en quelques étapes simples",
     "selectModel": "Sélectionner le modèle",
     "configureModbus": "Configurer ModBus",
-    "cloudApiSetup": "Cloud API",
-    "review": "Vérification",
-    "complete": "Installation terminée",
+    "cloudApiSetup": "API Cloud",
+    "review": "Vérifier",
+    "complete": "Configuration terminée",
     "completeMessage": "Votre système est configuré et prêt à l'emploi"
   },
   "common": {
@@ -164,7 +238,7 @@
     "info": "Info",
     "yes": "Oui",
     "no": "Non",
-    "actions": "",
+    "actions": "Actions",
     "enabled": "Activé",
     "disabled": "Désactivé",
     "refreshed": "Actualisé",
@@ -173,92 +247,97 @@
     "back": "Retour",
     "next": "Suivant",
     "finish": "Terminer",
-    "skip": "Passer"
+    "skip": "Passer",
+    "noItems": "Aucun élément trouvé",
+    "updated": "Mis à jour",
+    "created": "Créé",
+    "saved": "Enregistré",
+    "done": "Terminé"
   },
   "events": {
-    "title": "Événements Système",
-    "description": "Journal d'audit de toutes les actions auto et manuelles.",
+    "title": "Événements système",
+    "description": "Journal d'audit de toutes les actions automatisées et manuelles.",
     "total": "événements",
-    "drawerTitle": "Détails de l'Événement",
-    "logicReason": "Logique de Stratégie",
-    "rawPayload": "Données d'Exécution Brutes",
+    "drawerTitle": "Détails de l'événement",
+    "logicReason": "Logique de stratégie",
+    "rawPayload": "Données d'exécution brutes",
     "colTime": "Heure",
     "colType": "Type",
     "colAction": "Action",
-    "colUser": "Exécuté Par",
+    "colUser": "Effectué par",
     "colStatus": "Statut"
   },
   "control": {
-    "title": "Centre de Contrôle",
-    "description": "Gérez vos stratégies énergétiques, le pilotage manuel et vos appareils connectés.",
+    "title": "Centre de contrôle",
+    "description": "Gérez vos stratégies énergétiques, la commande manuelle et vos appareils connectés.",
     "live": "En direct",
     "offline": "Hors ligne",
     "solar": "Solaire",
     "battery": "Batterie",
     "grid": "Réseau",
-    "charging": "Charge",
-    "discharging": "Décharge",
-    "importing": "Soutirage",
-    "exporting": "Injection",
+    "charging": "En charge",
+    "discharging": "En décharge",
+    "importing": "En importation",
+    "exporting": "En exportation",
     "active": "Actif",
-    "sectionStrategy": "Stratégie de Fonctionnement",
-    "sectionStrategyDesc": "Sélectionnez la priorité d'utilisation de l'énergie et des cycles de batterie.",
-    "sectionDispatch": "Pilotage Manuel",
-    "sectionDispatchDesc": "Forcez des événements spécifiques de charge ou de décharge.",
-    "sectionDevices": "Appareils Connectés",
-    "sectionDevicesDesc": "Gérez vos prises HomeWizard et autres équipements intégrés.",
+    "sectionStrategy": "Stratégie d'exploitation",
+    "sectionStrategyDesc": "Définissez comment le système doit prioriser l'utilisation de l'énergie et les cycles de batterie.",
+    "sectionDispatch": "Commande manuelle",
+    "sectionDispatchDesc": "Remplacez la logique automatique pour forcer des événements de charge ou décharge spécifiques.",
+    "sectionDevices": "Appareils connectés",
+    "sectionDevicesDesc": "Gérez les prises HomeWizard et autres matériels intégrés.",
     "chargingActive": "Charge depuis le réseau",
     "dischargingActive": "Décharge vers le réseau",
     "stop": "Arrêter",
-    "chargeFromGrid": "Charger via Réseau",
-    "chargeFromGridDesc": "Remplissez la batterie depuis le réseau lors des heures creuses.",
+    "chargeFromGrid": "Charger depuis le réseau",
+    "chargeFromGridDesc": "Remplir la batterie depuis le réseau électrique pendant les heures creuses.",
     "power": "Puissance",
-    "targetSOC": "SOC Cible",
+    "targetSOC": "SOC cible",
     "duration": "Durée",
     "hours": "heures",
-    "startCharging": "Démarrer la Charge",
+    "startCharging": "Démarrer la charge",
     "chargingStarted": "Séquence de charge démarrée",
     "confirmCharge": "Charger la batterie à {watts}W jusqu'à {targetSOC}% pendant {durationHours} heures ?",
-    "dischargeToGrid": "Décharger vers Réseau",
-    "dischargeToGridDesc": "Exportez l'énergie de la batterie vers le réseau (utile en heures pleines).",
-    "minimumSOC": "SOC Minimum",
-    "startDischarging": "Démarrer la Décharge",
+    "dischargeToGrid": "Décharger vers le réseau",
+    "dischargeToGridDesc": "Exporter l'énergie de la batterie vers le réseau (utile pour les heures de pointe).",
+    "minimumSOC": "SOC minimum",
+    "startDischarging": "Démarrer la décharge",
     "dischargingStarted": "Séquence de décharge démarrée",
     "confirmDischarge": "Décharger la batterie à {watts}W jusqu'à {minimumSOC}% pendant {durationHours} heures ?",
-    "dispatchStopped": "Pilotage manuel arrêté",
-    "quickActions": "Actions Rapides",
-    "normal": "Mode Normal",
-    "actions": "",
-    "preventDischarge": "Empêcher Décharge",
-    "stopDispatch": "Arrêter Pilotage",
-    "normalRestored": "Fonctionnement normal restauré",
+    "dispatchStopped": "Commande manuelle arrêtée",
+    "quickActions": "Actions rapides",
+    "normal": "Mode normal",
+    "actions": "Actions",
+    "preventDischarge": "Bloquer la décharge",
+    "stopDispatch": "Arrêter la commande",
+    "normalRestored": "Fonctionnement normal rétabli",
     "dischargeBlocked": "Décharge de la batterie bloquée",
     "strategyUpdated": "Stratégie mise à jour",
     "strategy": {
       "smartEco": {
-        "name": "Smart Eco",
-        "desc": "Optimisation des coûts via les prévisions de prix."
+        "name": "Smart Éco",
+        "desc": "Optimiser pour le coût le plus bas grâce aux prévisions de prix."
       },
       "selfSufficient": {
-        "name": "Autosuffisance",
-        "desc": "Priorité au solaire pour la consommation et la batterie."
+        "name": "Autonome",
+        "desc": "Prioriser l'énergie solaire et la batterie pour les charges domestiques."
       },
       "peakShaving": {
-        "name": "Peak Shaving",
-        "desc": "Limite le soutirage réseau lors des pics de demande."
+        "name": "Écrêtage des pointes",
+        "desc": "Limiter l'utilisation du réseau pendant les périodes de forte demande."
       },
       "manual": {
         "name": "Manuel",
-        "desc": "Suit les programmes et paramètres définis par l'utilisateur."
+        "desc": "Suivre les plannings et paramètres définis par l'utilisateur."
       },
-      "targetTime": "Heure Cible du Matin",
-      "priceCap": "Prix de Charge Max",
-      "blockExport": "Bloquer l'Exportation",
-      "shadowMode": "Mode Ombre (Test)"
+      "targetTime": "Heure cible du matin",
+      "priceCap": "Prix de charge max.",
+      "blockExport": "Bloquer l'injection réseau",
+      "shadowMode": "Mode fantôme (Test)"
     },
     "forecast": {
-      "title": "Perspectives Énergétiques",
-      "price": "Prix du jour-ahead",
+      "title": "Perspectives énergétiques",
+      "price": "Prix day-ahead",
       "solar": "Prévision solaire",
       "noData": "Aucune donnée de prévision disponible pour aujourd'hui",
       "now": "Maintenant",
@@ -268,33 +347,40 @@
       "nextDay": "Jour suivant",
       "soc": "SoC batterie",
       "gridChargeZone": "Zone de charge réseau recommandée",
-      "batteryCapacity": "Capacité batterie",
+      "batteryCapacity": "Capacité de la batterie",
       "minSoc": "SoC min."
+    },
+    "triggeredBy": "Déclenché par",
+    "modbusRequired": "Connexion ModBus requise pour les opérations de contrôle",
+    "fields": {
+      "brightness": "Luminosité",
+      "power_on": "État à la mise sous tension",
+      "switch_lock": "Verrouillage du commutateur"
     },
     "devices": {
       "device": "appareil | appareils",
-      "active": "actif",
-      "usage24h": "aujourd'hui",
+      "brand": "Marque",
+      "usage24h": "Consommation aujourd'hui",
       "priority": "Priorité",
+      "active": "actif",
       "discover": "Découvrir",
-      "discoverDone": "Découverte terminée",
       "product": "Produit",
+      "discoverDone": "Découverte terminée",
       "refresh": "Actualiser",
-      "add": "Ajouter appareil",
+      "add": "Ajouter un appareil",
       "addTitle": "Enregistrer un nouvel appareil",
       "editTitle": "Modifier l'appareil",
-      "brand": "Marque",
       "empty": "Aucun appareil connecté trouvé.",
       "name": "Nom",
-      "namePlaceholder": "ex: Lave-linge",
+      "namePlaceholder": "ex. Lave-linge",
       "address": "Adresse IP",
       "ipAddress": "Adresse IP",
       "port": "Port",
       "registerNew": "Enregistrer un nouvel appareil",
       "statusLight": "LED",
-      "switchLock": "Verrouillage",
-      "switchLockHint": "Empêche l'activation manuelle via le bouton physique.",
-      "todayUsage": "Conso. du jour",
+      "switchLock": "Verrouillage du commutateur",
+      "switchLockHint": "Empêcher la commutation manuelle du bouton physique.",
+      "todayUsage": "Consommation aujourd'hui",
       "enabled": "Activé",
       "disabled": "Désactivé",
       "locked": "Verrouillé",
@@ -302,12 +388,12 @@
       "usage_today": "aujourd'hui",
       "identify": "Identifier",
       "identifying": "Identification de l'appareil (LED clignotante)...",
-      "sectionRegistration": "Enregistrement Réseau",
-      "sectionDevice": "Paramètres Appareil",
-      "pushedOnSave": "les réglages sont envoyés à l'appareil lors de l'enregistrement",
-      "ledBrightness": "Luminosité LED d'état",
+      "sectionRegistration": "Enregistrement réseau",
+      "sectionDevice": "Paramètres de l'appareil",
+      "pushedOnSave": "les paramètres sont envoyés à l'appareil lors de l'enregistrement",
+      "ledBrightness": "Luminosité LED de statut",
       "off": "Éteint",
-      "full": "Max",
+      "full": "Maximum",
       "confirmRemove": "Voulez-vous vraiment supprimer {name} ?",
       "validationRequired": "Le nom et l'adresse IP sont requis.",
       "added": "Appareil ajouté avec succès",
@@ -320,33 +406,33 @@
       "groups": {
         "priceSettings": "Paramètres de prix",
         "fetchSettings": "Paramètres de récupération",
-        "collectorStatus": "État du collecteur"
+        "collectorStatus": "Statut du collecteur"
       },
       "fields": {
         "enabled": {
-          "label": "Activer les prix Day-Ahead",
-          "description": "Active la récupération quotidienne des prix d'électricité"
+          "label": "Activer les prix day-ahead",
+          "description": "Activer la récupération quotidienne des prix de l'électricité"
         },
         "bidding_zone": {
-          "label": "Zone d'appel d'offres",
-          "description": "Sélectionnez la zone électrique pour votre région"
+          "label": "Zone d'enchères",
+          "description": "Sélectionnez la zone d'enchères électrique de votre région"
         },
         "country_code": {
           "label": "Code pays",
           "description": "Code pays à deux lettres (optionnel)",
-          "placeholder": "NL"
+          "placeholder": "FR"
         },
         "fetch_days": {
           "label": "Jours à récupérer",
-          "description": "Combien de jours de prix historiques récupérer par collecte"
+          "description": "Combien de jours de prix historiques récupérer par cycle"
         },
         "fetch_interval_hours": {
-          "label": "Intervalle de récupération (h)",
-          "description": "Fréquence de récupération des prix (en heures). Défaut : 4 heures"
+          "label": "Intervalle de récupération (heures)",
+          "description": "À quelle fréquence les prix sont re-récupérés (en heures). Défaut : 4 heures"
         },
         "retry_max": {
           "label": "Tentatives max.",
-          "description": "Nombre maximum de tentatives si les prix du lendemain manquent"
+          "description": "Nombre maximum de tentatives lorsque les prix de demain sont manquants"
         }
       },
       "status": {
@@ -354,7 +440,7 @@
         "lastFetchRecords": "Enregistrements récupérés",
         "status": "Statut",
         "retrying": "Nouvelle tentative active",
-        "retryCount": "Nombre de tentatives"
+        "retryCount": "Tentatives"
       },
       "biddingZones": {
         "NL": "Pays-Bas (NL)",
@@ -374,5 +460,16 @@
         "SE4": "Suède 4 (SE4)"
       }
     }
+  },
+  "profile": {
+    "title": "Mon profil",
+    "subtitle": "Consultez les détails de votre compte et modifiez votre mot de passe.",
+    "changePassword": "Changer le mot de passe",
+    "currentPassword": "Mot de passe actuel",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le nouveau mot de passe",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "savePassword": "Enregistrer le mot de passe",
+    "passwordChanged": "Mot de passe modifié. Veuillez vous reconnecter."
   }
 }

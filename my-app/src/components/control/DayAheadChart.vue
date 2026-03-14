@@ -123,6 +123,7 @@ function minDateStr()  { const d = new Date(); d.setMonth(d.getMonth() - 1); ret
 const canvasEl     = ref(null);
 const loading      = ref(false);
 const selectedDate = ref(todayStr());
+const isMobile     = ref(false);
 
 // Processed slots — set directly after fetch, not via intermediate rawPrices ref
 // This avoids any watcher timing issues: we build slots in JS, then call rebuildChart()
@@ -340,7 +341,36 @@ function buildSlots(prices, dailyKwh, dateStr, solarSlots = null, solarHours = n
   });
 }
 
-// ─── Formatters ────────────────────────────────────────────────────────────────
+// ─── Mobile aggregation ────────────────────────────────────────────────────────
+/**
+ * Collapse 15-min slots into hourly slots for mobile display.
+ * Price: average of non-null prices in the hour.
+ * Solar: sum of solarWh across the 4 slots.
+ */
+function aggregateToHourly(slots) {
+  if (!slots.length) return slots;
+  // If already hourly (≤ 24 slots), no-op
+  if (slots.length <= 24) return slots;
+
+  const hours = [];
+  for (let h = 0; h < 24; h++) {
+    const group = slots.filter(s => s.hour === h);
+    if (!group.length) continue;
+    const prices  = group.map(s => s.price).filter(p => p !== null);
+    const avgPrice = prices.length ? prices.reduce((a, b) => a + b, 0) / prices.length : null;
+    hours.push({
+      index   : h,
+      hour    : h,
+      minute  : 0,
+      label   : `${String(h).padStart(2,'0')}:00`,
+      price   : avgPrice,
+      solarWh : group.reduce((a, s) => a + (s.solarWh ?? 0), 0),
+    });
+  }
+  return hours;
+}
+
+
 function formatPrice(v) {
   return v != null ? `${(v * 100).toFixed(2)} ct/kWh` : '—';
 }
@@ -434,7 +464,8 @@ function buildConfig(sl) {
           if (!s) return '';
           // Show label at midnight, 03:00, 06:00 ... 21:00 only
           if (s.minute !== 0 || s.hour % 3 !== 0) return '';
-          return s.label;
+          // On mobile (hourly), show hour only to save space
+          return isMobile.value ? `${String(s.hour).padStart(2,'0')}` : s.label;
         },
       },
     },
@@ -509,14 +540,16 @@ function rebuildChart(sl) {
   chart?.destroy();
   chart = null;
   if (!sl || !sl.length) return;
-  chart = new Chart(canvasEl.value, buildConfig(sl));
+  const displaySlots = isMobile.value ? aggregateToHourly(sl) : sl;
+  chart = new Chart(canvasEl.value, buildConfig(displaySlots));
 }
 
 function recolourCurrentBar() {
   if (!chart || !chartSlots.value.length) return;
   const ds = chart.data.datasets.find(d => d.yAxisID === 'yPrice');
   if (!ds) return;
-  ds.backgroundColor = barColors(chartSlots.value);
+  const displaySlots = isMobile.value ? aggregateToHourly(chartSlots.value) : chartSlots.value;
+  ds.backgroundColor = barColors(displaySlots);
   chart.update('none');
 }
 
@@ -613,7 +646,24 @@ async function loadAndRender(date) {
 }
 
 // ─── Lifecycle ─────────────────────────────────────────────────────────────────
+let mq = null;
+let resizeObs = null;
+
+function onMqChange(e) {
+  const wasMobile = isMobile.value;
+  isMobile.value = e.matches;
+  // Re-render chart if mobile state changed and we have data
+  if (wasMobile !== isMobile.value && chartSlots.value.length) {
+    rebuildChart(chartSlots.value);
+  }
+}
+
 onMounted(async () => {
+  // Detect mobile breakpoint (< 640px)
+  mq = window.matchMedia('(max-width: 639px)');
+  isMobile.value = mq.matches;
+  mq.addEventListener('change', onMqChange);
+
   await loadThresholds();
   await loadAndRender(selectedDate.value);
 
@@ -630,6 +680,7 @@ onUnmounted(() => {
   chart?.destroy();
   clearTimeout(slotTimer);
   clearInterval(slotTimer);
+  mq?.removeEventListener('change', onMqChange);
 });
 
 watch(selectedDate, date => loadAndRender(date));

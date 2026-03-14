@@ -13,13 +13,15 @@
     "control": "Steuerung",
     "analytics": "Analyse",
     "events": "Ereignisse",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "myProfile": "Mein Profil"
   },
   "header": {
     "connected": "Verbunden",
     "disconnected": "Nicht verbunden",
     "refreshData": "Daten aktualisieren",
-    "userMenu": "Benutzermenü"
+    "userMenu": "Benutzermenü",
+    "logout": "Abmelden"
   },
   "userMenu": {
     "administrator": "Administrator",
@@ -34,13 +36,27 @@
     "total": "Gesamt",
     "liveData": "Live-Daten",
     "historicalOnly": "Nur historische Daten",
-    "powerGraph": "Leistungsdiagramm",
-    "energyDiagram": "Energiediagramm"
+    "powerGraph": "Leistungsgraph",
+    "energyDiagram": "Energiediagramm",
+    "periodDay": "Tag",
+    "periodWeek": "Woche",
+    "periodMonth": "Monat",
+    "periodYear": "Jahr",
+    "totalConsumed": "Gesamt verbraucht",
+    "produced": "Erzeugt",
+    "exported": "Exportiert",
+    "batteryLabel": "Batterie",
+    "currentPower": "Aktuelle Leistung",
+    "sourceCloud": "Cloud API",
+    "sourceModbus": "Lokaler ModBus",
+    "targetBuffer": "Zielpuffer",
+    "home": "Zuhause",
+    "clickForDetails": "für Details klicken"
   },
   "cards": {
     "homeSolar": "Haus & Solar",
     "battery": "Batterie",
-    "grid": "Stromnetz",
+    "grid": "Netz",
     "economic": "Wirtschaftlich",
     "green": "Grün"
   },
@@ -48,33 +64,33 @@
     "consumed": "Verbraucht",
     "generation": "Erzeugung",
     "charged": "Geladen",
-    "discharge": "Entladen",
+    "discharge": "Entladung",
     "feedIn": "Einspeisung",
     "gridConsumed": "Verbraucht",
     "selfConsumed": "Eigenverbrauch",
     "selfSufficiency": "Autarkie",
-    "treesPlanted": "Bäume gepflanzt",
-    "co2Reduction": "CO₂-Einsparung"
+    "treesPlanted": "Gepflanzte Bäume",
+    "co2Reduction": "CO₂-Reduktion"
   },
   "energy": {
-    "solarGeneration": "Solarerzeugung",
+    "solarGeneration": "Solarenergieerzeugung",
     "totalConsumption": "Gesamtverbrauch",
     "batteryCharged": "Batterie geladen",
-    "gridFeedIn": "Netzeinspeisung",
-    "gridImport": "Netzbezug",
-    "gridExport": "Netzeinspeisung",
+    "gridFeedIn": "Einspeisung",
+    "gridImport": "Import",
+    "gridExport": "Export",
     "loadConsumption": "Verbrauch",
-    "batteryCharge": "Batterie laden",
-    "batteryDischarge": "Batterie entladen",
+    "batteryCharge": "Laden",
+    "batteryDischarge": "Entladen",
     "pvGeneration": "PV-Erzeugung"
   },
   "status": {
     "charging": "Laden",
     "discharging": "Entladen",
-    "idle": "Ruhezustand",
+    "idle": "Leerlauf",
     "consuming": "Verbrauchend",
-    "exporting": "Einspeisen",
-    "importing": "Beziehen",
+    "exporting": "Exportierend",
+    "importing": "Importierend",
     "fault": "Störung"
   },
   "units": {
@@ -93,7 +109,7 @@
     "today": "Heute",
     "yesterday": "Gestern",
     "thisWeek": "Diese Woche",
-    "thisMonth": "Dieser Monat",
+    "thisMonth": "Diesen Monat",
     "thisYear": "Dieses Jahr",
     "last24h": "Letzte 24 Stunden",
     "last7d": "Letzte 7 Tage",
@@ -104,7 +120,7 @@
     "system": "System",
     "modules": "Module",
     "general": "Allgemein",
-    "usermanagement": "Benutzerverwaltung",
+    "usermanagement": "Benutzer",
     "cloudApi": "Cloud API",
     "modbus": "ModBus",
     "display": "Anzeige",
@@ -120,33 +136,91 @@
     "testConnection": "Verbindung testen",
     "connectionSuccess": "Verbindung erfolgreich",
     "connectionFailed": "Verbindung fehlgeschlagen",
+    "collectors": "Kollektoren",
+    "savedDetail": "Einstellungen aktualisiert",
+    "core": {
+      "subtitle": "Systemkonfiguration",
+      "description": "Verwalten Sie die Grundeinstellungen der Wolffie-Plattform.",
+      "restartSystem": "System neu starten",
+      "groups": {
+        "system": {
+          "title": "System & Standort"
+        },
+        "dataCollection": {
+          "title": "Datenerfassung"
+        },
+        "notifications": {
+          "title": "Benachrichtigungen"
+        },
+        "retention": {
+          "title": "Datenspeicherung (Tage)"
+        }
+      },
+      "fields": {
+        "system_name": "Systemname",
+        "location": "Standort",
+        "timezone": "Zeitzone",
+        "primary_source": "Primäre Quelle",
+        "enable_failover": "Automatisches Failover",
+        "cache_timeout": "Cache-Timeout (ms)",
+        "failover_threshold": "Failover-Schwelle",
+        "email_enabled": "E-Mail-Benachrichtigungen",
+        "email_address": "Empfänger-E-Mail",
+        "email_address_placeholder": "beispiel@domain.de",
+        "snapshots_days": "Snapshots",
+        "minutes_days": "Minutendaten",
+        "hours_days": "Stundendaten"
+      }
+    },
     "users": {
       "title": "Benutzerverwaltung",
-      "description": "Manage accounts and authorization levels for this system.",
+      "description": "Konten und Autorisierungsstufen für dieses System verwalten.",
       "addUser": "Benutzer hinzufügen",
-      "total": "Gesamt Benutzer",
+      "total": "Benutzer gesamt",
       "name": "Benutzername",
       "namePlaceholder": "z.B. Peter",
-      "email": "E-mail",
+      "email": "E-Mail",
       "role": "Rolle",
       "password": "Passwort",
       "addTitle": "Neuen Benutzer registrieren",
       "editTitle": "Benutzer bearbeiten",
+      "lastPasswordUpdate": "Letzte Passwortänderung",
+      "confirmRemove": "Möchten Sie den Benutzer {name} wirklich entfernen?",
       "full_name": "Vollständiger Name",
       "is_active": "Aktiv",
-      "last_password_update": "Letztes Passwortupdate",
-      "confirmRemove": "Sind Sie sicher, dass Sie den Benutzer {name} entfernen möchten?"
+      "last_password_update": "Letzte Passwortänderung",
+      "sectionAccount": "Konto",
+      "sectionPassword": "Passwort",
+      "passwordLeaveBlank": "leer lassen, um das aktuelle beizubehalten",
+      "active": "aktiv",
+      "empty": "Keine Benutzer konfiguriert",
+      "deleted": "Benutzer gelöscht",
+      "userCount": "Benutzer",
+      "groups": {
+        "management": {
+          "title": "Benutzerverwaltung"
+        }
+      },
+      "columns": {
+        "username": "Benutzername",
+        "email": "E-Mail",
+        "role": "Rolle"
+      },
+      "actions": {
+        "create": "Benutzer erstellen"
+      },
+      "confirmDelete": "Möchten Sie den Benutzer {username} wirklich löschen?"
     }
   },
   "setup": {
     "welcome": "Willkommen bei WattsOn",
-    "subtitle": "Lass uns dein System in wenigen einfachen Schritten einrichten",
+    "subtitle": "Richten Sie Ihr System in wenigen einfachen Schritten ein",
     "selectModel": "Modell auswählen",
     "configureModbus": "ModBus konfigurieren",
     "cloudApiSetup": "Cloud API",
     "review": "Überprüfen",
     "complete": "Einrichtung abgeschlossen",
-    "completeMessage": "Dein System ist konfiguriert und einsatzbereit"
+    "completeMessage": "Ihr System ist konfiguriert und einsatzbereit"
   },
   "common": {
     "save": "Speichern",
@@ -157,14 +231,14 @@
     "edit": "Bearbeiten",
     "search": "Suchen",
     "retry": "Erneut versuchen",
-    "loading": "Wird geladen...",
+    "loading": "Laden...",
     "error": "Fehler",
     "success": "Erfolgreich",
     "warning": "Warnung",
     "info": "Info",
     "yes": "Ja",
     "no": "Nein",
-    "actions": "",
+    "actions": "Aktionen",
     "enabled": "Aktiviert",
     "disabled": "Deaktiviert",
     "refreshed": "Aktualisiert",
@@ -172,20 +246,25 @@
     "noData": "Keine Daten verfügbar",
     "back": "Zurück",
     "next": "Weiter",
-    "finish": "Abschließen",
-    "skip": "Überspringen"
+    "finish": "Fertigstellen",
+    "skip": "Überspringen",
+    "noItems": "Keine Einträge gefunden",
+    "updated": "Aktualisiert",
+    "created": "Erstellt",
+    "saved": "Gespeichert",
+    "done": "Fertig"
   },
   "events": {
     "title": "Systemereignisse",
-    "description": "Audit-Log aller automatisierten und manuellen Aktionen.",
+    "description": "Auditprotokoll aller automatisierten und manuellen Aktionen.",
     "total": "Ereignisse",
     "drawerTitle": "Ereignisdetails",
-    "logicReason": "Strategie-Logik",
-    "rawPayload": "Rohdaten der Ausführung",
+    "logicReason": "Strategielogik",
+    "rawPayload": "Rohe Ausführungsdaten",
     "colTime": "Zeit",
     "colType": "Typ",
     "colAction": "Aktion",
-    "colUser": "Ausgeführt Von",
+    "colUser": "Ausgeführt von",
     "colStatus": "Status"
   },
   "control": {
@@ -198,68 +277,69 @@
     "grid": "Netz",
     "charging": "Laden",
     "discharging": "Entladen",
-    "importing": "Bezug",
-    "exporting": "Einspeisung",
+    "importing": "Importierend",
+    "exporting": "Exportierend",
     "active": "Aktiv",
     "sectionStrategy": "Betriebsstrategie",
-    "sectionStrategyDesc": "Wählen Sie aus, wie das System den Energieverbrauch und die Batteriezyklen priorisieren soll.",
+    "sectionStrategyDesc": "Wählen Sie, wie das System Energieverbrauch und Batteriezyklen priorisieren soll.",
     "sectionDispatch": "Manuelle Steuerung",
     "sectionDispatchDesc": "Überschreiben Sie die automatische Logik für spezifische Lade- oder Entladevorgänge.",
-    "sectionDevices": "Smart-Geräte",
-    "sectionDevicesDesc": "Verwalten Sie HomeWizard-Steckdosen und andere integrierte Hardware.",
-    "chargingActive": "Laden aus dem Netz",
+    "sectionDevices": "Smarte Geräte",
+    "sectionDevicesDesc": "Verwalten Sie HomeWizard-Energiesteckdosen und andere integrierte Hardware.",
+    "chargingActive": "Laden vom Netz",
     "dischargingActive": "Entladen ins Netz",
-    "stop": "Stopp",
-    "chargeFromGrid": "Aus Netz laden",
-    "chargeFromGridDesc": "Laden Sie die Batterie während Niedrigtarifzeiten aus dem Stromnetz auf.",
+    "stop": "Stoppen",
+    "chargeFromGrid": "Vom Netz laden",
+    "chargeFromGridDesc": "Batterie aus dem Stromnetz während Niedrigtarifzeiten aufladen.",
     "power": "Leistung",
     "targetSOC": "Ziel-SOC",
     "duration": "Dauer",
     "hours": "Stunden",
-    "startCharging": "Ladevorgang starten",
-    "chargingStarted": "Ladesequenz gestartet",
+    "startCharging": "Laden starten",
+    "chargingStarted": "Ladevorgang gestartet",
     "confirmCharge": "Batterie mit {watts}W bis {targetSOC}% für {durationHours} Stunden laden?",
     "dischargeToGrid": "Ins Netz entladen",
-    "dischargeToGridDesc": "Batterieenergie ins Netz einspeisen (nützlich bei Hochtarifen).",
-    "minimumSOC": "Minimaler SOC",
-    "startDischarging": "Entladevorgang starten",
-    "dischargingStarted": "Entladesequenz gestartet",
+    "dischargeToGridDesc": "Batterieenergie ins Netz einspeisen (nützlich für Hochpreiszeiten).",
+    "minimumSOC": "Mindest-SOC",
+    "startDischarging": "Entladen starten",
+    "dischargingStarted": "Entladevorgang gestartet",
     "confirmDischarge": "Batterie mit {watts}W bis {minimumSOC}% für {durationHours} Stunden entladen?",
     "dispatchStopped": "Manuelle Steuerung gestoppt",
-    "quickActions": "Schnellzugriffe",
-    "normal": "Normaler Modus",
-    "preventDischarge": "Entladen verhindern",
+    "quickActions": "Schnellaktionen",
+    "normal": "Normalmodus",
+    "actions": "Aktionen",
+    "preventDischarge": "Entladung sperren",
     "stopDispatch": "Steuerung stoppen",
     "normalRestored": "Normalbetrieb wiederhergestellt",
-    "dischargeBlocked": "Batterieentladung blockiert",
+    "dischargeBlocked": "Batterieentladung gesperrt",
     "strategyUpdated": "Strategie aktualisiert",
     "strategy": {
       "smartEco": {
         "name": "Smart Eco",
-        "desc": "Optimierung auf niedrigste Kosten durch Preisprognosen."
+        "desc": "Kosten minimieren durch Preisvorhersagen."
       },
       "selfSufficient": {
-        "name": "Autarkie",
-        "desc": "Priorisierung von Solarstrom für Hausverbrauch und Batterie."
+        "name": "Autark",
+        "desc": "Solarenergie und Batterie für Hauslasten priorisieren."
       },
       "peakShaving": {
-        "name": "Peak Shaving",
-        "desc": "Begrenzung des Netzbezugs in Zeiten hoher Nachfrage."
+        "name": "Lastspitzenkappung",
+        "desc": "Netznutzung in Hochlastzeiten begrenzen."
       },
       "manual": {
         "name": "Manuell",
-        "desc": "Folgt benutzerdefinierten Zeitplänen und Einstellungen."
+        "desc": "Benutzerdefinierte Zeitpläne und Einstellungen befolgen."
       },
-      "targetTime": "Morgen-Zielzeit",
+      "targetTime": "Morgenzielzeit",
       "priceCap": "Max. Ladepreis",
-      "blockExport": "Einspeisung blockieren",
+      "blockExport": "Netzeinspeisung sperren",
       "shadowMode": "Schattenmodus (Test)"
     },
     "forecast": {
-      "title": "Energie-Übersicht",
-      "price": "Day-Ahead-Preis",
+      "title": "Energieausblick",
+      "price": "Day-ahead-Preis",
       "solar": "Solarprognose",
-      "noData": "Keine Prognosedaten verfügbar",
+      "noData": "Keine Prognosedaten für heute verfügbar",
       "now": "Jetzt",
       "today": "heute",
       "tomorrow": "morgen",
@@ -270,44 +350,51 @@
       "batteryCapacity": "Batteriekapazität",
       "minSoc": "Min. SoC"
     },
+    "triggeredBy": "Ausgelöst von",
+    "modbusRequired": "ModBus-Verbindung für Steuerungsoperationen erforderlich",
+    "fields": {
+      "brightness": "Helligkeit",
+      "power_on": "Einschaltzustand",
+      "switch_lock": "Schaltersperrung"
+    },
     "devices": {
       "device": "Gerät | Geräte",
-      "active": "aktiv",
-      "usage24h": "heute",
-      "priority": "Priorität",
       "brand": "Marke",
-      "discover": "Suchen",
-      "discoverDone": "Suche abgeschlossen",
+      "usage24h": "Verbrauch heute",
+      "priority": "Priorität",
+      "active": "aktiv",
+      "discover": "Erkennen",
       "product": "Produkt",
+      "discoverDone": "Erkennung abgeschlossen",
       "refresh": "Aktualisieren",
       "add": "Gerät hinzufügen",
       "addTitle": "Neues Gerät registrieren",
       "editTitle": "Gerät bearbeiten",
-      "empty": "Keine Smart-Geräte gefunden.",
+      "empty": "Keine smarten Geräte gefunden.",
       "name": "Name",
-      "registerNew": "Neues Gerät registrieren",
       "namePlaceholder": "z.B. Waschmaschine",
       "address": "IP-Adresse",
       "ipAddress": "IP-Adresse",
       "port": "Port",
+      "registerNew": "Neues Gerät registrieren",
       "statusLight": "LED",
-      "switchLock": "Schaltsperre",
-      "switchLockHint": "Verhindert das manuelle Schalten über die physische Taste.",
-      "todayUsage": "Heutiger Verbrauch",
+      "switchLock": "Schaltersperrung",
+      "switchLockHint": "Manuelles Umschalten der physischen Taste verhindern.",
+      "todayUsage": "Verbrauch heute",
       "enabled": "Aktiviert",
       "disabled": "Deaktiviert",
       "locked": "Gesperrt",
-      "unlocked": "Entriegelt",
+      "unlocked": "Entsperrt",
       "usage_today": "heute",
       "identify": "Identifizieren",
       "identifying": "Gerät wird identifiziert (LED blinkt)...",
-      "sectionRegistration": "Netzwerk-Registrierung",
+      "sectionRegistration": "Netzwerkregistrierung",
       "sectionDevice": "Geräteeinstellungen",
       "pushedOnSave": "Einstellungen werden beim Speichern an das Gerät übertragen",
-      "ledBrightness": "Status-LED Helligkeit",
+      "ledBrightness": "Status-LED-Helligkeit",
       "off": "Aus",
-      "full": "Max",
-      "confirmRemove": "Sind Sie sicher, dass Sie {name} entfernen möchten?",
+      "full": "Voll",
+      "confirmRemove": "Möchten Sie {name} wirklich entfernen?",
       "validationRequired": "Name und IP-Adresse sind erforderlich.",
       "added": "Gerät erfolgreich hinzugefügt",
       "updated": "Gerät aktualisiert",
@@ -319,12 +406,12 @@
       "groups": {
         "priceSettings": "Preiseinstellungen",
         "fetchSettings": "Abrufeinstellungen",
-        "collectorStatus": "Collector-Status"
+        "collectorStatus": "Kollektorstatus"
       },
       "fields": {
         "enabled": {
-          "label": "Day-Ahead-Preise aktivieren",
-          "description": "Aktiviert den täglichen Abruf der Strompreise"
+          "label": "Day-ahead-Preise aktivieren",
+          "description": "Täglichen Abruf von Strompreisen aktivieren"
         },
         "bidding_zone": {
           "label": "Gebotszone",
@@ -333,19 +420,19 @@
         "country_code": {
           "label": "Ländercode",
           "description": "Zweistelliger Ländercode (optional)",
-          "placeholder": "NL"
+          "placeholder": "DE"
         },
         "fetch_days": {
           "label": "Abruftage",
-          "description": "Wie viele Tage historische Preise pro Sammellauf abgerufen werden"
+          "description": "Wie viele Tage historischer Preise pro Abruf geholt werden"
         },
         "fetch_interval_hours": {
           "label": "Abrufintervall (Stunden)",
-          "description": "Wie oft die Preise erneut abgerufen werden (in Stunden). Standard: 4 Stunden"
+          "description": "Wie oft Preise neu abgerufen werden (in Stunden). Standard: 4 Stunden"
         },
         "retry_max": {
           "label": "Max. Wiederholungen",
-          "description": "Maximale Wiederholungsversuche, wenn die morgigen Preise fehlen"
+          "description": "Maximale Wiederholungsversuche wenn Preise für morgen fehlen"
         }
       },
       "status": {
@@ -373,5 +460,16 @@
         "SE4": "Schweden 4 (SE4)"
       }
     }
+  },
+  "profile": {
+    "title": "Mein Profil",
+    "subtitle": "Kontodaten anzeigen und Passwort ändern.",
+    "changePassword": "Passwort ändern",
+    "currentPassword": "Aktuelles Passwort",
+    "newPassword": "Neues Passwort",
+    "confirmPassword": "Neues Passwort bestätigen",
+    "passwordMismatch": "Passwörter stimmen nicht überein",
+    "savePassword": "Passwort speichern",
+    "passwordChanged": "Passwort geändert. Bitte erneut anmelden."
   }
 }

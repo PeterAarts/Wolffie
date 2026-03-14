@@ -1,0 +1,475 @@
+{
+  "app": {
+    "name": "WattsOn",
+    "loading": "Indlæser WattsOn...",
+    "loadingConfig": "Indlæser konfiguration...",
+    "loadingSetup": "Kontrollerer opsætningsstatus...",
+    "loadingConnect": "Opretter forbindelse til system...",
+    "loadingDashboard": "Indlæser dashboard..."
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "history": "Historik",
+    "control": "Styring",
+    "analytics": "Analyse",
+    "events": "Hændelser",
+    "settings": "Indstillinger",
+    "myProfile": "Min profil"
+  },
+  "header": {
+    "connected": "Forbundet",
+    "disconnected": "Ikke forbundet",
+    "refreshData": "Opdater data",
+    "userMenu": "Brugermenu",
+    "logout": "Log ud"
+  },
+  "userMenu": {
+    "administrator": "Administrator",
+    "settings": "Indstillinger",
+    "setupWizard": "Kør opsætningsguide",
+    "reloadConfig": "Genindlæs konfiguration",
+    "logout": "Log ud"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "daily": "Daglig",
+    "total": "Total",
+    "liveData": "Live data",
+    "historicalOnly": "Kun historiske data",
+    "powerGraph": "Effektgraf",
+    "energyDiagram": "Energidiagram",
+    "periodDay": "dag",
+    "periodWeek": "uge",
+    "periodMonth": "måned",
+    "periodYear": "år",
+    "totalConsumed": "Totalt forbrug",
+    "produced": "Produceret",
+    "exported": "Eksporteret",
+    "batteryLabel": "Batteri",
+    "currentPower": "Aktuel effekt",
+    "sourceCloud": "Cloud API",
+    "sourceModbus": "Lokal ModBus",
+    "targetBuffer": "Målbuffer",
+    "home": "Hjem",
+    "clickForDetails": "klik for detaljer"
+  },
+  "cards": {
+    "homeSolar": "Hjem & Sol",
+    "battery": "Batteri",
+    "grid": "Net",
+    "economic": "Økonomisk",
+    "green": "Grøn"
+  },
+  "stats": {
+    "consumed": "Forbrugt",
+    "generation": "Produktion",
+    "charged": "Opladt",
+    "discharge": "Afladning",
+    "feedIn": "Tilbage til net",
+    "gridConsumed": "Forbrugt",
+    "selfConsumed": "Selvforbrugt",
+    "selfSufficiency": "Selvforsyning",
+    "treesPlanted": "Plantede træer",
+    "co2Reduction": "CO₂-reduktion"
+  },
+  "energy": {
+    "solarGeneration": "Solproduktion",
+    "totalConsumption": "Samlet forbrug",
+    "batteryCharged": "Batteri opladt",
+    "gridFeedIn": "Nettilbagelevering",
+    "gridImport": "Import",
+    "gridExport": "Eksport",
+    "loadConsumption": "Forbrug",
+    "batteryCharge": "Oplad",
+    "batteryDischarge": "Aflad",
+    "pvGeneration": "PV-produktion"
+  },
+  "status": {
+    "charging": "Oplader",
+    "discharging": "Aflader",
+    "idle": "Inaktiv",
+    "consuming": "Forbruger",
+    "exporting": "Eksporterer",
+    "importing": "Importerer",
+    "fault": "Fejl"
+  },
+  "units": {
+    "watt": "W",
+    "kilowatt": "kW",
+    "wattHour": "Wh",
+    "kilowattHour": "kWh",
+    "megawattHour": "MWh",
+    "percent": "%",
+    "degreeCelsius": "°C",
+    "volt": "V",
+    "ampere": "A",
+    "hertz": "Hz"
+  },
+  "time": {
+    "today": "I dag",
+    "yesterday": "I går",
+    "thisWeek": "Denne uge",
+    "thisMonth": "Denne måned",
+    "thisYear": "Dette år",
+    "last24h": "Sidste 24 timer",
+    "last7d": "Sidste 7 dage",
+    "last30d": "Sidste 30 dage"
+  },
+  "settings": {
+    "title": "Systemindstillinger",
+    "system": "System",
+    "modules": "Moduler",
+    "general": "Generelt",
+    "usermanagement": "Brugere",
+    "cloudApi": "Cloud API",
+    "modbus": "ModBus",
+    "display": "Visning",
+    "notifications": "Notifikationer",
+    "tariffs": "Takster",
+    "language": "Sprog",
+    "theme": "Tema",
+    "dateFormat": "Datoformat",
+    "timeFormat": "Tidsformat",
+    "temperatureUnit": "Temperaturenhed",
+    "save": "Gem alle ændringer",
+    "reload": "Genindlæs",
+    "testConnection": "Test forbindelse",
+    "connectionSuccess": "Forbindelse lykkedes",
+    "connectionFailed": "Forbindelse mislykkedes",
+    "collectors": "Samlere",
+    "savedDetail": "Indstillinger opdateret",
+    "core": {
+      "subtitle": "Systemkonfiguration",
+      "description": "Administrer grundindstillingerne for Wolffie-platformen.",
+      "restartSystem": "Genstart system",
+      "groups": {
+        "system": {
+          "title": "System & Placering"
+        },
+        "dataCollection": {
+          "title": "Dataindsamling"
+        },
+        "notifications": {
+          "title": "Notifikationer"
+        },
+        "retention": {
+          "title": "Dataopbevaring (dage)"
+        }
+      },
+      "fields": {
+        "system_name": "Systemnavn",
+        "location": "Placering",
+        "timezone": "Tidszone",
+        "primary_source": "Primær kilde",
+        "enable_failover": "Automatisk failover",
+        "cache_timeout": "Cache-timeout (ms)",
+        "failover_threshold": "Failover-grænse",
+        "email_enabled": "E-mailnotifikationer",
+        "email_address": "Modtager-e-mail",
+        "email_address_placeholder": "eksempel@domæne.dk",
+        "snapshots_days": "Øjebliksbilleder",
+        "minutes_days": "Minutdata",
+        "hours_days": "Timedata"
+      }
+    },
+    "users": {
+      "title": "Brugerstyring",
+      "description": "Administrer konti og autorisationsniveauer for dette system.",
+      "addUser": "Tilføj bruger",
+      "total": "Brugere i alt",
+      "name": "Brugernavn",
+      "namePlaceholder": "f.eks. Peter",
+      "email": "E-mail",
+      "role": "Rolle",
+      "password": "Adgangskode",
+      "addTitle": "Registrer ny bruger",
+      "editTitle": "Rediger bruger",
+      "lastPasswordUpdate": "Seneste adgangskodeændring",
+      "confirmRemove": "Er du sikker på, at du vil fjerne bruger {name}?",
+      "full_name": "Fulde navn",
+      "is_active": "Aktiv",
+      "last_password_update": "Seneste adgangskodeændring",
+      "sectionAccount": "Konto",
+      "sectionPassword": "Adgangskode",
+      "passwordLeaveBlank": "lad stå tomt for at beholde nuværende",
+      "active": "aktiv",
+      "empty": "Ingen brugere konfigureret",
+      "deleted": "Bruger slettet",
+      "userCount": "brugere",
+      "groups": {
+        "management": {
+          "title": "Brugerstyring"
+        }
+      },
+      "columns": {
+        "username": "Brugernavn",
+        "email": "E-mail",
+        "role": "Rolle"
+      },
+      "actions": {
+        "create": "Opret bruger"
+      },
+      "confirmDelete": "Er du sikker på, at du vil slette bruger {username}?"
+    }
+  },
+  "setup": {
+    "welcome": "Velkommen til WattsOn",
+    "subtitle": "Lad os konfigurere dit system i nogle få enkle trin",
+    "selectModel": "Vælg model",
+    "configureModbus": "Konfigurer ModBus",
+    "cloudApiSetup": "Cloud API",
+    "review": "Gennemse",
+    "complete": "Opsætning fuldført",
+    "completeMessage": "Dit system er konfigureret og klar til brug"
+  },
+  "common": {
+    "save": "Gem",
+    "cancel": "Annuller",
+    "close": "Luk",
+    "confirm": "Bekræft",
+    "delete": "Slet",
+    "edit": "Rediger",
+    "search": "Søg",
+    "retry": "Prøv igen",
+    "loading": "Indlæser...",
+    "error": "Fejl",
+    "success": "Succes",
+    "warning": "Advarsel",
+    "info": "Info",
+    "yes": "Ja",
+    "no": "Nej",
+    "actions": "Handlinger",
+    "enabled": "Aktiveret",
+    "disabled": "Deaktiveret",
+    "refreshed": "Opdateret",
+    "systemDataUpdated": "Systemdata opdateret",
+    "noData": "Ingen data tilgængelig",
+    "back": "Tilbage",
+    "next": "Næste",
+    "finish": "Afslut",
+    "skip": "Spring over",
+    "noItems": "Ingen elementer fundet",
+    "updated": "Opdateret",
+    "created": "Oprettet",
+    "saved": "Gemt",
+    "done": "Færdig"
+  },
+  "events": {
+    "title": "Systemhændelser",
+    "description": "Revisionslog over alle automatiserede og manuelle handlinger.",
+    "total": "hændelser",
+    "drawerTitle": "Hændelsesdetaljer",
+    "logicReason": "Strategilogik",
+    "rawPayload": "Rå udførelsesdata",
+    "colTime": "Tid",
+    "colType": "Type",
+    "colAction": "Handling",
+    "colUser": "Udført af",
+    "colStatus": "Status"
+  },
+  "control": {
+    "title": "Kontrolcenter",
+    "description": "Administrer dine energistrategier, manuel styring og smarte enheder.",
+    "live": "Live",
+    "offline": "Offline",
+    "solar": "Sol",
+    "battery": "Batteri",
+    "grid": "Net",
+    "charging": "Oplader",
+    "discharging": "Aflader",
+    "importing": "Importerer",
+    "exporting": "Eksporterer",
+    "active": "Aktiv",
+    "sectionStrategy": "Driftsstrategi",
+    "sectionStrategyDesc": "Vælg, hvordan systemet skal prioritere energiforbrug og batterikyclusser.",
+    "sectionDispatch": "Manuel styring",
+    "sectionDispatchDesc": "Tilsidesæt automatisk logik for at tvinge specifikke lade- eller afladehændelser.",
+    "sectionDevices": "Smarte enheder",
+    "sectionDevicesDesc": "Administrer HomeWizard-energistik og anden integreret hardware.",
+    "chargingActive": "Oplader fra net",
+    "dischargingActive": "Aflader til net",
+    "stop": "Stop",
+    "chargeFromGrid": "Oplad fra net",
+    "chargeFromGridDesc": "Fyld batteriet fra elnettet i perioder med lave tariffer.",
+    "power": "Effekt",
+    "targetSOC": "Mål-SOC",
+    "duration": "Varighed",
+    "hours": "timer",
+    "startCharging": "Start opladning",
+    "chargingStarted": "Opladningssekvens startet",
+    "confirmCharge": "Oplad batteri ved {watts}W til {targetSOC}% i {durationHours} timer?",
+    "dischargeToGrid": "Aflad til net",
+    "dischargeToGridDesc": "Eksporter batterienergi til nettet (nyttigt ved spidslasteksport).",
+    "minimumSOC": "Minimum SOC",
+    "startDischarging": "Start afladning",
+    "dischargingStarted": "Afladningssekvens startet",
+    "confirmDischarge": "Aflad batteri ved {watts}W til {minimumSOC}% i {durationHours} timer?",
+    "dispatchStopped": "Manuel styring stoppet",
+    "quickActions": "Hurtige handlinger",
+    "normal": "Normal tilstand",
+    "actions": "Handlinger",
+    "preventDischarge": "Bloker afladning",
+    "stopDispatch": "Stop styring",
+    "normalRestored": "Normal drift genoprettet",
+    "dischargeBlocked": "Batteriafladning blokeret",
+    "strategyUpdated": "Strategi opdateret",
+    "strategy": {
+      "smartEco": {
+        "name": "Smart Øko",
+        "desc": "Optimer til laveste omkostning ved hjælp af prisprognoser."
+      },
+      "selfSufficient": {
+        "name": "Selvforsynende",
+        "desc": "Prioriter solenergi og batteri til hjemmeforbrug."
+      },
+      "peakShaving": {
+        "name": "Spidslastafskæring",
+        "desc": "Begræns netforbrug i perioder med høj efterspørgsel."
+      },
+      "manual": {
+        "name": "Manuel",
+        "desc": "Følg brugerdefinerede tidsplaner og indstillinger."
+      },
+      "targetTime": "Morgenmåltid",
+      "priceCap": "Maks. ladepris",
+      "blockExport": "Bloker neteksport",
+      "shadowMode": "Skyggetilstand (Test)"
+    },
+    "forecast": {
+      "title": "Energioversigt",
+      "price": "Day-ahead pris",
+      "solar": "Solprognose",
+      "noData": "Ingen prognosedata tilgængelig for i dag",
+      "now": "Nu",
+      "today": "i dag",
+      "tomorrow": "i morgen",
+      "prevDay": "Forrige dag",
+      "nextDay": "Næste dag",
+      "soc": "Batteri SoC",
+      "gridChargeZone": "Anbefalet netladezone",
+      "batteryCapacity": "Batterikapacitet",
+      "minSoc": "Min. SoC"
+    },
+    "triggeredBy": "Udløst af",
+    "modbusRequired": "ModBus-forbindelse krævet til styringsoperationer",
+    "fields": {
+      "brightness": "Lysstyrke",
+      "power_on": "Tænd-tilstand",
+      "switch_lock": "Kontaktlås"
+    },
+    "devices": {
+      "device": "enhed | enheder",
+      "brand": "Mærke",
+      "usage24h": "Forbrug i dag",
+      "priority": "Prioritet",
+      "active": "aktiv",
+      "discover": "Opdag",
+      "product": "Produkt",
+      "discoverDone": "Registrering fuldført",
+      "refresh": "Opdater",
+      "add": "Tilføj enhed",
+      "addTitle": "Registrer ny enhed",
+      "editTitle": "Rediger enhed",
+      "empty": "Ingen smarte enheder fundet.",
+      "name": "Navn",
+      "namePlaceholder": "f.eks. Vaskemaskine",
+      "address": "IP-adresse",
+      "ipAddress": "IP-adresse",
+      "port": "Port",
+      "registerNew": "Registrer ny enhed",
+      "statusLight": "LED",
+      "switchLock": "Kontaktlås",
+      "switchLockHint": "Forhindre manuel omskiftning af den fysiske knap.",
+      "todayUsage": "Forbrug i dag",
+      "enabled": "Aktiveret",
+      "disabled": "Deaktiveret",
+      "locked": "Låst",
+      "unlocked": "Ulåst",
+      "usage_today": "i dag",
+      "identify": "Identificer",
+      "identifying": "Identificerer enhed (blinker LED)...",
+      "sectionRegistration": "Netværksregistrering",
+      "sectionDevice": "Enhedsindstillinger",
+      "pushedOnSave": "indstillinger sendes til enheden ved gem",
+      "ledBrightness": "Status-LED lysstyrke",
+      "off": "Fra",
+      "full": "Fuld",
+      "confirmRemove": "Er du sikker på, at du vil fjerne {name}?",
+      "validationRequired": "Navn og IP-adresse er påkrævet.",
+      "added": "Enhed tilføjet",
+      "updated": "Enhed opdateret",
+      "removed": "Enhed fjernet"
+    }
+  },
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": "Prisindstillinger",
+        "fetchSettings": "Hentningsindstillinger",
+        "collectorStatus": "Samler-status"
+      },
+      "fields": {
+        "enabled": {
+          "label": "Aktiver day-ahead priser",
+          "description": "Aktiver daglig hentning af elpriser"
+        },
+        "bidding_zone": {
+          "label": "Budzone",
+          "description": "Vælg elbud-zonen for din region"
+        },
+        "country_code": {
+          "label": "Landekode",
+          "description": "Totegns landekode (valgfri)",
+          "placeholder": "DK"
+        },
+        "fetch_days": {
+          "label": "Dage at hente",
+          "description": "Hvor mange dage med historiske priser der hentes pr. kørsel"
+        },
+        "fetch_interval_hours": {
+          "label": "Hentningsinterval (timer)",
+          "description": "Hvor ofte priser genhentes (i timer). Standard: 4 timer"
+        },
+        "retry_max": {
+          "label": "Maks. forsøg",
+          "description": "Maksimalt antal genforsøg når morgendagens priser mangler"
+        }
+      },
+      "status": {
+        "lastFetch": "Seneste hentning",
+        "lastFetchRecords": "Hentede poster",
+        "status": "Status",
+        "retrying": "Genforsøg aktivt",
+        "retryCount": "Genforsøg"
+      },
+      "biddingZones": {
+        "NL": "Holland (NL)",
+        "DE": "Tyskland (DE)",
+        "DE-LU": "Tyskland-Luxembourg (DE-LU)",
+        "BE": "Belgien (BE)",
+        "FR": "Frankrig (FR)",
+        "CH": "Schweiz (CH)",
+        "AT": "Østrig (AT)",
+        "DK1": "Danmark Vest (DK1)",
+        "DK2": "Danmark Øst (DK2)",
+        "NO1": "Norge 1 (NO1)",
+        "NO2": "Norge 2 (NO2)",
+        "SE1": "Sverige 1 (SE1)",
+        "SE2": "Sverige 2 (SE2)",
+        "SE3": "Sverige 3 (SE3)",
+        "SE4": "Sverige 4 (SE4)"
+      }
+    }
+  },
+  "profile": {
+    "title": "Min profil",
+    "subtitle": "Se dine kontooplysninger og skift adgangskode.",
+    "changePassword": "Skift adgangskode",
+    "currentPassword": "Nuværende adgangskode",
+    "newPassword": "Ny adgangskode",
+    "confirmPassword": "Bekræft ny adgangskode",
+    "passwordMismatch": "Adgangskoderne stemmer ikke overens",
+    "savePassword": "Gem adgangskode",
+    "passwordChanged": "Adgangskode ændret. Log venligst ind igen."
+  }
+}
