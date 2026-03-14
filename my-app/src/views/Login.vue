@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center bg-slate-50 app-section font-sans antialiased">
+  <div class="loginscreen flex flex-col items-center justify-center bg-slate-50 app-section font-sans antialiased">
     <div class="py-6 px-4 w-full flex justify-center">
       <div class="grid lg:grid-cols-2 items-center gap-10 max-w-3xl w-full">
         
@@ -26,7 +26,7 @@
                 :disabled="authStore.loading"
                 @focus="usernameFocused = true"
                 @blur="usernameFocused = false"
-                class="field-input outline-none transition-all bg-gray-100 focus:bg-white disabled:opacity-50 focus:ring-1 focus:ring-slate-400 w-full text-sm text-slate-900"
+                class="field-input outline-none transition-all bg-gray-100 focus:bg-white disabled:opacity-50 focus:ring-1 focus:ring-slate-200 w-full text-sm text-slate-900"
                 placeholder=""
               />
               <label class="field-label" :class="{ 'field-label--active': usernameFocused || username }">username</label>
@@ -34,7 +34,7 @@
             </div>
 
             <!-- Password field with floating label -->
-            <div class="field-wrap group">
+            <div class="field-wrap group !mt-6">
               <input 
                 v-model="password"
                 autocomplete="new-password"
@@ -44,11 +44,11 @@
                 :disabled="authStore.loading"
                 @focus="passwordFocused = true"
                 @blur="passwordFocused = false"
-                class="field-input outline-none transition-all bg-gray-100 focus:bg-white disabled:opacity-50 focus:ring-1 focus:ring-slate-400 w-full text-sm text-slate-900"
+                class="field-input outline-none transition-all bg-gray-100 focus:bg-white disabled:opacity-50 focus:ring-1 focus:ring-gray-200 w-full text-sm text-slate-900"
                 placeholder=""
               />
               <label class="field-label" :class="{ 'field-label--active': passwordFocused || password }">password</label>
-              <button type="button" @click="showPassword = !showPassword" class="field-icon text-slate-400 hover:text-slate-600 transition-colors bg-transparent border-none cursor-pointer p-0">
+              <button type="button" @click="showPassword = !showPassword" class="field-icon text-gray-100 hover:text-slate-600 transition-colors bg-transparent border-none cursor-pointer p-0">
                 <i :class="['fa-light', showPassword ? 'fa-eye-slash' : 'fa-eye']"></i>
               </button>
             </div>
@@ -66,7 +66,7 @@
               <button 
                 type="submit" 
                 :disabled="authStore.loading"
-                class="w-full p-2 text-sm text-white bg-gray-500 hover:bg-gray-600 focus:outline-none transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
+                class="w-full p-2 text-sm text-white bg-gray-700 hover:bg-gray-900 focus:outline-none transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
               >
                 <i v-if="authStore.loading" class="fa-light fa-spinner-third fa-spin"></i>
                 <i v-else class="fa-light fa-right-to-bracket"></i>
@@ -76,7 +76,7 @@
           </form>
         </div>
 
-        <div class="max-lg:mt-12 flex flex-col items-center justify-center text-center p-6">
+        <div class="max-lg:mt-6 flex flex-col items-center justify-center text-center p-6">
           <img 
             src="@/assets/wolffie.svg" 
             class="w-4/5 max-w-[400px] aspect-square object-contain grayscale opacity-20 hover:opacity-100 transition-opacity duration-700" 
@@ -84,7 +84,7 @@
           />
           <div class="mt-0 space-y-2">
             <h2 class="text-2xl font-black text-slate-700 tracking-tighter uppercase">Wolffie</h2>
-            <p class="text-slate-400 text-xs tracking-[0.1em]">your <b>W</b>atts <b>O</b>n<b>L</b>ine/o<b>FF</b>l<b>I</b>n<b>E</b> energy management system</p>
+            <p class="text-slate-600 text-xs tracking-[0.1em]">your <b>W</b>atts management <b>O</b>n<b>l</b>ine/o<b>ff</b> l <b>i</b> n <b>E</b> system</p>
           </div>
         </div>
 
@@ -146,6 +146,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.loginscreen                {height: calc(100vh - 2rem); box-shadow: 3px 3px 6px #a8a8a8;} 
 
 /* Kill browser autofill background injection */
 .field-input:-webkit-autofill,
@@ -225,8 +226,6 @@ onUnmounted(() => {
   opacity: 0;
   transform: translateY(8px);
 }
-.shout-leave-to {
-  opacity: 0;
-  transform: translateY(-8px);
-}
+.shout-leave-to               {opacity: 0;transform: translateY(-8px);}
+
 </style>

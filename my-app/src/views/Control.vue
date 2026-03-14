@@ -1,14 +1,14 @@
 <template>
   <div class="flex flex-col md:flex-row h-full w-full overflow-hidden text-gray-900 bg-white">
     
-    <aside class="w-full md:w-72 bg-gray-100 flex-shrink-0 flex flex-col">
+    <aside class="w-full md:w-64 bg-gray-100 flex-shrink-0 flex flex-col">
 <!--      <div class="p-6 border-b border-gray-200 flex-shrink-0">
         <h4 class="text-md font-bold text-gray-900 flex items-center gap-3">
           <span>{{ t('control.title') }}</span>
         </h4>
       </div>-->
 
-      <nav class="flex-1 overflow-y-auto p-4 pe-0 space-y-2 controlmenu">
+      <nav class="flex-1 max-w-xs overflow-y-auto p-4 pe-0 space-y-2 controlmenu">
         <button 
           v-for="item in menuItems" 
           :key="item.id"
