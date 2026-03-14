@@ -2,6 +2,7 @@
 import express from 'express';
 import api from '../services/api.js';
 import settingsService from '../../../core/system/services/settingsService.js';
+import collectorManager from '../../../core/collectorManager.js';
 
 const router = express.Router();
 

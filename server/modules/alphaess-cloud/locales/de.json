@@ -1,0 +1,52 @@
+{
+  "modules": {
+    "alphaessCloud": {
+      "groups": {
+        "api": {
+          "title": "Cloud API"
+        }
+      },
+      "sections": {
+        "credentials": {
+          "title": "API-Zugangsdaten"
+        },
+        "dataCollection": {
+          "title": "Datenerfassung"
+        },
+        "battery": {
+          "title": "Batterieeinstellungen"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Cloud API Aktivieren"
+        },
+        "app_id": {
+          "label": "App ID",
+          "placeholder": "Ihre App-ID von open.alphaess.com"
+        },
+        "app_secret": {
+          "label": "App Secret"
+        },
+        "system_sn": {
+          "label": "Seriennummer"
+        },
+        "poll_interval": {
+          "label": "Abfrageintervall"
+        },
+        "endpoint_url": {
+          "label": "Endpunkt-URL"
+        },
+        "min_soc": {
+          "label": "Minimaler SoC"
+        },
+        "max_soc": {
+          "label": "Maximaler SoC"
+        },
+        "ups": {
+          "label": "USV-Reserve Verwenden"
+        }
+      }
+    }
+  }
+}

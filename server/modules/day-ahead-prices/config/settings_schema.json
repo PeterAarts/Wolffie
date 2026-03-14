@@ -1,124 +1,176 @@
 {
+  "i18nKeys": true,
   "groups": [
     {
-      "title": "Prijsinstellingen",
+      "title": "modules.dayAheadPrices.groups.priceSettings.title",
       "sections": [
         {
           "fields": [
             {
               "key": "enabled",
               "component": "switch",
-              "label": "Day-Ahead Prijzen Inschakelen",
-              "description": "Activeer het ophalen van de dagelijkse stroomprijzen",
+              "label": "modules.dayAheadPrices.fields.enabled.label",
+              "description": "modules.dayAheadPrices.fields.enabled.description",
               "cols": 4
             },
             {
               "key": "bidding_zone",
               "component": "dropdown",
-              "label": "Biedingszone",
-              "description": "Selecteer de elektriciteitszone voor jouw regio",
-              "options": [
-                { "label": "Nederland (NL)", "value": "NL" },
-                { "label": "Duitsland (DE)", "value": "DE" },
-                { "label": "Duitsland-Luxemburg (DE-LU)", "value": "DE-LU" },
-                { "label": "België (BE)", "value": "BE" },
-                { "label": "Frankrijk (FR)", "value": "FR" },
-                { "label": "Zwitserland (CH)", "value": "CH" },
-                { "label": "Oostenrijk (AT)", "value": "AT" },
-                { "label": "Denemarken West (DK1)", "value": "DK1" },
-                { "label": "Denemarken Oost (DK2)", "value": "DK2" },
-                { "label": "Noorwegen 1 (NO1)", "value": "NO1" },
-                { "label": "Noorwegen 2 (NO2)", "value": "NO2" },
-                { "label": "Zweden 1 (SE1)", "value": "SE1" },
-                { "label": "Zweden 2 (SE2)", "value": "SE2" },
-                { "label": "Zweden 3 (SE3)", "value": "SE3" },
-                { "label": "Zweden 4 (SE4)", "value": "SE4" }
-              ],
+              "label": "modules.dayAheadPrices.fields.bidding_zone.label",
+              "description": "modules.dayAheadPrices.fields.bidding_zone.description",
+              "cols": 4,
               "default": "NL",
-              "cols": 4
+              "options": [
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.NL",
+                  "value": "NL"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.DE",
+                  "value": "DE"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.DELU",
+                  "value": "DE-LU"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.BE",
+                  "value": "BE"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.FR",
+                  "value": "FR"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.CH",
+                  "value": "CH"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.AT",
+                  "value": "AT"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.DK1",
+                  "value": "DK1"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.DK2",
+                  "value": "DK2"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.NO1",
+                  "value": "NO1"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.NO2",
+                  "value": "NO2"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.SE1",
+                  "value": "SE1"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.SE2",
+                  "value": "SE2"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.SE3",
+                  "value": "SE3"
+                },
+                {
+                  "label": "modules.dayAheadPrices.biddingZones.SE4",
+                  "value": "SE4"
+                }
+              ]
             },
             {
               "key": "country_code",
               "component": "text",
-              "label": "Landcode",
-              "description": "Tweeletterige landcode (optioneel)",
-              "placeholder": "NL",
-              "default": "NL",
-              "cols": 4
+              "label": "modules.dayAheadPrices.fields.country_code.label",
+              "description": "modules.dayAheadPrices.fields.country_code.description",
+              "placeholder": "modules.dayAheadPrices.fields.country_code.placeholder",
+              "cols": 4,
+              "default": "NL"
             }
           ]
         }
       ]
     },
     {
-      "title": "Ophaalinstellingen",
+      "title": "modules.dayAheadPrices.groups.fetchSettings.title",
       "sections": [
         {
           "fields": [
             {
               "key": "fetch_days",
               "component": "number",
-              "label": "Dagen Ophalen",
-              "description": "Hoeveel dagen historische prijzen ophalen bij elke collectie",
-              "min": 1,
-              "max": 30,
+              "label": "modules.dayAheadPrices.fields.fetch_days.label",
+              "description": "modules.dayAheadPrices.fields.fetch_days.description",
+              "cols": 4,
               "default": 10,
-              "cols": 4
+              "min": 1,
+              "max": 30
             },
             {
               "key": "fetch_interval_hours",
               "component": "number",
-              "label": "Ophaalinterval (uren)",
-              "description": "Hoe vaak de prijzen opnieuw opgehaald worden (in uren). Standaard: 4 uur",
-              "min": 1,
-              "max": 24,
+              "label": "modules.dayAheadPrices.fields.fetch_interval_hours.label",
+              "description": "modules.dayAheadPrices.fields.fetch_interval_hours.description",
+              "cols": 4,
               "default": 4,
-              "cols": 4
+              "min": 1,
+              "max": 24
             },
             {
               "key": "retry_max",
               "component": "number",
-              "label": "Max Retries",
-              "description": "Maximum aantal pogingen als morgen-prijzen ontbreken",
-              "min": 1,
-              "max": 24,
+              "label": "modules.dayAheadPrices.fields.retry_max.label",
+              "description": "modules.dayAheadPrices.fields.retry_max.description",
+              "cols": 4,
               "default": 10,
-              "cols": 4
+              "min": 1,
+              "max": 24
             }
           ]
         }
       ]
     },
     {
-      "title": "Collector Status",
+      "title": "modules.dayAheadPrices.groups.collectorStatus.title",
       "sections": [
         {
           "component": "info-panel",
           "data": {
-            "endpoint": "/api/day-ahead-prices/status",
+            "endpoint": "/day-ahead-prices/status",
             "dynamic": true,
             "items": [
               {
-                "label": "Laatste Ophaalmoment",
+                "label": "modules.dayAheadPrices.status.lastFetch",
                 "field": "lastFetch",
-                "template": { "type": "datetime" }
+                "template": {
+                "type": "datetime"
+                }
               },
               {
-                "label": "Opgehaalde Records",
+                "label": "modules.dayAheadPrices.status.lastFetchRecords",
                 "field": "lastFetchRecords"
               },
               {
-                "label": "Status",
+                "label": "modules.dayAheadPrices.status.status",
                 "field": "healthy",
-                "template": { "type": "status-badge" }
+                "template": {
+                  "type": "status-badge"
+                }
               },
               {
-                "label": "Retry Actief",
+                "label": "modules.dayAheadPrices.status.retrying",
                 "field": "retrying",
-                "template": { "type": "status-badge" }
+                "template": {
+                  "type": "status-badge"
+                }
               },
               {
-                "label": "Retry Pogingen",
+                "label": "modules.dayAheadPrices.status.retryCount",
                 "field": "retryCount"
               }
             ]

@@ -1,0 +1,52 @@
+{
+  "modules": {
+    "alphaessCloud": {
+      "groups": {
+        "api": {
+          "title": "Cloud API"
+        }
+      },
+      "sections": {
+        "credentials": {
+          "title": "API-legitimationsoplysninger"
+        },
+        "dataCollection": {
+          "title": "Dataindsamling"
+        },
+        "battery": {
+          "title": "Batteriindstillinger"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Aktiver Cloud API"
+        },
+        "app_id": {
+          "label": "App ID",
+          "placeholder": "dit app_id på open.alphaess.com"
+        },
+        "app_secret": {
+          "label": "App Secret"
+        },
+        "system_sn": {
+          "label": "Serienummer"
+        },
+        "poll_interval": {
+          "label": "Forespørgselsinterval"
+        },
+        "endpoint_url": {
+          "label": "Endpoint URL"
+        },
+        "min_soc": {
+          "label": "Minimum SoC"
+        },
+        "max_soc": {
+          "label": "Maksimum SoC"
+        },
+        "ups": {
+          "label": "Brug UPS Reserve"
+        }
+      }
+    }
+  }
+}

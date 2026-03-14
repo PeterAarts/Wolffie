@@ -1,34 +1,90 @@
 {
+  "i18nKeys": true,
   "groups": [
     {
-      "title": "API",
+      "title": "modules.alphaessCloud.groups.api.title",
       "sections": [
         {
+          "title": "modules.alphaessCloud.sections.credentials.title",
           "fields": [
-            { "key": "enabled", "component": "switch", "label": "Cloud Actief", "cols": 12, "default": true }
+            {
+              "key": "enabled",
+              "component": "switch",
+              "label": "modules.alphaessCloud.fields.enabled.label",
+              "cols": 12,
+              "default": true
+            },
+            {
+              "key": "app_id",
+              "component": "text",
+              "label": "modules.alphaessCloud.fields.app_id.label",
+              "cols": 4,
+              "required": true,
+              "placeholder": "modules.alphaessCloud.fields.app_id.placeholder"
+            },
+            {
+              "key": "app_secret",
+              "component": "password",
+              "label": "modules.alphaessCloud.fields.app_secret.label",
+              "cols": 4,
+              "required": true
+            },
+            {
+              "key": "system_sn",
+              "component": "text",
+              "label": "modules.alphaessCloud.fields.system_sn.label",
+              "cols": 6,
+              "required": true
+            }
           ]
         },
         {
-          "title": "API Credentials",
+          "title": "modules.alphaessCloud.sections.dataCollection.title",
           "fields": [
-            { "key": "app_id", "component": "text", "label": "App ID", "cols": 4, "default": "your app_id at open.alphaess.com","required": true  },
-            { "key": "app_secret", "component": "password", "label": "App Secret", "cols": 4, "default":"","required": true },
-            { "key": "system_sn", "component": "text", "label": "Serienummer", "cols": 6, "default":"","required": true }
+            {
+              "key": "poll_interval",
+              "component": "number",
+              "label": "modules.alphaessCloud.fields.poll_interval.label",
+              "cols": 2,
+              "suffix": " ms"
+            },
+            {
+              "key": "endpoint_url",
+              "component": "text",
+              "label": "modules.alphaessCloud.fields.endpoint_url.label",
+              "cols": 6,
+              "default": "https://openapi.alphaess.com/api"
+            }
           ]
         },
         {
-          "title": "Data Collection",
+          "title": "modules.alphaessCloud.sections.battery.title",
           "fields": [
-            { "key": "poll_interval", "component": "number", "label": "Interval", "cols": 2, "suffix": " ms" },
-            { "key": "endpoint_url", "component": "text", "label": "Endpoint", "cols": 6,"default": "https://openapi.alphaess.com/api" }
-          ]
-        },
-        {
-          "title": "Batterij instellingen",
-          "fields": [
-            { "key": "MinSoC ", "component": "number", "label": "Minimal SoC", "cols": 2, "default": 30, "suffix": " %","required": true },
-            { "key": "MaxSoC", "component": "number", "label": "Maximale SoC", "cols": 2, "default": 98, "suffix": " %","required": true },
-            { "key": "UPS", "component": "boolean", "label": "use UPS Reserve", "cols": 2, "default": true}
+            {
+              "key": "MinSoC ",
+              "component": "number",
+              "label": "modules.alphaessCloud.fields.min_soc.label",
+              "cols": 2,
+              "default": 30,
+              "suffix": " %",
+              "required": true
+            },
+            {
+              "key": "MaxSoC",
+              "component": "number",
+              "label": "modules.alphaessCloud.fields.max_soc.label",
+              "cols": 2,
+              "default": 98,
+              "suffix": " %",
+              "required": true
+            },
+            {
+              "key": "UPS",
+              "component": "boolean",
+              "label": "modules.alphaessCloud.fields.ups.label",
+              "cols": 2,
+              "default": true
+            }
           ]
         }
       ]

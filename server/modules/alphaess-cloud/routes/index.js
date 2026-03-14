@@ -2,6 +2,7 @@
 import express from 'express';
 import alphaessAPI from '../services/api.js';
 import collector from '../services/collector.js';
+import collectorManager from '../../../core/collectorManager.js';
 
 const router = express.Router();
 
@@ -216,13 +217,30 @@ router.get('/settings', async (req, res) => {
 
 /**
  * POST /api/alphaess-cloud/settings
- * Slaat nieuwe waarden op in de database
+ * Saves new values to the database, then notifies collectorManager
+ * if the enabled flag changed.
  */
 router.post('/settings', async (req, res) => {
   try {
     const newValues = req.body;
     await settingsService.setCategory('alphaess-cloud', newValues, req.user?.username || 'system');
-    
+
+    // If enabled was part of this save, notify the running collector immediately
+    if ('enabled' in newValues) {
+      const isEnabled = newValues.enabled === true
+        || newValues.enabled === 'true'
+        || newValues.enabled === '1'
+        || newValues.enabled === 1;
+
+      try {
+        await collectorManager.setEnabled('alphaess-cloud', isEnabled);
+        console.log(`▶ collectorManager.setEnabled('alphaess-cloud', ${isEnabled})`);
+      } catch (e) {
+        // Non-fatal — collector may not be registered yet
+        console.warn(`⚠️  setEnabled skipped: ${e.message}`);
+      }
+    }
+
     res.json({ success: true, message: 'Settings saved successfully' });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });

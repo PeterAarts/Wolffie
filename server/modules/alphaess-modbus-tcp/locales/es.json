@@ -1,0 +1,57 @@
+{
+  "modules": {
+    "alphaessModbusTcp": {
+      "groups": {
+        "modbus": {
+          "title": "Configuración ModBus TCP"
+        }
+      },
+      "sections": {
+        "network": {
+          "title": "Configuración de Red",
+          "description": "Datos de red de tu inversor AlphaESS"
+        },
+        "protocol": {
+          "title": "Protocolo Modbus",
+          "description": "Configuración de protocolo específica para AlphaESS"
+        },
+        "battery": {
+          "title": "Configuración de Batería"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Activar ModBus TCP"
+        },
+        "host": {
+          "label": "Dirección IP",
+          "placeholder": "192.168.1.158"
+        },
+        "port": {
+          "label": "Puerto"
+        },
+        "unit_id": {
+          "label": "Unit ID (Slave ID)"
+        },
+        "poll_interval": {
+          "label": "Intervalo de Sondeo (ms)"
+        },
+        "timeout": {
+          "label": "Tiempo de Espera (ms)"
+        },
+        "min_soc": {
+          "label": "SoC Mínimo"
+        },
+        "max_soc": {
+          "label": "SoC Máximo"
+        },
+        "ups": {
+          "label": "Usar Reserva UPS"
+        }
+      },
+      "actions": {
+        "testConnection": "Probar Conexión"
+      }
+    }
+  }
+}

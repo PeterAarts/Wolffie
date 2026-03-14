@@ -1,0 +1,68 @@
+{
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": {
+          "title": "Preiseinstellungen"
+        },
+        "fetchSettings": {
+          "title": "Abrufeinstellungen"
+        },
+        "collectorStatus": {
+          "title": "Collector Status"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Day-Ahead Preise Aktivieren",
+          "description": "Täglichen Strompreisabruf aktivieren"
+        },
+        "bidding_zone": {
+          "label": "Gebotszone",
+          "description": "Wählen Sie die Stromgebotszone für Ihre Region"
+        },
+        "country_code": {
+          "label": "Ländercode",
+          "description": "Zweistelliger Ländercode (optional)",
+          "placeholder": "DE"
+        },
+        "fetch_days": {
+          "label": "Abruftage",
+          "description": "Wie viele Tage historischer Preise pro Lauf abgerufen werden"
+        },
+        "fetch_interval_hours": {
+          "label": "Abrufintervall (Stunden)",
+          "description": "Wie oft Preise erneut abgerufen werden. Standard: 4 Stunden"
+        },
+        "retry_max": {
+          "label": "Max. Wiederholungen",
+          "description": "Maximale Wiederholungsversuche bei fehlenden morgigen Preisen"
+        }
+      },
+      "status": {
+        "lastFetch": "Letzter Abruf",
+        "lastFetchRecords": "Abgerufene Datensätze",
+        "status": "Status",
+        "retrying": "Wiederholung Aktiv",
+        "retryCount": "Wiederholungsversuche"
+      },
+      "biddingZones": {
+        "NL": "Niederlande (NL)",
+        "DE": "Deutschland (DE)",
+        "DELU": "Deutschland-Luxemburg (DE-LU)",
+        "BE": "Belgien (BE)",
+        "FR": "Frankreich (FR)",
+        "CH": "Schweiz (CH)",
+        "AT": "Österreich (AT)",
+        "DK1": "Dänemark West (DK1)",
+        "DK2": "Dänemark Ost (DK2)",
+        "NO1": "Norwegen 1 (NO1)",
+        "NO2": "Norwegen 2 (NO2)",
+        "SE1": "Schweden 1 (SE1)",
+        "SE2": "Schweden 2 (SE2)",
+        "SE3": "Schweden 3 (SE3)",
+        "SE4": "Schweden 4 (SE4)"
+      }
+    }
+  }
+}

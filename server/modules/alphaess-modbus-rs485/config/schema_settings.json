@@ -1,28 +1,69 @@
 {
+  "i18nKeys": true,
   "groups": [
     {
-      "title": "ModBus RS485 Configuratie",
+      "title": "modules.alphaessModbusRs485.groups.modbus.title",
       "sections": [
         {
           "fields": [
-            { "key": "enabled", "component": "switch", "label": "ModBus RS485 Inschakelen", "cols": 2 }
+            {
+              "key": "enabled",
+              "component": "switch",
+              "label": "modules.alphaessModbusRs485.fields.enabled.label",
+              "cols": 2
+            }
           ]
         },
         {
-          "title": "Seriële Instellingen",
-          "description": "De instellingen van je DSD TECH USB-RS485 adapter",
+          "title": "modules.alphaessModbusRs485.sections.serial.title",
+          "description": "modules.alphaessModbusRs485.sections.serial.description",
           "fields": [
-            { "key": "port", "component": "text", "label": "Seriële Poort", "cols": 3, "placeholder": "/dev/ttyUSB0", "required": true },
-            { "key": "baudrate", "component": "number", "label": "Baudrate", "cols": 3, "default": 9600, "required": true }
+            {
+              "key": "port",
+              "component": "text",
+              "label": "modules.alphaessModbusRs485.fields.port.label",
+              "cols": 3,
+              "placeholder": "modules.alphaessModbusRs485.fields.port.placeholder",
+              "required": true
+            },
+            {
+              "key": "baudrate",
+              "component": "number",
+              "label": "modules.alphaessModbusRs485.fields.baudrate.label",
+              "cols": 3,
+              "default": 9600,
+              "required": true
+            }
           ]
         },
         {
-          "title": "Modbus Protocol",
-          "description": "Specifieke protocol instellingen voor AlphaESS over RS485",
+          "title": "modules.alphaessModbusRs485.sections.protocol.title",
+          "description": "modules.alphaessModbusRs485.sections.protocol.description",
           "fields": [
-            { "key": "slave_id", "component": "number", "label": "Slave ID", "cols": 2, "default": 85, "required": true },
-            { "key": "poll_interval", "component": "number", "label": "Poll Interval (ms)", "cols": 2, "default": 10000, "suffix": " ms" },
-            { "key": "timeout", "component": "number", "label": "Timeout (ms)", "cols": 2, "default": 2000, "suffix": " ms" }
+            {
+              "key": "slave_id",
+              "component": "number",
+              "label": "modules.alphaessModbusRs485.fields.slave_id.label",
+              "cols": 2,
+              "default": 85,
+              "required": true
+            },
+            {
+              "key": "poll_interval",
+              "component": "number",
+              "label": "modules.alphaessModbusRs485.fields.poll_interval.label",
+              "cols": 2,
+              "default": 10000,
+              "suffix": " ms"
+            },
+            {
+              "key": "timeout",
+              "component": "number",
+              "label": "modules.alphaessModbusRs485.fields.timeout.label",
+              "cols": 2,
+              "default": 2000,
+              "suffix": " ms"
+            }
           ]
         }
       ]

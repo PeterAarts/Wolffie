@@ -1,0 +1,52 @@
+{
+  "modules": {
+    "alphaessCloud": {
+      "groups": {
+        "api": {
+          "title": "API en la Nube"
+        }
+      },
+      "sections": {
+        "credentials": {
+          "title": "Credenciales API"
+        },
+        "dataCollection": {
+          "title": "Recopilación de Datos"
+        },
+        "battery": {
+          "title": "Configuración de Batería"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Activar API en la Nube"
+        },
+        "app_id": {
+          "label": "App ID",
+          "placeholder": "tu app_id en open.alphaess.com"
+        },
+        "app_secret": {
+          "label": "App Secret"
+        },
+        "system_sn": {
+          "label": "Número de Serie"
+        },
+        "poll_interval": {
+          "label": "Intervalo de Sondeo"
+        },
+        "endpoint_url": {
+          "label": "URL del Endpoint"
+        },
+        "min_soc": {
+          "label": "SoC Mínimo"
+        },
+        "max_soc": {
+          "label": "SoC Máximo"
+        },
+        "ups": {
+          "label": "Usar Reserva UPS"
+        }
+      }
+    }
+  }
+}
