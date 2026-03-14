@@ -26,7 +26,6 @@ export default defineConfig({
         theme_color: '#ffffff',
         background_color: '#ffffff',
         display: 'standalone',
-        start_url: '/',
         scope: '/',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
@@ -41,6 +40,10 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@fortawesome': path.resolve(__dirname, 'node_modules/@fortawesome'),
+      // Force the full vue-i18n build (runtime + compiler) in production.
+      // Without this, Vite bundles the runtime-only build which cannot
+      // compile message templates containing {placeholders} at runtime.
+      'vue-i18n': 'vue-i18n/dist/vue-i18n.cjs.js',
     },
   },
 
