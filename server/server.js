@@ -1,4 +1,3 @@
-
 import './systemLogger.js'; 
 import express from 'express';
 import cors from 'cors';
@@ -24,6 +23,7 @@ import dataRoutes from './core/system/routes/data.js';
 import historyRoutes from './core/system/routes/history.js';
 import strategyManager from './core/strategyManager.js';
 import collectorRoutes from './core/system/routes/collectors.js';
+import modulesRoutes from './core/system/routes/modules.js';
 import aggregatorService from './core/system/services/aggregatorService.js';
 
 
@@ -98,6 +98,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/system/config', configRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/collectors', collectorRoutes);
+app.use('/api/modules', authorize('admin'), modulesRoutes);
 app.use('/api/system', dataRoutes);
 
 // ============================================================================
