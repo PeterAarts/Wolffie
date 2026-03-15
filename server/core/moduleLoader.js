@@ -91,6 +91,9 @@ class ModuleLoader {
       // 1. Lees en parse manifest
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
+      // 2. Sync manifest fields → module_registry
+      await this.syncManifestToRegistry(manifest);
+
       // 2. Importeer de module logica
       const moduleUrl = `file://${indexPath}`;
       const moduleExport = await import(moduleUrl);
@@ -116,6 +119,84 @@ class ModuleLoader {
       return moduleInstance;
     } catch (error) {
       throw new Error(`Load error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Syncs all manifest.json fields into module_registry.
+   * Uses INSERT … ON DUPLICATE KEY UPDATE so:
+   *  - New modules get a full row inserted (enabled = 0 by default)
+   *  - Existing rows get version, author, description, type etc. refreshed
+   *    without touching enabled / discovered_at
+   */
+  async syncManifestToRegistry(manifest) {
+    const {
+      id,
+      name              = '',
+      version           = '0.0.0',
+      type              = 'unknown',
+      description       = '',
+      author            = null,
+      documentation_url = null,
+      capabilities      = {},
+      collector         = {},
+      routes            = {},
+      settings          = {},
+    } = manifest;
+
+    const has_collector = (capabilities.dataCollection || !!collector.enabled) ? 1 : 0;
+    const has_api       = capabilities.api ? 1 : 0;
+    const has_ui        = capabilities.ui  ? 1 : 0;
+    const api_prefix    = routes.prefix      ?? null;
+    const interval      = collector.interval ?? null;
+    const priority      = collector.priority ?? null;
+    const component     = settings.component ?? null;
+    const has_schema    = fs.existsSync(
+      path.join(this.modulesPath, id, 'config', 'settings_schema.json')
+    ) ? 1 : 0;
+
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    try {
+      await db.pool.query(`
+        INSERT INTO module_registry (
+          module_id, module_name, module_version, module_type,
+          description, author, documentation_url,
+          has_collector, has_api, has_ui, has_schema,
+          api_prefix, collector_interval, collector_priority,
+          settings_component,
+          enabled, installed,
+          discovered_at, installed_at, updated_at, last_seen_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 1, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          module_name        = VALUES(module_name),
+          module_version     = VALUES(module_version),
+          module_type        = VALUES(module_type),
+          description        = VALUES(description),
+          author             = VALUES(author),
+          documentation_url  = VALUES(documentation_url),
+          has_collector      = VALUES(has_collector),
+          has_api            = VALUES(has_api),
+          has_ui             = VALUES(has_ui),
+          has_schema         = VALUES(has_schema),
+          api_prefix         = VALUES(api_prefix),
+          collector_interval = VALUES(collector_interval),
+          collector_priority = VALUES(collector_priority),
+          settings_component = VALUES(settings_component),
+          installed          = 1,
+          updated_at         = VALUES(updated_at),
+          last_seen_at       = VALUES(last_seen_at)
+      `, [
+        id, name, version, type,
+        description, author, documentation_url,
+        has_collector, has_api, has_ui, has_schema,
+        api_prefix, interval, priority,
+        component,
+        now, now, now, now,  // discovered_at, installed_at, updated_at, last_seen_at
+      ]);
+    } catch (error) {
+      // Non-fatal — log and continue so a DB hiccup never prevents module load
+      console.warn(`   ⚠️  syncManifestToRegistry failed for ${id}:`, error.message);
     }
   }
 

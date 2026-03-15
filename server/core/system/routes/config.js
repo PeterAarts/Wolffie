@@ -2,8 +2,10 @@
 import express from 'express';
 import systemConfigService from '../services/systemconfigservice.js';
 import { authorize } from '../../auth/middleware/authorize.js';
+import modulesRoutes from './modules.js';
 
 const router = express.Router();
+router.use('/modules', modulesRoutes);
 
 /**
  * GET /api/system/config
