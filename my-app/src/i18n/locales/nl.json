@@ -137,7 +137,38 @@
     "connectionSuccess": "Verbinding geslaagd",
     "connectionFailed": "Verbinding mislukt",
     "collectors": "Collectors",
-    "savedDetail": "Instellingen bijgewerkt",
+    "savedDetail": "Instellingen bijgewerkt",    
+    "modulesTab": {
+      "install": "Module installeren",
+      "install_desc": "Upload een .zip-pakket met een manifest.json om een nieuwe module te installeren.",
+      "install_btn": "Installeren",
+      "update_btn": "Bijwerken",
+      "drop": "Sleep een .zip hierheen of",
+      "browse": "bladeren",
+      "zip_hint": "Max 10 MB · alleen .zip",
+      "zip_only": "Alleen .zip-bestanden worden ondersteund",
+      "checksum": "Verwachte SHA-256 checksum",
+      "checksum_placeholder": "Plak hash om te verifiëren vóór installatie…",
+      "installed": "Geïnstalleerd",
+      "updated": "Bijgewerkt",
+      "install_failed": "Installatie mislukt",
+      "restart_required": "Herstart de server om deze module te activeren.",
+      "installed_title": "Geïnstalleerde modules",
+      "count": "modules gevonden",
+      "empty": "Nog geen modules geïnstalleerd.",
+      "verified": "geverifieerd",
+      "verify": "Integriteit verifiëren",
+      "verify_ok": "Module-integriteit bevestigd",
+      "update_detected": "Update gedetecteerd",
+      "update_ready": "Update beschikbaar",
+      "new": "Nieuwe module",
+      "reading": "Pakket lezen…",
+      "uninstall": "Verwijderen",
+      "uninstall_title": "Module verwijderen",
+      "uninstall_confirm": "Verwijder {name}? Alle modulebestanden worden gewist.",
+      "uninstalled": "{name} verwijderd",
+      "load_error": "Modules laden mislukt"
+    },
     "core": {
       "subtitle": "Systeemconfiguratie",
       "description": "Beheer de basisinstellingen van het Wolffie platform.",
@@ -399,66 +430,6 @@
       "added": "Apparaat succesvol toegevoegd",
       "updated": "Apparaat bijgewerkt",
       "removed": "Apparaat verwijderd"
-    }
-  },
-  "modules": {
-    "dayAheadPrices": {
-      "groups": {
-        "priceSettings": "Prijsinstellingen",
-        "fetchSettings": "Ophaalinstellingen",
-        "collectorStatus": "Collector status"
-      },
-      "fields": {
-        "enabled": {
-          "label": "Day-ahead prijzen inschakelen",
-          "description": "Activeer dagelijks ophalen van elektriciteitsprijzen"
-        },
-        "bidding_zone": {
-          "label": "Biedzone",
-          "description": "Selecteer de elektriciteitsbiedzone voor jouw regio"
-        },
-        "country_code": {
-          "label": "Landcode",
-          "description": "Tweeletterige landcode (optioneel)",
-          "placeholder": "NL"
-        },
-        "fetch_days": {
-          "label": "Dagen op te halen",
-          "description": "Hoeveel dagen historische prijzen per ophaalronde worden opgehaald"
-        },
-        "fetch_interval_hours": {
-          "label": "Ophaalinterval (uren)",
-          "description": "Hoe vaak prijzen opnieuw worden opgehaald (in uren). Standaard: 4 uur"
-        },
-        "retry_max": {
-          "label": "Max. pogingen",
-          "description": "Maximaal aantal herpogingen wanneer prijzen van morgen ontbreken"
-        }
-      },
-      "status": {
-        "lastFetch": "Laatste ophaling",
-        "lastFetchRecords": "Opgehaalde records",
-        "status": "Status",
-        "retrying": "Herpoging actief",
-        "retryCount": "Herpogingen"
-      },
-      "biddingZones": {
-        "NL": "Nederland (NL)",
-        "DE": "Duitsland (DE)",
-        "DE-LU": "Duitsland-Luxemburg (DE-LU)",
-        "BE": "België (BE)",
-        "FR": "Frankrijk (FR)",
-        "CH": "Zwitserland (CH)",
-        "AT": "Oostenrijk (AT)",
-        "DK1": "Denemarken West (DK1)",
-        "DK2": "Denemarken Oost (DK2)",
-        "NO1": "Noorwegen 1 (NO1)",
-        "NO2": "Noorwegen 2 (NO2)",
-        "SE1": "Zweden 1 (SE1)",
-        "SE2": "Zweden 2 (SE2)",
-        "SE3": "Zweden 3 (SE3)",
-        "SE4": "Zweden 4 (SE4)"
-      }
     }
   },
   "profile": {

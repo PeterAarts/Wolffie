@@ -4,14 +4,14 @@
     <!-- Header -->
     <div class="status-header">
       <div class="header-left">
-        <h2>Module Data Collectors</h2>
+        <h2>{{ t('collectors.title') }}</h2>
         <span class="manager-badge" :class="managerRunning ? 'badge--ok' : 'badge--err'">
-          {{ managerRunning ? 'Running' : 'Stopped' }}
+          {{ managerRunning ? t('collectors.running') : t('collectors.stopped') }}
         </span>
       </div>
       <div class="header-right">
-        <span class="last-refresh">Updated {{ lastRefreshLabel }}</span>
-        <button class="btn-icon" :class="{ spinning: loading }" @click="load" title="Refresh">
+        <span class="last-refresh">{{ t('collectors.updated') }} {{ lastRefreshLabel }}</span>
+        <button class="btn-icon" :class="{ spinning: loading }" @click="load" :title="t('common.refresh')">
           <i class="fa-solid fa-rotate"></i>
         </button>
       </div>
@@ -49,7 +49,7 @@
 
         <!-- Last collected -->
         <div class="col-last">
-          <span class="meta-label">Last collected</span>
+          <span class="meta-label">{{ t('collectors.lastCollected') }}</span>
           <span class="meta-value" :class="{ stale: isStale(c) }">
             {{ formatLastRun(c) }}
           </span>
@@ -57,13 +57,13 @@
 
         <!-- Next run -->
         <div class="col-next">
-          <span class="meta-label">Next run</span>
+          <span class="meta-label">{{ t('collectors.nextRun') }}</span>
           <span class="meta-value">{{ formatNextRun(c) }}</span>
         </div>
 
         <!-- Interval -->
         <div class="col-interval">
-          <span class="meta-label">Interval</span>
+          <span class="meta-label">{{ t('collectors.interval') }}</span>
           <span class="meta-value">{{ formatInterval(c.intervalMs) }}</span>
         </div>
 
@@ -71,7 +71,7 @@
         <div class="col-errors">
           <span v-if="c.consecutiveErrors > 0" class="error-count" :title="c.lastError ?? ''">
             <i class="fa-solid fa-circle-exclamation"></i>
-            {{ c.consecutiveErrors }} error{{ c.consecutiveErrors > 1 ? 's' : '' }}
+            {{ c.consecutiveErrors }} {{ c.consecutiveErrors > 1 ? t('collectors.errors') : t('collectors.error') }}
           </span>
           <span v-else class="no-errors">—</span>
         </div>
@@ -83,10 +83,10 @@
             class="btn-restart"
             :disabled="restarting === c.id"
             @click="restart(c.id)"
-            title="Restart collector"
+            :title="t('collectors.restart')"
           >
             <i class="fa-solid fa-play"></i>
-            {{ restarting === c.id ? 'Starting…' : 'Restart' }}
+            {{ restarting === c.id ? t('collectors.starting') : t('collectors.restart') }}
           </button>
           <span v-else class="status-ok">
             <i class="fa-solid fa-check"></i>
@@ -96,7 +96,7 @@
 
       <!-- Empty state -->
       <div v-if="collectors.length === 0" class="empty-state">
-        No collectors registered
+        {{ t('collectors.empty') }}
       </div>
     </template>
 
@@ -106,6 +106,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import apiClient from '@/services/api.js';
+import { useI18n } from 'vue-i18n';
+import { useToastStore } from '@/stores/toast';
+import '@/assets/styles/control.css';
+
+const { t } = useI18n();
+const toast = useToastStore();
 
 // ── Config ──────────────────────────────────────────────────────────────────
 
@@ -128,13 +134,13 @@ async function load() {
   error.value = null;
   try {
     const response = await apiClient.get('/collectors/status');
-    // Handle both unwrapped and wrapped responses
-    const data = response.collectors ? response : response.data;
+    // apiClient returns full axios response — .data is the payload
+    const data = response?.data?.data ?? response?.data ?? {};
     collectors.value     = data.collectors ?? [];
     managerRunning.value = data.running    ?? false;
     lastRefresh.value    = new Date();
   } catch (e) {
-    error.value = e?.response?.data?.error ?? e.message ?? 'Failed to load collector status';
+    error.value = e?.response?.data?.error ?? e.message ?? t('collectors.loadError');
   } finally {
     loading.value = false;
   }
@@ -146,7 +152,7 @@ async function restart(id) {
     await apiClient.post(`/collectors/${id}/restart`);
     await load();
   } catch (e) {
-    error.value = `Restart failed: ${e?.response?.data?.error ?? e.message}`;
+    error.value = `${t('collectors.restartError')}: ${e?.response?.data?.error ?? e.message}`;
   } finally {
     restarting.value = null;
   }
@@ -178,10 +184,10 @@ function isEnabled(c) {
 
 function formatLastRun(c) {
   const ts = c.lastRun;
-  if (!ts) return 'Never';
+  if (!ts) return t('collectors.never');
   const d = new Date(ts);
   const ago = Math.round((Date.now() - d) / 1000);
-  if (ago < 60)  return `${ago}s ago`;
+  if (ago < 60)   return `${ago}s ago`;
   if (ago < 3600) return `${Math.round(ago / 60)}m ago`;
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
@@ -191,8 +197,8 @@ function formatNextRun(c) {
   if (!c.nextRun) return '—';
   const d = new Date(c.nextRun);
   const ms = d - Date.now();
-  if (ms <= 0) return 'now';
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
+  if (ms <= 0)       return t('collectors.now');
+  if (ms < 60_000)   return `${Math.round(ms / 1000)}s`;
   return `${Math.round(ms / 60_000)}m`;
 }
 
@@ -220,11 +226,11 @@ function dotClass(c) {
 }
 
 function dotLabel(c) {
-  if (!isEnabled(c))  return 'Disabled';
-  if (c.paused)    return `Paused after ${c.consecutiveErrors} errors`;
-  if (c.consecutiveErrors) return `${c.consecutiveErrors} consecutive error(s)`;
-  if (isStale(c))  return 'No recent data';
-  return 'Healthy';
+  if (!isEnabled(c))        return t('collectors.statusDisabled');
+  if (c.paused)             return t('collectors.statusPaused', { n: c.consecutiveErrors });
+  if (c.consecutiveErrors)  return t('collectors.statusErrors', { n: c.consecutiveErrors });
+  if (isStale(c))           return t('collectors.statusStale');
+  return t('collectors.statusHealthy');
 }
 
 function rowClass(c) {

@@ -52,8 +52,8 @@
             <div v-else-if="activeModuleId === 'users'">
               <UserSettings />
             </div>
-            <div v-else-if="activeModuleId === 'collectors'">
-              <CollectorStatus />
+            <div v-else-if="activeModuleId === 'modules'">
+              <ModulesTab />
             </div>
             <div v-else>
               <UniversalSettingsPanel :key="activeModuleId" :module-id="activeModuleId" />
@@ -72,7 +72,7 @@ import { useI18n } from 'vue-i18n';
 import UniversalSettingsPanel from '@/components/settings/universalSettingsPanel.vue';
 import CoreSettings from '@/components/settings/CoreSettings.vue';
 import UserSettings from '@/components/settings/UserSettings.vue';
-import CollectorStatus from '@/components/settings/CollectorStatus.vue';
+import ModulesTab from '@/components/settings/ModulesTab.vue';
 const { t } = useI18n();
 
 const activeModuleId = ref('core');
@@ -81,7 +81,7 @@ const settingsModules = ref([]);
 const staticMenu = [
   { id: 'core', label: t('settings.general'), icon: 'fa-light fa-server' },
   { id: 'users', label: t('settings.usermanagement'), icon: 'fa-light fa-users-gear' },
-  { id: 'collectors', label: t('settings.collectors'), icon: 'fa-light fa-database' },
+  { id: 'modules', label: t('modulesTab.install'), icon: 'fa-light fa-puzzle-piece' },
 ];
 
 const activeLabel = computed(() => {

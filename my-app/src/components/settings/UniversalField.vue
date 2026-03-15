@@ -1,10 +1,6 @@
 <template>
   <div v-if="field.visible !== false" class="flex flex-col gap-1.5 w-full">
-  <label 
-      v-if="field.label && !['checkbox', 'boolean','switch'].includes(field.component)" 
-      :for="field.key" 
-      class="text-xs  text-gray-500  tracking-wider ml-1"
-    >
+  <label class="text-xs  text-gray-500  tracking-wider ml-1">
       {{ field.label }}
       <span v-if="field.required" class="text-red-500 ml-1">*</span>
     </label>
@@ -70,9 +66,7 @@
           >
             <span class="toggle__knob" />
           </button>
-          <div class="flex flex-col">
-            <span class="select-none text-sm font-normal text-gray-700">{{ field.label }}</span>
-          </div>
+
         </div>
       </div>
       <div v-else-if="field.component === 'color'" class="flex items-center gap-3 p-2 bg-white border border-gray-200  shadow-sm">

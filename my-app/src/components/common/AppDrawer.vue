@@ -90,7 +90,7 @@ function close() {
 }
 
 .drawer {
-  width: 420px;
+  width: 600px;
   max-width: 100vw;
   height: 100%;
   background: #fff;

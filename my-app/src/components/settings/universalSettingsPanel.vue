@@ -21,7 +21,7 @@
                 <h4 class=" font-semibold m-0">{{ resolve(section.title) }}</h4>
                 <p v-if="section.description" class="text-gray-400 text-xs font-normal mt-1 mb-0">{{ resolve(section.description) }}</p>
               </div>
-              <div v-if="section.fields?.length" class="grid bg-gray-100 p-4 gap-4 fields-container">
+              <div v-if="section.fields?.length" class="grid bg-gray-100 p-4 gap-4 fields-container" :class="{ 'drawer-mode': props.drawerMode }">
                 <div 
                   v-for="field in section.fields" 
                   :key="field.key" 
@@ -126,7 +126,8 @@ import UniversalInfoPanel from './UniversalInfoPanel.vue';
 import UniversalCardGrid from './UniversalCardGrid.vue';
 
 const props = defineProps({
-  moduleId: { type: String, required: true }
+  moduleId:   { type: String,  required: true },
+  drawerMode: { type: Boolean, default: false },  // forces single-column layout
 });
 
 const schema = ref({});
@@ -142,8 +143,8 @@ const messagesReady = ref(false);
 
 // Helpers
 function getFieldColumnClass(field) {
-
-  const cols = field.cols || 12; 
+  if (props.drawerMode) return 'col-12';   // always full width in drawer
+  const cols = field.cols || 12;
   return `col-12 md:col-${cols}`;
 }
 
@@ -413,6 +414,16 @@ onMounted(loadSchema);
   .save-bar-actions {flex-direction: column;}
 }
 .grid                   {display:flex ;grid-template-columns: auto auto auto auto;}
+/* In drawer mode: stack fields vertically, full width */
+.fields-container.drawer-mode {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1rem;
+}
+.fields-container.drawer-mode > div {
+  width: 100% !important;
+  max-width: 100% !important;
+}
 .p-tabview-tablist-item-active 
                         {background-color: #f59e0b !important; color: white !important;border-color:#92400e;border-width: 3px;}
 .field-label            {font-weight: 400;color: #585858;font-size: 0.9rem;}

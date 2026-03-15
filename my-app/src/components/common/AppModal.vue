@@ -109,7 +109,7 @@ function cancel() {
   border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 1.5rem;
-  width: 360px;
+  width: 500px;
   max-width: 90vw;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }

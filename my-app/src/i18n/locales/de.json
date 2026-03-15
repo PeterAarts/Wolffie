@@ -138,6 +138,37 @@
     "connectionFailed": "Verbindung fehlgeschlagen",
     "collectors": "Kollektoren",
     "savedDetail": "Einstellungen aktualisiert",
+    "modulesTab": {
+      "install": "Modul installieren",
+      "install_desc": "Lade ein .zip-Paket mit einer manifest.json hoch, um ein neues Modul zu installieren.",
+      "install_btn": "Installieren",
+      "update_btn": "Aktualisieren",
+      "drop": "Eine .zip hier ablegen oder",
+      "browse": "durchsuchen",
+      "zip_hint": "Max. 10 MB · nur .zip",
+      "zip_only": "Es werden nur .zip-Dateien unterstützt",
+      "checksum": "Erwartete SHA-256-Prüfsumme",
+      "checksum_placeholder": "Hash vor der Installation zur Überprüfung einfügen…",
+      "installed": "Installiert",
+      "updated": "Aktualisiert",
+      "install_failed": "Installation fehlgeschlagen",
+      "restart_required": "Server neu starten, um dieses Modul zu aktivieren.",
+      "installed_title": "Installierte Module",
+      "count": "Module gefunden",
+      "empty": "Noch keine Module installiert.",
+      "verified": "verifiziert",
+      "verify": "Integrität prüfen",
+      "verify_ok": "Modulintegrität bestätigt",
+      "update_detected": "Update erkannt",
+      "update_ready": "Update bereit",
+      "new": "Neues Modul",
+      "reading": "Paket wird gelesen…",
+      "uninstall": "Deinstallieren",
+      "uninstall_title": "Modul deinstallieren",
+      "uninstall_confirm": "Soll {name} entfernt werden? Alle Moduldateien werden gelöscht.",
+      "uninstalled": "{name} entfernt",
+      "load_error": "Module konnten nicht geladen werden"
+    },
     "core": {
       "subtitle": "Systemkonfiguration",
       "description": "Verwalten Sie die Grundeinstellungen der Wolffie-Plattform.",
@@ -399,66 +430,6 @@
       "added": "Gerät erfolgreich hinzugefügt",
       "updated": "Gerät aktualisiert",
       "removed": "Gerät entfernt"
-    }
-  },
-  "modules": {
-    "dayAheadPrices": {
-      "groups": {
-        "priceSettings": "Preiseinstellungen",
-        "fetchSettings": "Abrufeinstellungen",
-        "collectorStatus": "Kollektorstatus"
-      },
-      "fields": {
-        "enabled": {
-          "label": "Day-ahead-Preise aktivieren",
-          "description": "Täglichen Abruf von Strompreisen aktivieren"
-        },
-        "bidding_zone": {
-          "label": "Gebotszone",
-          "description": "Wählen Sie die Stromgebotszone für Ihre Region"
-        },
-        "country_code": {
-          "label": "Ländercode",
-          "description": "Zweistelliger Ländercode (optional)",
-          "placeholder": "DE"
-        },
-        "fetch_days": {
-          "label": "Abruftage",
-          "description": "Wie viele Tage historischer Preise pro Abruf geholt werden"
-        },
-        "fetch_interval_hours": {
-          "label": "Abrufintervall (Stunden)",
-          "description": "Wie oft Preise neu abgerufen werden (in Stunden). Standard: 4 Stunden"
-        },
-        "retry_max": {
-          "label": "Max. Wiederholungen",
-          "description": "Maximale Wiederholungsversuche wenn Preise für morgen fehlen"
-        }
-      },
-      "status": {
-        "lastFetch": "Letzter Abruf",
-        "lastFetchRecords": "Abgerufene Datensätze",
-        "status": "Status",
-        "retrying": "Wiederholung aktiv",
-        "retryCount": "Wiederholungsversuche"
-      },
-      "biddingZones": {
-        "NL": "Niederlande (NL)",
-        "DE": "Deutschland (DE)",
-        "DE-LU": "Deutschland-Luxemburg (DE-LU)",
-        "BE": "Belgien (BE)",
-        "FR": "Frankreich (FR)",
-        "CH": "Schweiz (CH)",
-        "AT": "Österreich (AT)",
-        "DK1": "Dänemark West (DK1)",
-        "DK2": "Dänemark Ost (DK2)",
-        "NO1": "Norwegen 1 (NO1)",
-        "NO2": "Norwegen 2 (NO2)",
-        "SE1": "Schweden 1 (SE1)",
-        "SE2": "Schweden 2 (SE2)",
-        "SE3": "Schweden 3 (SE3)",
-        "SE4": "Schweden 4 (SE4)"
-      }
     }
   },
   "profile": {
