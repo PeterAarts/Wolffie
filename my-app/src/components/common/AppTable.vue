@@ -293,7 +293,7 @@ const slotColumns = computed(() =>
   color: #fff;
 }
 .app-table__datatable .bh-pagination li button:disabled {
-  opacity: 0.4;
+  opacity: 0;
   cursor: not-allowed;
 }
 

@@ -1,99 +1,148 @@
 <!-- src/components/control/DayAheadChart.vue -->
 <template>
-  <div class="dac">
+  <div class="flex flex-col gap-3 pt-5 border-t border-[color:var(--color-border)]">
 
     <!-- ── Header ── -->
-    <div class="dac__header">
-      <span class="dac__title">{{ t('control.forecast.title') }}</span>
+    <div class="flex flex-col gap-2">
 
-      <!-- Date navigator -->
-      <div class="dac__nav">
-        <button class="dac__nav-btn" :disabled="!canGoPrev" :title="t('control.forecast.prevDay')" @click="shiftDate(-1)">‹</button>
+      <!-- Row 1: title + legend + thresholds -->
+      <div class="flex items-center gap-3 flex-wrap">
 
-        <div class="dac__date-wrap">
+        <!-- Title -->
+        <span class="text-sm font-semibold whitespace-nowrap "
+              style="color: var(--color-text-primary)">
+          {{ t('control.forecast.title') }}
+        </span>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex items-center gap-1">
+
+        <button
+          class="w-6 h-6 flex items-center justify-center text-base leading-none cursor-pointer p-0 transition-colors duration-[120ms]"
+          :class="canGoPrev
+            ? ' hover:border-[color:var(--color-border-dark)] hover:bg-[color:var(--color-secondary-subtle)]'
+            : ' opacity-30 cursor-not-allowed'"
+          style="color: var(--color-text-secondary); border-radius: var(--border-radius)"
+          :disabled="!canGoPrev"
+          :title="t('control.forecast.prevDay')"
+          @click="shiftDate(-1)"
+        >‹</button>
+
+        <div class="relative">
           <input
             type="date"
-            class="dac__date-input"
+            class="dac-date-input"
             :value="selectedDate"
             :min="minDate"
             :max="maxDate"
             @change="onDateChange"
           />
-          <span class="dac__date-label" @click="openPicker">
+          <span
+            class="flex items-center gap-1.5 px-2 py-1 text-[0.78rem] whitespace-nowrap select-none cursor-pointer bg-white transition-colors duration-[120ms]  hover:border-[color:var(--color-border-dark)] hover:bg-[color:var(--color-secondary-subtle)]"
+            style="color: var(--color-text-primary); border-radius: var(--border-radius)"
+            @click="openPicker"
+          >
             {{ formattedDate }}
-            <span v-if="isToday"         class="dac__badge dac__badge--today">{{ t('control.forecast.today') }}</span>
-            <span v-else-if="isTomorrow" class="dac__badge dac__badge--tomorrow">{{ t('control.forecast.tomorrow') }}</span>
+            <span v-if="isToday"
+                  class="text-[0.65rem] font-semibold uppercase tracking-wide px-1.5 py-0.5"
+                  style="background: var(--color-secondary-muted); color: var(--color-text-primary); border-radius: var(--border-radius)">
+              {{ t('control.forecast.today') }}
+            </span>
+            <span v-else-if="isTomorrow"
+                  class="text-[0.65rem] font-semibold uppercase tracking-wide px-1.5 py-0.5 bg-amber-100 text-amber-800"
+                  style="border-radius: var(--border-radius)">
+              {{ t('control.forecast.tomorrow') }}
+            </span>
           </span>
         </div>
 
-        <button class="dac__nav-btn" :disabled="!canGoNext" :title="t('control.forecast.nextDay')" @click="shiftDate(1)">›</button>
-      </div>
+        <button
+          class="w-6 h-6 flex items-center justify-center text-base leading-none cursor-pointer p-0 transition-colors duration-[120ms]"
+          :class="canGoNext
+            ? '  hover:bg-[color:var(--color-secondary-subtle)]'
+            : ' opacity-30 cursor-not-allowed'"
+          style="color: var(--color-text-secondary); border-radius: var(--border-radius)"
+          :disabled="!canGoNext"
+          :title="t('control.forecast.nextDay')"
+          @click="shiftDate(1)"
+        >›</button>
 
-      <!-- Legend -->
-      <div class="dac__legend">
-        <span v-if="hasPrices" class="dac__legend-item">
-          <span class="dac__swatch dac__swatch--price" />
-          {{ t('control.forecast.price') }}
-        </span>
-        <span v-if="hasSolar" class="dac__legend-item">
-          <span class="dac__swatch dac__swatch--solar" />
-          {{ t('control.forecast.solar') }}
-          <span class="dac__legend-kwh">({{ solarKwhLabel }})</span>
-        </span>
       </div>
-
-      <!-- Threshold controls (only when prices available) -->
-      <div v-if="hasPrices" class="dac__thresholds">
-        <span class="dac__threshold-item dac__threshold-item--green">
-          <span class="dac__swatch dac__swatch--cheap" />
-          ≤
-          <input
-            type="range" min="0" max="100" step="1"
-            :value="greenBelow"
-            class="dac__slider dac__slider--green"
-            @input="greenBelow = Math.min(+$event.target.value, redAbove - 5); recolourCurrentBar(); scheduleSave()"
-          />
-          <span class="dac__threshold-val">{{ greenBelow }}%</span>
-        </span>
-        <span class="dac__threshold-item dac__threshold-item--red">
-          <span class="dac__swatch dac__swatch--costly" />
-          ≥
-          <input
-            type="range" min="0" max="100" step="1"
-            :value="redAbove"
-            class="dac__slider dac__slider--red"
-            @input="redAbove = Math.max(+$event.target.value, greenBelow + 5); recolourCurrentBar(); scheduleSave()"
-          />
-          <span class="dac__threshold-val">{{ redAbove }}%</span>
-        </span>
-      </div>
+        <!-- Threshold controls -->
+        <div v-if="hasPrices" class="flex items-center gap-4 ml-auto">
+          <span class="flex items-center gap-1.5 text-[0.72rem] whitespace-nowrap"
+                style="color: var(--color-text-secondary)">
+            <span class="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0 bg-green-200" />
+            ≤
+            <input type="range" min="0" max="100" step="1"
+                   :value="greenBelow"
+                   class="dac-slider dac-slider--green"
+                   @input="greenBelow = Math.min(+$event.target.value, redAbove - 5); recolourCurrentBar(); scheduleSave()" />
+            <span class="font-semibold w-10 text-right text-green-600">{{ greenBelow }}%</span>
+          </span>
+          <span class="flex items-center gap-1.5 text-[0.72rem] whitespace-nowrap"
+                style="color: var(--color-text-secondary)">
+            <span class="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0 bg-red-200" />
+            ≥
+            <input type="range" min="0" max="100" step="1"
+                   :value="redAbove"
+                   class="dac-slider dac-slider--red"
+                   @input="redAbove = Math.max(+$event.target.value, greenBelow + 5); recolourCurrentBar(); scheduleSave()" />
+            <span class="font-semibold w-10 text-right text-red-600">{{ redAbove }}%</span>
+          </span>
+        </div>
+      </div>      
     </div>
 
     <!-- ── Canvas ── -->
-    <div class="dac__canvas-wrap">
-      <canvas ref="canvasEl" />
+    <div class="relative h-[250px]">
+      <canvas ref="canvasEl" class="!w-full !h-full" />
       <Transition name="dac-fade">
-        <div v-if="loading" class="dac__overlay">
-          <span class="dac__spinner" />
+        <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white/75">
+          <span class="dac-spinner" />
         </div>
       </Transition>
     </div>
 
     <!-- ── No-data ── -->
-    <div v-if="!loading && !hasPrices && !hasSolar" class="dac__empty">
+    <div v-if="!loading && !hasPrices && !hasSolar"
+         class="text-center text-[0.8rem] italic py-2"
+         style="color: var(--color-text-tertiary)">
       {{ t('control.forecast.noData') }}
     </div>
-
-    <!-- ── Current-slot pill (today only) ── -->
-    <div v-if="!loading && isToday && currentSlot" class="dac__now">
-      <span class="dac__now-label">{{ t('control.forecast.now') }}</span>
-      <span v-if="hasPrices && currentSlot.price != null" class="dac__now-chip">
-        {{ formatPrice(currentSlot.price) }}
+        <!-- Legend -->
+    <div class="flex gap-3.5 mr-auto">
+      <span v-if="hasPrices" class="flex items-center gap-1.5 text-[0.72rem]"
+            style="color: var(--color-text-secondary)">
+        <span class="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0"
+              style="background: var(--color-secondary-muted)" />
+        {{ t('control.forecast.price') }}
       </span>
-      <span v-if="hasSolar && currentSlot.solarWh > 0" class="dac__now-chip dac__now-chip--solar">
-        ☀ {{ formatPower(currentSlot.solarWh) }}
+      <span v-if="hasSolar" class="flex items-center gap-1.5 text-[0.72rem]"
+            style="color: var(--color-text-secondary)">
+        <span class="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 bg-amber-400" />
+        {{ t('control.forecast.solar') }}
+        <span class="text-[0.68rem]" style="color: var(--color-text-tertiary)">({{ solarKwhLabel }})</span>
       </span>
     </div>
+    <!-- ── Current-slot pill (today only) ── 
+    <div v-if="!loading && isToday && currentSlot"
+         class="flex items-center gap-2 px-2.5 py-1.5 text-[0.75rem] border border-[color:var(--color-border)]"
+         style="background: var(--color-secondary-subtle); border-radius: var(--border-radius)">
+      <span class="text-[0.68rem] font-medium uppercase tracking-wide whitespace-nowrap"
+            style="color: var(--color-text-tertiary)">
+        {{ t('control.forecast.now') }}
+      </span>
+      <span v-if="hasPrices && currentSlot.price != null"
+            class="font-semibold"
+            style="color: var(--color-text-primary)">
+        {{ formatPrice(currentSlot.price) }}
+      </span>
+      <span v-if="hasSolar && currentSlot.solarWh > 0"
+            class="font-semibold text-amber-600">
+        ☀ {{ formatPower(currentSlot.solarWh) }}
+      </span>
+    </div>-->
 
   </div>
 </template>
@@ -111,7 +160,7 @@ const { t } = useLocale();
 // ─── Config ────────────────────────────────────────────────────────────────────
 const PRICE_IN_MWH       = false;
 const SOLAR_FORECAST_URL = '/solar-forecast';
-const LATITUDE           = parseFloat(import.meta.env.VITE_LOCATION_LATITUDE ?? '52.1');
+const LATITUDE           = parseFloat(import.meta.env.VITE_LOCATION_LATITUDE ?? '50.861');
 
 // ─── Date helpers ──────────────────────────────────────────────────────────────
 function localDateStr(d = new Date()) { return d.toLocaleDateString('en-CA'); }
@@ -384,8 +433,8 @@ const C = {
   barCurrent : '#3c3c3d',
   barCheap   : 'rgba(83, 218, 101,1)',
   barCostly  : 'rgba(153, 27, 27,1)',
-  solar      : 'rgba(245,158,11,0.3)',
-  solarFill  : 'rgba(245,158,11,0.1)',
+  solar      : 'rgba(245,158,11,0.9)',
+  solarFill  : 'rgba(245,158,11,0.05)',
 };
 
 function barColors(sl) {
@@ -425,6 +474,7 @@ function buildConfig(sl) {
       data               : sl.map(s => s.price),
       backgroundColor    : barColors(sl),
       borderWidth        : 0,
+      borderRadius       : 5,
       yAxisID            : 'yPrice',
       order              : 2,
       barPercentage      : 1.0,
@@ -449,13 +499,14 @@ function buildConfig(sl) {
     });
   }
 
-  const isQtr = sl.length > 24;
+  const tickColor = getComputedStyle(document.documentElement).getPropertyValue('--color-text-tertiary').trim() || '#9ca3af';
+  const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--color-border').trim() || '#f3f4f6';
 
   const scales = {
     x: {
       grid : { display: false },
       ticks: {
-        color      : '#9ca3af',
+        color      : tickColor,
         font       : { size: 10 },
         maxRotation: 0,
         autoSkip   : false,
@@ -475,13 +526,13 @@ function buildConfig(sl) {
     scales.yPrice = {
       type    : 'linear',
       position: 'left',
-      grid    : { color: '#f3f4f6' },
+      grid    : { color: gridColor },
       ticks   : {
-        color   : '#9ca3af',
+        color   : tickColor,
         font    : { size: 10 },
         callback: v => v != null ? `${(v * 100).toFixed(0)}ct` : '',
       },
-      title: { display: true, text: 'ct/kWh', color: '#9ca3af', font: { size: 9 } },
+      title: { display: true, text: 'ct/kWh', color: tickColor, font: { size: 9 } },
     };
   }
 
@@ -492,11 +543,11 @@ function buildConfig(sl) {
       beginAtZero : true,
       grid        : { drawOnChartArea: false },
       ticks       : {
-        color   : C.solar,
+        color   : tickColor,
         font    : { size: 10 },
         callback: v => `${v.toFixed(1)}`,
       },
-      title: { display: true, text: 'kW', color: C.solar, font: { size: 9 } },
+      title: { display: true, text: 'kW', color: tickColor, font: { size: 9 } },
     };
   }
 
@@ -510,19 +561,28 @@ function buildConfig(sl) {
       plugins: {
         legend : { display: false },
         tooltip: {
-          backgroundColor : 'rgba(17,24,39,0.1)',
-          padding         : 5,
-          titleFont       : { size: 12 },
-          bodyFont        : { size: 12 },
+          backgroundColor  : '#ffffff',
+          borderColor      : '#e5e7eb',
+          borderWidth      : 1,
+          padding          : { top: 8, right: 12, bottom: 8, left: 12 },
+          titleColor       : '#111827',
+          titleFont        : { size: 12, weight: '600' },
+          bodyColor        : '#374151',
+          bodyFont         : { size: 12, weight: '400' },
+          bodySpacing      : 5,
+          boxWidth         : 8,
+          boxHeight        : 8,
+          boxPadding       : 4,
+          usePointStyle    : true,
           callbacks: {
             title: items => items[0]?.label ?? '',
             label: ctx => {
               if (ctx.dataset.yAxisID === 'yPrice') {
                 const v = ctx.parsed.y;
-                return v != null ? ` Price: ${formatPrice(v)}` : ' Price: —';
+                return v != null ? `Price: ${formatPrice(v)}` : 'Price: —';
               }
               if (ctx.dataset.yAxisID === 'ySolar') {
-                return ` Solar: ${formatPower(Math.round(ctx.parsed.y * 1000))}`;
+                return `Solar: ${formatPower(Math.round(ctx.parsed.y * 1000))}`;
               }
               return ctx.formattedValue;
             },
@@ -687,63 +747,8 @@ watch(selectedDate, date => loadAndRender(date));
 </script>
 
 <style scoped>
-.dac {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding-top: 1.25rem;
-  border-top: 1px solid #f3f4f6;
-}
-
-/* ── Header ──────────────────────────────────────────────────────────────── */
-.dac__header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.dac__title {
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: #374151;
-  white-space: nowrap;
-  margin-right: auto;
-}
-
-/* ── Date navigator ──────────────────────────────────────────────────────── */
-.dac__nav {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.dac__nav-btn {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: 1px solid #e5e7eb;
-  border-radius: 0;
-  color: #6b7280;
-  font-size: 1rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.12s, border-color 0.12s, color 0.12s;
-}
-.dac__nav-btn:hover:not(:disabled) {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-  color: #111827;
-}
-.dac__nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-.dac__date-wrap { position: relative; }
-
-.dac__date-input {
+/* ── Hidden date input overlay (must cover the label exactly) ── */
+.dac-date-input {
   position: absolute;
   inset: 0;
   opacity: 0;
@@ -754,98 +759,21 @@ watch(selectedDate, date => loadAndRender(date));
   padding: 0;
 }
 
-.dac__date-label {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #e5e7eb;
-  font-size: 0.78rem;
-  color: #374151;
-  cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
-  background: #fff;
-  transition: background 0.12s, border-color 0.12s;
-}
-.dac__date-label:hover { background: #f9fafb; border-color: #9ca3af; }
-
-.dac__badge {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.1rem 0.35rem;
-  border-radius: 3px;
-}
-.dac__badge--today    { background: #e5e7eb; color: #374151; }
-.dac__badge--tomorrow { background: #fef3c7; color: #92400e; }
-
-/* ── Legend ──────────────────────────────────────────────────────────────── */
-.dac__legend { display: flex; gap: 0.875rem; }
-
-.dac__legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.72rem;
-  color: #6b7280;
-}
-
-.dac__swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  flex-shrink: 0;
-}
-.dac__swatch--price  { background: #d1d5db; }
-.dac__swatch--solar  { background: #f59e0b; border-radius: 50%; }
-.dac__swatch--cheap  { background: #86efac; }
-.dac__swatch--costly { background: #fca5a5; }
-.dac__legend-kwh { color: #9ca3af; font-size: 0.68rem; }
-
-/* ── Threshold sliders ───────────────────────────────────────────────────── */
-.dac__thresholds {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-left: auto;
-}
-
-.dac__threshold-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  font-size: 0.72rem;
-  color: #6b7280;
-  white-space: nowrap;
-}
-
-.dac__threshold-val {
-  font-weight: 600;
-  font-size: 0.72rem;
-  width: 2.5rem;
-  text-align: right;
-}
-
-.dac__threshold-item--green .dac__threshold-val { color: #16a34a; }
-.dac__threshold-item--red   .dac__threshold-val { color: #dc2626; }
-
-.dac__slider {
+/* ── Range sliders — thumb pseudo-elements can't be expressed in Tailwind ── */
+.dac-slider {
   -webkit-appearance: none;
   appearance: none;
-  width: 80px;
+  width: 120px;
   height: 3px;
   border-radius: 2px;
   outline: none;
   cursor: pointer;
 }
 
-.dac__slider--green {
-  background: linear-gradient(to right, #86efac, #d1d5db);
+.dac-slider--green {
+  background: linear-gradient(to right, #86efac, var(--color-secondary-muted, #e5e7eb));
 }
-.dac__slider--green::-webkit-slider-thumb {
+.dac-slider--green::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
@@ -854,10 +782,10 @@ watch(selectedDate, date => loadAndRender(date));
   cursor: pointer;
 }
 
-.dac__slider--red {
-  background: linear-gradient(to right, #d1d5db, #fca5a5);
+.dac-slider--red {
+  background: linear-gradient(to right, var(--color-secondary-muted, #e5e7eb), #fca5a5);
 }
-.dac__slider--red::-webkit-slider-thumb {
+.dac-slider--red::-webkit-slider-thumb {
   -webkit-appearance: none;
   width: 12px;
   height: 12px;
@@ -866,69 +794,20 @@ watch(selectedDate, date => loadAndRender(date));
   cursor: pointer;
 }
 
-/* ── Canvas ──────────────────────────────────────────────────────────────── */
-.dac__canvas-wrap {
-  position: relative;
-  height: 200px;
-}
-.dac__canvas-wrap canvas {
-  width:  100% !important;
-  height: 100% !important;
-}
-
-.dac__overlay {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255,255,255,0.75);
-}
-
-.dac__spinner {
+/* ── Loading spinner ── */
+.dac-spinner {
   width: 20px;
   height: 20px;
-  border: 2px solid #e5e7eb;
-  border-top-color: #9ca3af;
+  border: 2px solid var(--color-border, #e5e7eb);
+  border-top-color: var(--color-text-tertiary, #9ca3af);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: dac-spin 0.8s linear infinite;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes dac-spin { to { transform: rotate(360deg); } }
 
+/* ── Vue transition ── */
 .dac-fade-enter-active,
 .dac-fade-leave-active { transition: opacity 0.2s; }
 .dac-fade-enter-from,
 .dac-fade-leave-to    { opacity: 0; }
-
-/* ── Empty state ─────────────────────────────────────────────────────────── */
-.dac__empty {
-  text-align: center;
-  font-size: 0.8rem;
-  font-style: italic;
-  color: #9ca3af;
-  padding: 0.5rem 0;
-}
-
-/* ── Current-slot pill ───────────────────────────────────────────────────── */
-.dac__now {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.625rem;
-  background: #f9fafb;
-  border: 1px solid #f3f4f6;
-  font-size: 0.75rem;
-}
-
-.dac__now-label {
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.dac__now-chip              { font-weight: 600; color: #374151; }
-.dac__now-chip--solar       { color: #d97706; }
 </style>

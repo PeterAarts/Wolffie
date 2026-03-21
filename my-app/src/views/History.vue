@@ -1,5 +1,5 @@
 <template>
-  <div class="history-page bg-gray-100 max-h-screen">
+  <div class="history-page max-h-screen" style="background: var(--color-bg-primary);">
     <!-- Header with controls -->
     <div class="history-header">
       <div class="controls">
@@ -8,7 +8,7 @@
           <button 
             v-for="period in periods" 
             :key="period.value"
-            :class="['period-btn text-sm font-bold text-gray-500', { active: selectedPeriod === period.value }]"
+            :class="['period-btn text-sm font-bold', { active: selectedPeriod === period.value }]"
             @click="selectPeriod(period.value)"
           >
             {{ period.label }}
@@ -129,42 +129,43 @@ function formatEnergy(value) {
   border: none;
   background: transparent;
   font-family: 'Rubik', sans-serif;
+  color: var(--color-text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
 }
 
 .period-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--color-text-primary, #111827);
+  background: var(--color-secondary-subtle);
+  color: var(--color-text-primary);
 }
 
 .period-btn.active {
-  background: var(--color-text-primary, #111827);
-  color: var(--color-bg-primary, #ffffff);
+  background: var(--color-text-primary);
+  color: var(--color-bg-secondary);
   font-weight: 600;
 }
 
 .date-picker input {
   padding: 10px 16px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   font-family: 'Rubik', sans-serif;
   font-size: 14px;
-  background: var(--color-bg-secondary, #f8f9fa);
-  color: var(--color-text-primary, #111827);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .date-picker input:hover {
-  border-color: rgba(0, 0, 0, 0.2);
+  border-color: var(--color-secondary-hover);
 }
 
 .date-picker input:focus {
   outline: none;
-  border-color: var(--color-text-primary, #111827);
-  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 3px var(--color-secondary-subtle);
 }
 
 /* Chart Wrapper - No background */

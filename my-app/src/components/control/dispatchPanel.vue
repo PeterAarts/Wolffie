@@ -8,6 +8,7 @@
       <span class="status-bar__text">
         {{ status.charging ? t('control.chargingActive') : t('control.dischargingActive') }}
         &mdash; {{ status.watts }} W
+        <span v-if="status.startedAt"> &mdash; {{ status.startedAt }}</span>
         <span v-if="remaining"> &mdash; {{ remaining }}</span>
       </span>
       <button
@@ -125,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import apiClient from '@/services/api';
 import { useToastStore } from '@/stores/toast';
 import { useLocale } from '@/composables/useLocale';
@@ -141,7 +142,25 @@ const { t } = useLocale();
 const charging    = ref(false);
 const discharging = ref(false);
 const stopping    = ref(false);
-const status      = ref({ active: false, charging: false, discharging: false, watts: 0, remainingSeconds: 0 });
+
+// startedAt is persisted in localStorage so it survives logout/login cycles.
+// It is keyed to 'wolffie_dispatch_startedAt' and cleared as soon as the
+// backend reports no active dispatch.
+const STORAGE_KEY  = 'wolffie_dispatch_startedAt';
+const startedAt    = ref(localStorage.getItem(STORAGE_KEY) || null);
+
+function setStartedAt() {
+  const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  startedAt.value = t;
+  localStorage.setItem(STORAGE_KEY, t);
+}
+
+function clearStartedAt() {
+  startedAt.value = null;
+  localStorage.removeItem(STORAGE_KEY);
+}
+
+const status = ref({ active: false, charging: false, discharging: false, watts: 0, remainingSeconds: 0, startedAt: null });
 
 const charge    = ref({ watts: 2000, targetSOC: 100,  durationHours: 4 });
 const discharge = ref({ watts: 2000, minimumSOC: 20,  durationHours: 2 });
@@ -170,7 +189,8 @@ async function doCharge() {
   ask(t('control.confirmCharge', { watts, targetSOC, durationHours }), async () => {
     charging.value = true;
     try {
-      await apiClient.post('/alphaess/charge', { watts, targetSOC, durationHours });
+      await apiClient.post('/alphaess-modbus-tcp/charge', { watts, targetSOC, durationHours });
+      setStartedAt();
       toast.add({ severity: 'success', summary: t('control.chargingStarted'), detail: `${watts} W → ${targetSOC}%` });
       await loadStatus();
     } catch (e) {
@@ -186,7 +206,8 @@ async function doDischarge() {
   ask(t('control.confirmDischarge', { watts, minimumSOC, durationHours }), async () => {
     discharging.value = true;
     try {
-      await apiClient.post('/alphaess/discharge', { watts, minimumSOC, durationHours });
+      await apiClient.post('/alphaess-modbus-tcp/discharge', { watts, minimumSOC, durationHours });
+      setStartedAt();
       toast.add({ severity: 'success', summary: t('control.dischargingStarted'), detail: `${watts} W, min ${minimumSOC}%` });
       await loadStatus();
     } catch (e) {
@@ -200,7 +221,8 @@ async function doDischarge() {
 async function doStop() {
   stopping.value = true;
   try {
-    await apiClient.post('/alphaess/stop');
+    await apiClient.post('/alphaess-modbus-tcp/stop');
+    clearStartedAt();
     toast.add({ severity: 'success', summary: t('control.dispatchStopped') });
     await loadStatus();
   } catch (e) {
@@ -212,18 +234,34 @@ async function doStop() {
 
 async function loadStatus() {
   try {
-    const { data } = await apiClient.get('/alphaess/dispatch-status');
+    // apiClient interceptor unwraps response.data, so the result is the
+    // payload directly — not { data: payload }. Destructuring as { data }
+    // would give undefined; receive it directly instead.
+    const payload = await apiClient.get('/alphaess-modbus-tcp/dispatch-status');
+    const d = payload?.data ?? payload;   // handle both wrapped and unwrapped
     status.value = {
-      active:           data.active      || false,
-      charging:         data.charging    || false,
-      discharging:      data.discharging || false,
-      watts:            data.watts       || 0,
-      remainingSeconds: data.remainingSeconds || 0,
+      active:           d.active      || false,
+      charging:         d.charging    || false,
+      discharging:      d.discharging || false,
+      watts:            d.watts       || 0,
+      remainingSeconds: d.remainingSeconds || 0,
+      startedAt:        (d.active && startedAt.value) ? startedAt.value : null,
     };
+    if (!d.active) clearStartedAt();
   } catch { /* not critical */ }
 }
 
-onMounted(loadStatus);
+// Poll every 30 s so remaining time and startedAt stay current after login
+let pollTimer = null;
+
+onMounted(() => {
+  loadStatus();
+  pollTimer = setInterval(loadStatus, 30_000);
+});
+
+onUnmounted(() => {
+  clearInterval(pollTimer);
+});
 </script>
 
 <style scoped>
@@ -237,20 +275,22 @@ onMounted(loadStatus);
   padding: 0.625rem 0.875rem;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 6px;
 }
 
 .status-bar__dot {
-  width: 7px; height: 7px;
+  width: 14px; height: 14px;
   border-radius: 50%;
-  background: #374151;
+  background: var(--color-primary);
   flex-shrink: 0;
-  animation: pulse 2s infinite;
+  animation: pulse 3s infinite;
+}
+.range::-webkit-slider-thumb {
+    border-radius: 0%!important;
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.35; }
+  50%       { opacity: .1; }
 }
 
 .status-bar__text {
@@ -261,37 +301,21 @@ onMounted(loadStatus);
 }
 
 /* ── Two-column card grid ─────────────────────────────────────────────────── */
-.dispatch-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.75rem;
-}
+.dispatch-grid        { display: grid;grid-template-columns: 1fr 1fr 1fr;gap: 0.75rem;}
 
 @media (max-width: 720px) {
   .dispatch-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Individual card ──────────────────────────────────────────────────────── */
-.dcard {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem;
-  border-radius: 6px;
-}
+.dcard                { display: flex;flex-direction: column;gap: 1rem;padding: 1.25rem;}
 
-.dcard__header { display: flex; flex-direction: column; gap: 0.25rem; }
-.dcard__title  { font-size: 0.875rem; font-weight: 600; color: #111827; }
-.dcard__sub    { font-size: 0.775rem; color: #6b7280; }
+.dcard__header        { display: flex; flex-direction: column; gap: 0.25rem; }
+.dcard__title         { font-size: 0.875rem; font-weight: 600; color: #111827; }
+.dcard__sub           { font-size: 0.775rem; color: #6b7280; }
 
-.fields { display: flex; flex-direction: column; gap: 0.875rem; }
+.fields               { display: flex; flex-direction: column; gap: 0.875rem; }
 
 /* ── Summary line ─────────────────────────────────────────────────────────── */
-.dcard__summary {
-  font-size: 0.775rem;
-  color: #6b7280;
-  background: #fff;
-  padding: 0.5rem 0.75rem;
-  border-radius: 4px;
-}
+.dcard__summary       { font-size: 0.775rem;color: #6b7280;background: #fff;padding: 0.5rem 0.75rem;border-radius: 4px;}
 </style>

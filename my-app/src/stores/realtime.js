@@ -184,26 +184,26 @@ async function fetchSummary() {
       console.log('📊 Fetching summary data from /api/system/summary...');
       const res = await apiClient.get('/system/summary');
       
-      if (res.data) {
+      if (res) {
         // Update daily totals from new response format
         summaryData.value = {
-          today_pv_gen: parseFloat(res.data.today.pv_generation) || 0,
-          today_load: parseFloat(res.data.today.load_consumption) || 0,
-          today_grid_export: parseFloat(res.data.today.grid_export) || 0,
-          today_grid_import: parseFloat(res.data.today.grid_import) || 0,
-          today_battery_charge: parseFloat(res.data.today.battery_charge) || 0,
-          today_battery_discharge: parseFloat(res.data.today.battery_discharge) || 0,
-          total_trees: parseFloat(res.data.environmental.trees_equivalent) || 0,
-          total_co2: parseFloat(res.data.environmental.co2_saved) || 0
+          today_pv_gen: parseFloat(res.today.pv_generation) || 0,
+          today_load: parseFloat(res.today.load_consumption) || 0,
+          today_grid_export: parseFloat(res.today.grid_export) || 0,
+          today_grid_import: parseFloat(res.today.grid_import) || 0,
+          today_battery_charge: parseFloat(res.today.battery_charge) || 0,
+          today_battery_discharge: parseFloat(res.today.battery_discharge) || 0,
+          total_trees: parseFloat(res.environmental.trees_equivalent) || 0,
+          total_co2: parseFloat(res.environmental.co2_saved) || 0
         };
         
         console.log('✅ Summary data loaded:', summaryData.value);
         
         // Update realtime data from snapshot
-        if (res.data.realtime) {
+        if (res.realtime) {
           console.log('📸 Loading realtime data from summary...');
           
-          const rt = res.data.realtime;
+          const rt = res.realtime;
           
           // Transform to store format
           updateRealtimeData({
@@ -212,29 +212,29 @@ async function fetchSummary() {
               battery_1: {
                 currentIn: rt.battery.power > 0 ? rt.battery.power : 0,
                 currentOut: rt.battery.power < 0 ? Math.abs(rt.battery.power) : 0,
-                dailyIn: parseFloat(res.data.today.battery_charge) || 0,
-                dailyOut: parseFloat(res.data.today.battery_discharge) || 0
+                dailyIn: parseFloat(res.today.battery_charge) || 0,
+                dailyOut: parseFloat(res.today.battery_discharge) || 0
               },
               grid: {
                 currentIn: rt.grid.power > 0 ? rt.grid.power : 0,
                 currentOut: rt.grid.power < 0 ? Math.abs(rt.grid.power) : 0,
-                dailyIn: parseFloat(res.data.today.grid_import) || 0,
-                dailyOut: parseFloat(res.data.today.grid_export) || 0
+                dailyIn: parseFloat(res.today.grid_import) || 0,
+                dailyOut: parseFloat(res.today.grid_export) || 0
               },
               solar: {
-                currentOut: rt.solar.total|| 0,
-                dailyOut: parseFloat(res.data.today.pv_generation) || 0
+                currentOut: rt.solar.total || 0,
+                dailyOut: parseFloat(res.today.pv_generation) || 0
               },
               home_usage: {
                 currentIn: rt.home.power || 0,
-                dailyIn: parseFloat(res.data.today.load_consumption) || 0
+                dailyIn: parseFloat(res.today.load_consumption) || 0
               }
             }
           });
           
           // Update connection status from collector info
-          if (res.data.collector) {
-            connectionSource.value = res.data.collector.connected ? 'modbus' : 'disconnected';
+          if (res.collector) {
+            connectionSource.value = res.collector.connected ? 'modbus' : 'disconnected';
           }
           
           console.log('✅ Realtime data loaded from summary');
@@ -256,9 +256,9 @@ async function fetchSummary() {
         timeout: 3000
       });
       
-      if (res.data && res.data.connected) {
+      if (res && res.connected) {
         connectionSource.value = 'modbus';
-        console.log('✅ Connected (data age: ' + res.data.ageSeconds + 's)');
+        console.log('✅ Connected (data age: ' + res.ageSeconds + 's)');
         return true;
       } else {
         connectionSource.value = 'disconnected';

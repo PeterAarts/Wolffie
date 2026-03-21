@@ -190,7 +190,7 @@
         </div>
 
         <div v-if="pendingFile" class="mt-3 space-y-2">
-          <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-700 w-fit">
+          <div class="flex items-center gap-2 p-4 bg-gray-100 border border-gray-200 rounded text-sm text-gray-700 w-fit">
             <i class="fa-light fa-file-zipper text-gray-400" />
             <span>{{ pendingFile.name }}</span>
             <button class="ml-1 text-gray-400 hover:text-gray-600" @click.stop="clearPending">
@@ -233,8 +233,8 @@
 
         <div
           v-if="uploadResult"
-          class="mt-4 flex items-start gap-3 p-3 rounded border text-xs"
-          :class="uploadResult.success ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'"
+          class="mt-4 flex items-start gap-3 p-4 rounded border text-xs"
+          :class="uploadResult.success ? 'bg-green-100 border-green-200 text-green-800' : 'bg-red-100 border-red-200 text-red-800'"
         >
           <i class="mt-0.5 fa-solid flex-shrink-0"
              :class="uploadResult.success ? 'fa-circle-check' : 'fa-triangle-exclamation'" />

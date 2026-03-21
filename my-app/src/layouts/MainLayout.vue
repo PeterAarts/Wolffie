@@ -1,60 +1,69 @@
 <template>
-  <div class="app-section flex flex-col  bg-white text-gray-900 overflow-hidden font-sans">
-    <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between p-6 z-40 shrink-0 ">
+  <div class="app-section flex flex-col overflow-hidden font-sans bg-white text-primary">
+
+    <!-- ── Header ──────────────────────────────────────────────────────────── -->
+    <header class="app-header flex items-center justify-between p-2 bg-white z-40 shrink-0 bg-secondary-100 border-b border-secondary-200">
+
       <div class="flex items-center gap-3">
-        <button 
-          @click="sidebarOpen = !sidebarOpen" 
-          class="lg:hidden w-10 h-10 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
+        <button
+          @click="sidebarOpen = !sidebarOpen"
+          class="nav-mobile-toggle lg:hidden flex items-center justify-center text-secondary-400 hover:bg-secondary-200 transition-colors"
         >
           <i class="fa-light fa-bars text-xl"></i>
         </button>
 
         <div class="flex items-center gap-3">
-        <router-link to="/" class="flex items-center gap-3 no-underline text-inherit">
-          <img src="@/assets/wolffie.svg" alt="Wolffie Logo" class="w-8 h-8 drop-shadow-sm" />
-          <span class="text-3xl font-black tracking-tight  uppercase">
-            Wolffie
-          </span>
-        </router-link>
-          
-          <div class="flex items-center ml-2">
+          <router-link to="/" class="flex items-center gap-3 no-underline text-inherit">
+            <img src="@/assets/wolffie.svg" alt="Wolffie Logo" class="w-8 h-8 drop-shadow-sm" />
+            <span class="text-3xl font-black tracking-tight uppercase">Wolffie</span>
+          </router-link>
+
+          <div class="flex items-center">
             <span class="relative flex h-2.5 w-2.5">
-              <span 
+              <span
                 v-if="realtimeStore.isConnected"
                 class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
               ></span>
-              <span 
-                :class="[
-                  'relative inline-flex rounded-full h-2.5 w-2.5',
-                  realtimeStore.isConnected ? 'bg-green-700' : 'bg-amber-500'
-                ]"
+              <span
+                :class="['relative inline-flex rounded-full h-2.5 w-2.5',
+                  realtimeStore.isConnected ? 'bg-green-700' : 'bg-amber-500']"
               ></span>
             </span>
-            <span class="p-2 text-xs lowercase tracking-wider text-gray-400 hidden lg:block">
+            <span class="connection-label text-xs lowercase tracking-wider text-secondary-400 hidden lg:block">
               {{ realtimeStore.isConnected ? t('header.connected') : t('header.disconnected') }}
             </span>
           </div>
         </div>
       </div>
 
-      <div class="flex items-center gap-3 relative">
-        <button 
+      <!-- User menu -->
+      <div class="flex items-center relative">
+        <button
           @click="toggleUserMenu"
-          class="flex items-center gap-2 p-2 bg-gray-200 transition-all"
+          class="user-menu-btn flex items-center bg-white hover:bg-secondary-300 transition-colors"
         >
-          <div class="w-6 h-5 bg-gray-900 text-white flex items-center justify-center text-[10px] font-bold uppercase">
+          <div class="user-avatar flex items-center justify-center text-[10px] font-bold uppercase bg-primary text-white">
             {{ authStore.user?.username?.substring(0,2) || 'me' }}
           </div>
-          <span class="text-sm font-bold text-gray-700 hidden sm:block">{{ authStore.user?.username }}</span>
-          <i class="fa-solid fa-chevron-down text-[10px] text-gray-400"></i>
+          <span class="text-sm font-bold text-secondary-400 hidden sm:block">{{ authStore.user?.username }}</span>
+          <i class="fa-solid fa-chevron-down text-[10px] text-secondary-400"></i>
         </button>
 
-        <div v-if="userMenuOpen" class="absolute top-12 right-0 w-44 bg-white border border-gray-100 shadow-xl z-50 overflow-hidden">
-          <div class="p-4">
-            <button @click="openProfile" class="w-full text-left p-2 text-sm text-gray-500 hover:bg-gray-200 flex items-center gap-3">
+        <div
+          v-if="userMenuOpen"
+          class="user-dropdown absolute z-50 overflow-hidden shadow-xl bg-white border border-secondary-200"
+        >
+          <div class="dropdown-inner">
+            <button
+              @click="openProfile"
+              class="dropdown-item w-full text-left flex items-center gap-3 text-sm text-secondary-400 hover:bg-secondary-200 hover:text-primary transition-colors"
+            >
               <i class="fa-light fa-user-pen"></i> {{ t('nav.myProfile') }}
             </button>
-            <button @click="handleLogout" class="w-full text-left p-2 text-sm text-gray-500 hover:bg-gray-200 flex items-center gap-3">
+            <button
+              @click="handleLogout"
+              class="dropdown-item w-full text-left flex items-center gap-3 text-sm text-secondary-400 hover:bg-secondary-200 hover:text-primary transition-colors"
+            >
               <i class="fa-light fa-right-from-bracket"></i> {{ t('header.logout') }}
             </button>
           </div>
@@ -62,50 +71,49 @@
       </div>
     </header>
 
-    <!-- ── Profile drawer (available on every page) ──────────────────────── -->
+    <!-- ── Profile drawer ──────────────────────────────────────────────────── -->
     <AppDrawer v-model:visible="profileDrawerOpen" :title="t('nav.myProfile')">
       <div v-if="profileDrawerOpen">
 
-        <div class="profile-meta">
-          <div class="profile-meta__avatar">
+        <div class="profile-meta bg-white">
+          <div class="profile-meta__avatar bg-primary text-white">
             {{ authStore.user?.username?.substring(0,2)?.toUpperCase() || '??' }}
           </div>
-          <div class="profile-meta__name">{{ authStore.user?.full_name || authStore.user?.username }}</div>
+          <div class="profile-meta__name text-primary">{{ authStore.user?.full_name || authStore.user?.username }}</div>
           <div class="profile-meta__sub">
-            <span :class="['role-badge', `role-badge--${authStore.user?.role}`]">{{ authStore.user?.role }}</span>
+            <span :class="[
+              'role-badge',
+              authStore.user?.role === 'admin'  ? 'role-badge--admin' :
+              authStore.user?.role === 'viewer' ? 'role-badge--viewer' : 'role-badge--user'
+            ]">{{ authStore.user?.role }}</span>
           </div>
         </div>
 
-        <div class="profile-fields">
-          <div class="profile-field">
-            <span class="profile-field__label">{{ t('settings.users.name') }}</span>
-            <span class="profile-field__value">{{ authStore.user?.username }}</span>
+        <div class="profile-fields border-t border-secondary-200 border-b border-secondary-200">
+          <div class="profile-field border-b border-secondary-100">
+            <span class="profile-field__label text-secondary-400">{{ t('settings.users.name') }}</span>
+            <span class="profile-field__value text-primary">{{ authStore.user?.username }}</span>
           </div>
-          <div class="profile-field">
-            <span class="profile-field__label">{{ t('settings.users.full_name') }}</span>
-            <span class="profile-field__value">{{ authStore.user?.full_name || '—' }}</span>
+          <div class="profile-field border-b border-secondary-100">
+            <span class="profile-field__label text-secondary-400">{{ t('settings.users.full_name') }}</span>
+            <span class="profile-field__value text-primary">{{ authStore.user?.full_name || '—' }}</span>
           </div>
           <div v-if="authStore.user?.email" class="profile-field">
-            <span class="profile-field__label">{{ t('settings.users.email') }}</span>
-            <span class="profile-field__value">{{ authStore.user?.email }}</span>
+            <span class="profile-field__label text-secondary-400">{{ t('settings.users.email') }}</span>
+            <span class="profile-field__value text-primary">{{ authStore.user?.email }}</span>
           </div>
         </div>
 
-        <div class="drawer-divider" />
-
         <div class="drawer-section">
-          <div class="drawer-section__title mt-4">{{ t('profile.changePassword') }}</div>
-
+          <div class="drawer-section__title">{{ t('profile.changePassword') }}</div>
           <div class="form-field">
             <label class="form-label">{{ t('profile.currentPassword') }} <span class="req">*</span></label>
             <input v-model="profileForm.oldPassword" type="password" class="input" autocomplete="current-password" />
           </div>
-
           <div class="form-field">
             <label class="form-label">{{ t('profile.newPassword') }} <span class="req">*</span></label>
             <input v-model="profileForm.newPassword" type="password" class="input" autocomplete="new-password" />
           </div>
-
           <div class="form-field">
             <label class="form-label">{{ t('profile.confirmPassword') }} <span class="req">*</span></label>
             <input v-model="profileForm.confirmPassword" type="password" class="input" autocomplete="new-password" />
@@ -127,41 +135,44 @@
       </template>
     </AppDrawer>
 
-    <div class=" flex flex-1 overflow-hidden relative">
+    <!-- ── Body ────────────────────────────────────────────────────────────── -->
+    <div class="flex flex-1 overflow-hidden relative">
 
-      <!-- Backdrop overlay - closes menu when clicking outside on mobile -->
-      <div 
+      <div
         v-if="sidebarOpen"
         class="fixed inset-0 bg-black/30 z-30 lg:hidden"
         @click="sidebarOpen = false"
       />
 
-      <aside 
+      <aside
         :class="[
-          'absolute inset-y-0 left-0 w-64 bg-white  z-40 transition-transform duration-300 transform lg:translate-x-0 lg:static lg:block flex-shrink-0 flex flex-col',
+          'app-sidebar absolute inset-y-0 left-0 z-40 transition-transform duration-300 lg:translate-x-0 lg:static lg:block shrink-0 flex flex-col bg-white',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         ]"
       >
-        <nav class="flex-1 overflow-y-auto p-4 gap-4 sidebar-menu">
-          <router-link 
-            v-for="item in navItems" 
-            :key="item.id" 
+        <nav class="sidebar-nav flex flex-col overflow-y-auto">
+          <router-link
+            v-for="item in navItems"
+            :key="item.id"
             :to="item.to"
             @click="sidebarOpen = false"
-            class="flex items-center p-2 transition-all group font-medium"
-            :active-class="item.to === '/' ? '' : 'bg-gray-900 text-white '"
-            :exact-active-class="item.to === '/' ? 'bg-gray-900 text-white ' : ''"
-            :class="item.disabled ? 'opacity-50 pointer-events-none' : 'text-gray-700 hover:bg-gray-200 hover:text-gray-900 '"
+            class="nav-item flex items-center p-2 mb-2 font-medium tracking-tight transition-colors no-underline"
+            :class="[
+              item.disabled ? 'opacity-50 pointer-events-none' : '',
+              isActive(item.to)
+                ? 'bg-primary text-white'
+                : 'text-secondary-400 hover:bg-secondary-200 hover:text-primary'
+            ]"
           >
-            <div class="w-12 flex justify-center">
-              <i :class="[item.icon, 'text-md', isActive(item.to) ? 'text-gray-300 font-light' : 'text-gray-400 group-hover:text-gray-900 transition-colors']"></i>
+            <div class="nav-item__icon flex justify-center shrink-0">
+              <i :class="[item.icon, 'text-base', isActive(item.to) ? 'text-white' : 'text-secondary-400']"></i>
             </div>
-            <span class="p-2 text-sm  tracking-tight group-hover:text-gray-900">{{ item.label }}</span>
+            <span class="nav-item__label text-sm">{{ item.label }}</span>
           </router-link>
         </nav>
       </aside>
 
-      <main class="flex-1 overflow-y-auto bg-gray-50 ">
+      <main class="flex-1 overflow-y-auto bg-background">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
             <component :is="Component" />
@@ -169,10 +180,9 @@
         </router-view>
       </main>
     </div>
-    <!--<ConnectionStatusBanner v-if="!realtimeStore.isConnected" />-->
+
   </div>
 </template>
-
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
@@ -280,31 +290,48 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
+/* Page transition */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from,  .fade-leave-to      { opacity: 0; }
 
-/* Profile drawer */
+/* nav-link needs explicit no-underline since router-link renders as <a> */
+.nav-item { text-decoration: none; }
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.app-header           { height: 4rem; padding: 0 1.5rem; }
+.nav-mobile-toggle    { width: 2.5rem; height: 2.5rem; }
+.connection-label     { padding: 0 0.5rem; }
+
+/* ── User menu ───────────────────────────────────────────────────────────── */
+.user-menu-btn        { gap: 0.5rem; padding: 0.375rem 0.5rem; }
+.user-avatar          { width: 1.5rem; height: 1.25rem; }
+.user-dropdown        { top: 3rem; right: 0; width: 11rem; }
+.dropdown-inner       { padding: 0.375rem; }
+.dropdown-item        { padding: 0.375rem 0.625rem; gap: 0.625rem; }
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+.app-sidebar          { width: 13rem; }
+.sidebar-nav          { padding: 0.75rem; gap: 0.125rem; flex: 1; }
+.nav-item             { gap: 0; }
+.nav-item__icon       { width: 2.5rem; padding: 0.5rem 0; }
+.nav-item__label      { padding: 0.5rem 0.25rem; }
+
+/* ── Profile drawer ──────────────────────────────────────────────────────── */
 .profile-meta               { display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem 1.25rem; text-align: center; }
-.profile-meta__avatar       { width: 3.5rem; height: 3.5rem; border-radius: 50%; background: #111827; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
-.profile-meta__name         { font-size: 1rem; font-weight: 700; color: #111827; }
+.profile-meta__avatar       { width: 3.5rem; height: 3.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+.profile-meta__name         { font-size: 1rem; font-weight: 700; }
 .profile-meta__sub          { margin-top: 0.35rem; }
 
-.profile-fields             { border-top: 1px solid #f3f4f6; border-bottom: 1px solid #f3f4f6; margin-bottom: 0; }
-.profile-field              { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; border-bottom: 1px solid #f9fafb; }
-.profile-field:last-child   { border-bottom: none; }
-.profile-field__label       { font-size: 0.75rem; color: #9ca3af; font-weight: 400; text-transform: lowercase; letter-spacing: 0.04em; }
-.profile-field__value       { font-size: 0.85rem; font-weight: 600; color: #374151; }
+.profile-fields             { margin-bottom: 0; }
+.profile-field              { display: flex; justify-content: space-between; align-items: center; padding: 0.6rem 1rem; }
+.profile-field:last-child   { border-bottom: none !important; }
+.profile-field__label       { font-size: 0.75rem; font-weight: 400; text-transform: lowercase; letter-spacing: 0.04em; }
+.profile-field__value       { font-size: 0.85rem; font-weight: 600; }
 
-.role-badge          { display: inline-block; padding: 0.125rem 0.5rem; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 2px; background: #f3f4f6; color: #374151; }
-.role-badge--admin   { background: #111827; color: #fff; }
-.role-badge--user    { background: #e5e7eb; color: #374151; }
-.role-badge--viewer  { background: #f3f4f6; color: #9ca3af; }
-.req                 { color: #ef4444; margin-left: 2px; }
-.field-error         { font-size: 0.72rem; color: #ef4444; margin-top: 0.25rem; display: block; }
+.role-badge                 { display: inline-block; padding: 0.125rem 0.5rem; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.role-badge--admin          { background: var(--color-primary); color: #fff; }
+.role-badge--user           { background: var(--color-secondary-200); color: var(--color-text-secondary); }
+.role-badge--viewer         { background: var(--color-secondary-100); color: var(--color-text-tertiary); }
+.req                        { color: #ef4444; margin-left: 2px; }
+.field-error                { font-size: 0.72rem; color: #ef4444; margin-top: 0.25rem; display: block; }
 </style>

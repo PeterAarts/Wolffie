@@ -7,7 +7,7 @@
       :empty-text="t('settings.users.empty')"
     >
       <template #toolbar-left>
-  <!--      <span class="toolbar__count">{{ users.length }} {{ t('settings.users.userCount', users.length) }}</span>-->
+        <!-- <span class="toolbar__count">{{ users.length }} {{ t('settings.users.userCount', users.length) }}</span> -->
       </template>
 
       <template #toolbar-right>
@@ -21,22 +21,22 @@
 
       <!-- Status dot -->
       <template #_status="{ value }">
-        <i :class="value.is_active ? 'fa-solid fa-circle text-gray-500' : 'fa-light fa-circle text-gray-400'" />
+        <i :class="value.is_active ? 'fa-solid fa-circle text-secondary-400' : 'fa-light fa-circle text-secondary-300'" />
       </template>
 
       <!-- Username -->
       <template #username="{ value }">
-        <div class="text-sm font-medium text-gray-900">{{ value.username }}</div>
+        <div class="text-sm font-medium text-primary">{{ value.username }}</div>
       </template>
 
       <!-- Full name -->
       <template #full_name="{ value }">
-        <div class="text-sm text-gray-500">{{ value.full_name || '—' }}</div>
+        <div class="text-sm text-secondary-400">{{ value.full_name || '—' }}</div>
       </template>
 
       <!-- Email -->
       <template #email="{ value }">
-        <div class="text-xs text-gray-500">{{ value.email }}</div>
+        <div class="text-xs text-secondary-400">{{ value.email }}</div>
       </template>
 
       <!-- Role badge -->
@@ -48,7 +48,7 @@
 
       <!-- Last password update -->
       <template #_lastpw="{ value }">
-        <div class="text-xs text-gray-400">{{ formatDate(value.last_password_update) }}</div>
+        <div class="text-xs text-secondary-400">{{ formatDate(value.last_password_update) }}</div>
       </template>
 
       <!-- Actions -->
@@ -72,28 +72,28 @@
       <div v-if="activeForm">
 
         <!-- Edit-mode meta cards -->
-        <div v-if="drawer.mode === 'edit'" class="drawer-meta-section">
+        <div v-if="drawer.mode === 'edit'" class="meta-section">
           <div class="meta-grid">
-            <div class="meta-card">
-              <label>{{ t('settings.users.role') }}</label>
-              <div class="meta-value">{{ activeForm.role }}</div>
+            <div class="meta-card bg-secondary-100">
+              <label class="meta-label text-secondary-400">{{ t('settings.users.role') }}</label>
+              <div class="meta-value text-primary">{{ activeForm.role }}</div>
             </div>
-            <div class="meta-card">
-              <label>{{ t('settings.users.is_active') }}</label>
-              <div class="meta-value">{{ activeForm.is_active ? t('common.yes') : t('common.no') }}</div>
+            <div class="meta-card bg-secondary-100">
+              <label class="meta-label text-secondary-400">{{ t('settings.users.is_active') }}</label>
+              <div class="meta-value text-primary">{{ activeForm.is_active ? t('common.yes') : t('common.no') }}</div>
             </div>
-            <div class="meta-card">
-              <label>{{ t('settings.users.last_password_update') }}</label>
-              <div class="meta-value">{{ formatDate(activeForm.last_password_update) }}</div>
+            <div class="meta-card bg-secondary-100">
+              <label class="meta-label text-secondary-400">{{ t('settings.users.last_password_update') }}</label>
+              <div class="meta-value text-primary">{{ formatDate(activeForm.last_password_update) }}</div>
             </div>
           </div>
         </div>
 
-        <div class="drawer-divider" />
+        <div class="drawer-divider mb-4" />
 
         <!-- Account section -->
         <div class="drawer-section">
-          <div class="drawer-section__title mt-4">{{ t('settings.users.sectionAccount') }}</div>
+          <div class="drawer-section__title">{{ t('settings.users.sectionAccount') }}</div>
 
           <div class="form-field">
             <label class="form-label">{{ t('settings.users.name') }} <span class="req">*</span></label>
@@ -112,18 +112,17 @@
 
           <div class="form-field">
             <label class="form-label">{{ t('settings.users.role') }}</label>
-            <!-- Admins can change role; non-admins see a read-only display -->
             <select v-if="isAdmin" v-model="activeForm.role" class="input">
               <option value="admin">Admin</option>
               <option value="user">User</option>
               <option value="viewer">Viewer</option>
             </select>
-            <div v-else class="input input--readonly">
+            <div v-else class="input input--readonly mb-4">
               <span :class="['role-badge', `role-badge--${activeForm.role?.toLowerCase()}`]">{{ activeForm.role }}</span>
             </div>
           </div>
 
-          <div class="toggle-row">
+          <div class="toggle-row mb-4">
             <label class="form-label">{{ t('settings.users.is_active') }}</label>
             <button
               class="toggle"
@@ -135,11 +134,11 @@
           </div>
         </div>
 
-        <div class="drawer-divider mt-4" />
+        <div class="drawer-divider mb-4" />
 
         <!-- Password section -->
         <div class="drawer-section">
-          <div class="drawer-section__title mt-4">{{ t('settings.users.sectionPassword') }}</div>
+          <div class="drawer-section__title">{{ t('settings.users.sectionPassword') }}</div>
 
           <div class="form-field">
             <label class="form-label">
@@ -156,6 +155,7 @@
             />
           </div>
         </div>
+
       </div>
 
       <template #footer>
@@ -191,58 +191,57 @@ import AppModal  from '@/components/common/AppModal.vue';
 import '@/assets/styles/control.css';
 
 const { t } = useI18n();
-const toast    = useToastStore();
+const toast     = useToastStore();
 const authStore = useAuthStore();
-const isAdmin  = computed(() => authStore.isAdmin);
+const isAdmin   = computed(() => authStore.isAdmin);
 
-// ── State ────────────────────────────────────────────────────────────────────
-const users       = ref([]);
-const loading     = ref(false);
-const saving      = ref(false);
-const removing    = ref(false);
-const removeTarget = ref(null);
-const editTarget  = ref(null);
-const drawer      = ref({ visible: false, mode: 'add' });
-const isMobile    = ref(false);
+// ── State ─────────────────────────────────────────────────────────────────────
+const users          = ref([]);
+const loading        = ref(false);
+const saving         = ref(false);
+const removing       = ref(false);
+const removeTarget   = ref(null);
+const editTarget     = ref(null);
+const drawer         = ref({ visible: false, mode: 'add' });
+const isMobile       = ref(false);
 
-// ── Columns ──────────────────────────────────────────────────────────────────
+// ── Columns ───────────────────────────────────────────────────────────────────
 const desktopColumns = computed(() => [
-  { field: '_status',   title: '',                                          width: '2rem',  slotMode: true },
-  { field: 'username',  title: t('settings.users.name'),                                   slotMode: true },
-  { field: 'full_name', title: t('settings.users.full_name'),                              slotMode: true },
-  { field: 'email',     title: t('settings.users.email'),                                  slotMode: true },
-  { field: '_role',     title: t('settings.users.role'),                                   slotMode: true },
-  { field: '_lastpw',   title: t('settings.users.last_password_update'),                   slotMode: true },
-  { field: '_actions',  title: t('common.actions'),                         width: '5rem', slotMode: true },
+  { field: '_status',   title: '',                                         width: '2rem',  slotMode: true },
+  { field: 'username',  title: t('settings.users.name'),                                  slotMode: true },
+  { field: 'full_name', title: t('settings.users.full_name'),                             slotMode: true },
+  { field: 'email',     title: t('settings.users.email'),                                 slotMode: true },
+  { field: '_role',     title: t('settings.users.role'),                                  slotMode: true },
+  { field: '_lastpw',   title: t('settings.users.last_password_update'),                  slotMode: true },
+  { field: '_actions',  title: t('common.actions'),                        width: '5rem', slotMode: true },
 ]);
 
 const mobileColumns = computed(() => [
-  { field: '_status',  title: '',                              width: '1rem', slotMode: true },
-  { field: 'username', title: t('settings.users.name'),                      slotMode: true },
-  { field: '_actions', title: '',                              width: '5rem', slotMode: true },
+  { field: '_status',  title: '',                             width: '1rem', slotMode: true },
+  { field: 'username', title: t('settings.users.name'),                     slotMode: true },
+  { field: '_actions', title: '',                             width: '5rem', slotMode: true },
 ]);
 
 const columns = computed(() => isMobile.value ? mobileColumns.value : desktopColumns.value);
 
-// ── Derived ──────────────────────────────────────────────────────────────────
-const activeCount      = computed(() => users.value.filter(u => u.is_active).length);
-const activeForm       = computed(() => drawer.value.mode === 'add' ? form.value : editTarget.value);
+// ── Derived ───────────────────────────────────────────────────────────────────
+const activeForm = computed(() => drawer.value.mode === 'add' ? form.value : editTarget.value);
 const removeModalVisible = computed({
   get: () => !!removeTarget.value,
   set: (v) => { if (!v) removeTarget.value = null; }
 });
 
-// ── Form ─────────────────────────────────────────────────────────────────────
+// ── Form ──────────────────────────────────────────────────────────────────────
 const defaultForm = () => ({ username: '', full_name: '', email: '', role: 'user', is_active: true, password: '' });
 const form = ref(defaultForm());
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function formatDate(value) {
   if (!value) return '—';
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-// ── Data loading ─────────────────────────────────────────────────────────────
+// ── Data loading ──────────────────────────────────────────────────────────────
 async function fetchUsers() {
   loading.value = true;
   try {
@@ -262,7 +261,7 @@ function openAdd() {
 }
 
 function openEdit(user) {
-  editTarget.value = { ...user, password: '' }; // never pre-fill password
+  editTarget.value = { ...user, password: '' };
   drawer.value = { visible: true, mode: 'edit' };
 }
 
@@ -274,13 +273,10 @@ async function save() {
   if (!activeForm.value) return;
   saving.value = true;
   try {
-    const isAdd = drawer.value.mode === 'add';
-    const url   = isAdd ? '/settings/users/create' : `/settings/users/${activeForm.value.id}`;
-
+    const isAdd  = drawer.value.mode === 'add';
+    const url    = isAdd ? '/settings/users/create' : `/settings/users/${activeForm.value.id}`;
     const payload = { ...activeForm.value };
-    // For edit: omit password entirely if the field was left blank
     if (!isAdd && !payload.password) delete payload.password;
-
     await apiClient[isAdd ? 'post' : 'put'](url, payload);
     toast.add({ severity: 'success', summary: t('common.success'), detail: t('common.saved') });
     drawer.value.visible = false;
@@ -306,7 +302,7 @@ async function doRemove() {
   }
 }
 
-// ── Mobile detection (same pattern as devicesPanel) ──────────────────────────
+// ── Mobile detection ──────────────────────────────────────────────────────────
 let mq = null;
 function onMqChange(e) { isMobile.value = e.matches; }
 
@@ -323,47 +319,25 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.users-panel { display: flex; flex-direction: column; gap: 0.875rem; }
+.users-panel            { display: flex; flex-direction: column; gap: 0.875rem; }
+/* ── Role badges ─────────────────────────────────────────────────────────── */
+.role-badge             { display: inline-block;padding: 0.125rem 0.5rem;font-size: 0.65rem;font-weight: 600;text-transform: uppercase;letter-spacing: 0.05em;border-radius: 2px;background: var(--color-secondary-200);color: var(--color-text-secondary);}
+.role-badge--admin      { background: var(--color-primary); color: #fff; }
+.role-badge--user       { background: var(--color-secondary-200); color: var(--color-text-secondary); }
+.role-badge--viewer     { background: var(--color-secondary-100); color: var(--color-text-tertiary); }
 
-/* Role badges */
-.role-badge {
-  display: inline-block;
-  padding: 0.125rem 0.5rem;
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-radius: 2px;
-  background: #f3f4f6;
-  color: #374151;
-}
-.role-badge--admin   { background: #111827; color: #fff; }
-.role-badge--user    { background: #e5e7eb; color: #374151; }
-.role-badge--viewer  { background: #f3f4f6; color: #9ca3af; }
+/* ── Meta cards (edit-mode summary row) ──────────────────────────────────── */
+.meta-section           { padding-bottom: 1.25rem; }
+.meta-grid              { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.meta-card              { padding: 0.5rem 0.75rem; }
+.meta-label             { display: block; font-size: 0.6rem; text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem; letter-spacing: 0.05em; }
+.meta-value             { font-size: 0.8rem; font-weight: 600; }
 
-/* Drawer meta cards — mirrors devicesPanel */
-.drawer-meta-section  { padding-bottom: 1.25rem; }
-.meta-grid            { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
-.meta-card            { background: var(--color-gray-100); padding: 0.5rem; }
-.meta-card label      { display: block; font-size: 0.6rem; text-transform: uppercase; color: #6b7280; font-weight: 600; }
-.meta-value           { font-size: 0.75rem; font-weight: 600; color: #111827; }
+/* ── Field helpers ───────────────────────────────────────────────────────── */
+.req                    { color: #ef4444; margin-left: 2px; }
+.field-hint             { font-size: 0.7rem; font-weight: 400; color: var(--color-text-tertiary); margin-left: 4px; }
+.input--readonly        { display: flex;align-items: center;background: var(--color-secondary-100);padding: 0.4rem 0.6rem;cursor: default;}
 
-.req        { color: #ef4444; margin-left: 2px; }
-.field-hint { font-size: 0.7rem; font-weight: 400; color: #9ca3af; margin-left: 4px; }
-
-.input--readonly {
-  display: flex;
-  align-items: center;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  padding: 0.4rem 0.6rem;
-  cursor: default;
-}
-
-/* Mobile: action buttons always visible */
-.row-actions--always-visible {
-  opacity: 1 !important;
-  visibility: visible !important;
-  pointer-events: auto !important;
-}
+/* ── Mobile: action buttons always visible ───────────────────────────────── */
+.row-actions--always-visible { opacity: 1 !important;visibility: visible !important;pointer-events: auto !important;}
 </style>

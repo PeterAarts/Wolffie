@@ -1,39 +1,56 @@
 <template>
-  <div class="bg-gray-100 lg:grid lg:grid-cols-4 lg:gap-0 overflow-hidden text-[#111827]">
-    
-    <div class="hero-card lg:col-span-3 p-6 lg:p-10 bg-gray-100 overflow-y-auto">
-      <div class="hero-header mb-2">
-        <span class="text-xs font-medium bold text-gray-500 lowercase tracking-widest">{{ t('dashboard.totalConsumed') }}</span>
-      </div>
-      <div class="flex gap-4 ">
-        <div class="hero-value flex-2  font-bold leading-none tracking-tighter mb-8">
-          {{ parseFloat(realtimeStore.summaryData.today_load || 0).toFixed(2) }}
-          <span class="text-base font-medium text-gray-500 ml-2 tracking-normal">kWh</span>
-        </div>
-        <div class="flex-1 p-4 bg-white h-30">
-          <div class="text-2xl font-bold">{{ parseFloat(realtimeStore.summaryData.today_pv_gen || 0).toFixed(1) }}<span class="text-sm font-medium"> kWh</span></div>
-          <div class="text-xs  text-gray-400 lowercase tracking-wider">{{ t('dashboard.produced') }}</div>
-        </div>
-        <div class="flex-1 p-4 bg-white h-30">
-          <div class="text-2xl font-bold">{{ parseFloat(realtimeStore.summaryData.today_grid_export || 0).toFixed(1) }}<span class="text-sm font-medium"> kWh</span></div>
-          <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider">{{ t('dashboard.exported') }}</div>
-        </div>
-        <div class="flex-1 p-4 bg-white h-30">
-          <div class="text-2xl font-bold">{{ parseFloat(realtimeStore.summaryData.today_battery_charge || 0).toFixed(1) }}<span class="text-sm font-medium"> kWh</span></div>
-          <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider">{{ t('dashboard.batteryLabel') }}</div>
-        </div>
-      
-        </div>
-      <div class="mt-6 mb-6 hidden lg:block">
+  <div class="lg:grid lg:grid-cols-4 lg:gap-0 overflow-hidden bg-background text-primary">
 
-        <!-- Date navigation -->
+    <!-- ── Left: hero + chart ──────────────────────────────────────────────── -->
+    <div class="hero-card lg:col-span-3 p-6 lg:p-10 overflow-y-auto bg-background">
+
+      <!-- Total consumed header -->
+      <div class="mb-2">
+        <span class="text-xs font-medium lowercase tracking-widest text-secondary-400">
+          {{ t('dashboard.totalConsumed') }}
+        </span>
+      </div>
+
+      <!-- Hero value + summary tiles -->
+      <div class="flex gap-4 mb-8">
+        <div class="hero-value flex-none font-bold leading-none tracking-tighter">
+          {{ parseFloat(realtimeStore.summaryData.today_load || 0).toFixed(2) }}
+          <span class="text-base font-medium ml-2 tracking-normal text-secondary-400">kWh</span>
+        </div>
+
+        <div class="flex gap-6  ml-auto">
+          <div class="flex-1 p-4 bg-white rounded-md ">
+            <div class="text-2xl font-bold text-primary">
+              {{ parseFloat(realtimeStore.summaryData.today_pv_gen || 0).toFixed(1) }}
+              <span class="text-sm font-medium"> kWh</span>
+            </div>
+            <div class="text-xs lowercase tracking-wider text-secondary-400 mt-1">{{ t('dashboard.produced') }}</div>
+          </div>
+          <div class="flex-1 p-4 bg-white rounded-md">
+            <div class="text-2xl font-bold text-primary">
+              {{ parseFloat(realtimeStore.summaryData.today_grid_export || 0).toFixed(1) }}
+              <span class="text-sm font-medium"> kWh</span>
+            </div>
+            <div class="text-xs lowercase tracking-wider text-secondary-400 mt-1">{{ t('dashboard.exported') }}</div>
+          </div>
+          <div class="flex-1 p-4 bg-white rounded-md">
+            <div class="text-2xl font-bold text-primary">
+              {{ parseFloat(realtimeStore.summaryData.today_battery_charge || 0).toFixed(1) }}
+              <span class="text-sm font-medium"> kWh</span>
+            </div>
+            <div class="text-xs lowercase tracking-wider text-secondary-400 mt-1">{{ t('dashboard.batteryLabel') }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Date nav + chart (desktop only) -->
+      <div class="hidden lg:block mt-6 mb-6">
         <div class="date-nav mb-4">
           <button class="date-btn" @click="goToPrevDay">‹</button>
           <span class="date-label">{{ selectedDateLabel }}</span>
           <button class="date-btn" :class="{ disabled: isToday }" @click="goToNextDay">›</button>
         </div>
-
-        <EnergyFlowGraph 
+        <EnergyFlowGraph
           :period="graphPeriod"
           :date="graphDate"
           :auto-update="isToday"
@@ -41,24 +58,26 @@
           :granularity="15"
         />
       </div>
-
     </div>
 
+    <!-- ── Right: power cards ──────────────────────────────────────────────── -->
     <div class="right-section flex flex-col bg-white p-4 ">
-
       <div class="flex-1 overflow-y-auto">
-        <transition 
+        <transition
           enter-active-class="transition duration-200 ease-out"
           enter-from-class="opacity-0"
           leave-active-class="transition duration-150 ease-in"
           leave-to-class="opacity-0"
           mode="out-in"
         >
-          <div v-if="!showSocketsList" key="power-cards" class="flex flex-col bg-gray-100">
-            
-            <div class="flex items-center gap-4 p-6 lg:p-8 bg-white transition-all">
-              <div class="flex flex-col items-center gap-1">
-                <div class="w-12 h-12 flex items-center justify-center text-2xl text-gray-800">
+
+          <!-- Power cards list -->
+          <div v-if="!showSocketsList" key="power-cards" class="flex flex-col divide-y divide-secondary-200">
+
+            <!-- Battery -->
+            <div class="power-card hover:bg-secondary-200 transition-colors">
+              <div class="flex flex-col items-center gap-1 w-12 shrink-0">
+                <div class="w-12 h-12 flex items-center justify-center text-2xl text-primary">
                   <i class="fa-light fa-battery-bolt"></i>
                 </div>
                 <div v-if="batteryStatusKey !== 'idle'" class="flow-track" :class="batteryStatusKey">
@@ -67,36 +86,38 @@
                 <div v-else class="flow-track-placeholder"></div>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-base font-bold text-gray-900">{{ t('control.battery') }} ({{ currentBatterySOC }}%)</div>
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider ">{{ t('energy.batteryCharge') }}: {{ parseFloat(realtimeStore.summaryData.today_battery_charge || 0).toFixed(2) }} kWh</div>
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider ">{{ t('energy.batteryDischarge') }}: {{ parseFloat(realtimeStore.summaryData.today_battery_discharge || 0).toFixed(2) }} kWh</div>
-                <div v-if="strategyStore.targetBufferSoc" class="mt-1">
-                  <div class="text-xs text-blue-600 font-bold">{{ t('dashboard.targetBuffer') }}: {{ parseFloat(strategyStore.formattedTargetBuffer || 0).toFixed(2) }} kWh</div>
+                <div class="text-base font-bold text-primary">{{ t('control.battery') }} ({{ currentBatterySOC }}%)</div>
+                <div class="text-xs lowercase tracking-wider text-secondary-400 mt-0.5">{{ t('energy.batteryCharge') }}: {{ parseFloat(realtimeStore.summaryData.today_battery_charge || 0).toFixed(2) }} kWh</div>
+                <div class="text-xs lowercase tracking-wider text-secondary-400">{{ t('energy.batteryDischarge') }}: {{ parseFloat(realtimeStore.summaryData.today_battery_discharge || 0).toFixed(2) }} kWh</div>
+                <div v-if="strategyStore.targetBufferSoc" class="text-xs font-bold text-blue-600 mt-1">
+                  {{ t('dashboard.targetBuffer') }}: {{ parseFloat(strategyStore.formattedTargetBuffer || 0).toFixed(2) }} kWh
                 </div>
               </div>
-              <div class="text-right flex-shrink-0">
-                <div class="text-3xl font-bold leading-none">{{ currentBatteryPower }} W</div>
-                <div class="text-xs font-mediumbold lowercase tracking-wider mt-1" :class="batteryStatusClass">{{ batteryStatus }}</div>
+              <div class="text-right shrink-0">
+                <div class="text-3xl font-bold leading-none text-primary">{{ currentBatteryPower }} W</div>
+                <div class="text-xs lowercase tracking-wider mt-1" :class="batteryStatusClass">{{ batteryStatus }}</div>
               </div>
             </div>
 
-            <div class="flex items-center gap-4 p-6 lg:p-8 bg-gray-100 transition-all">
-              <div class="w-12 h-12 flex items-center justify-center text-2xl text-gray-800">
+            <!-- Solar -->
+            <div class="power-card  hover:bg-secondary-200 transition-colors">
+              <div class="w-12 h-12 flex items-center justify-center text-2xl text-primary shrink-0">
                 <i class="fa-light fa-sun-bright"></i>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-base font-bold text-gray-900">{{ t('control.solar') }}</div>
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider ">{{ t('energy.pvGeneration') }}: {{ parseFloat(realtimeStore.summaryData.today_pv_gen || 0).toFixed(2) }} kWh</div>
+                <div class="text-base font-bold text-primary">{{ t('control.solar') }}</div>
+                <div class="text-xs lowercase tracking-wider text-secondary-400 mt-0.5">{{ t('energy.pvGeneration') }}: {{ parseFloat(realtimeStore.summaryData.today_pv_gen || 0).toFixed(2) }} kWh</div>
               </div>
-              <div class="text-right flex-shrink-0">
-                <div class="text-3xl font-bold leading-none">{{ formatPowerValue(currentSolarPower) }}</div>
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider  mt-1">{{ t('control.live') }}</div>
+              <div class="text-right shrink-0">
+                <div class="text-3xl font-bold leading-none text-primary">{{ formatPowerValue(currentSolarPower) }}</div>
+                <div class="text-xs lowercase tracking-wider text-secondary-400 mt-1">{{ t('control.live') }}</div>
               </div>
             </div>
 
-            <div class="flex items-center gap-4 p-6 lg:p-8 bg-white transition-all">
-              <div class="flex flex-col items-center gap-1">
-                <div class="w-12 h-12 flex items-center justify-center text-2xl text-gray-800">
+            <!-- Grid -->
+            <div class="power-card hover:bg-secondary-200 transition-colors">
+              <div class="flex flex-col items-center gap-1 w-12 shrink-0">
+                <div class="w-12 h-12 flex items-center justify-center text-2xl text-primary">
                   <i class="fa-light fa-utility-pole"></i>
                 </div>
                 <div v-if="gridStatusKey !== 'idle'" class="flow-track" :class="gridStatusKey">
@@ -105,59 +126,61 @@
                 <div v-else class="flow-track-placeholder"></div>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-base font-bold text-gray-900">{{ t('control.grid') }}</div>
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider ">{{ t('energy.gridExport') }}: {{ parseFloat(realtimeStore.summaryData.today_grid_export || 0).toFixed(2) }} kWh</div>
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider ">{{ t('energy.gridImport') }}: {{ parseFloat(realtimeStore.summaryData.today_grid_import || 0).toFixed(2) }} kWh</div>
+                <div class="text-base font-bold text-primary">{{ t('control.grid') }}</div>
+                <div class="text-xs lowercase tracking-wider text-secondary-400 mt-0.5">{{ t('energy.gridExport') }}: {{ parseFloat(realtimeStore.summaryData.today_grid_export || 0).toFixed(2) }} kWh</div>
+                <div class="text-xs lowercase tracking-wider text-secondary-400">{{ t('energy.gridImport') }}: {{ parseFloat(realtimeStore.summaryData.today_grid_import || 0).toFixed(2) }} kWh</div>
               </div>
-              <div class="text-right flex-shrink-0">
-                <div class="text-3xl font-bold leading-none">{{ formatPowerValue(Math.abs(currentGridPower)) }}</div>
-                <div class="text-xs font-mediumbold lowercase tracking-wider mt-1" :class="gridStatusClass">{{ gridDirection }}</div>
+              <div class="text-right shrink-0">
+                <div class="text-3xl font-bold leading-none text-primary">{{ formatPowerValue(Math.abs(currentGridPower)) }}</div>
+                <div class="text-xs lowercase tracking-wider mt-1" :class="gridStatusClass">{{ gridDirection }}</div>
               </div>
             </div>
 
-            <div @click="toggleSocketsList" class="flex items-center gap-4 p-6 lg:p-8 bg-gray-100 cursor-pointer hover:bg-gray-100 transition-all group relative">
-              <div class="w-12 h-12 flex items-center justify-center text-2xl text-gray-800">
+            <!-- Home / devices -->
+            <div @click="toggleSocketsList" class="power-card  hover:bg-secondary-200 transition-colors cursor-pointer group relative">
+              <div class="w-12 h-12 flex items-center justify-center text-2xl text-primary shrink-0">
                 <i class="fa-light fa-plug-circle-bolt"></i>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-base font-bold text-gray-900">{{ t('dashboard.home') }}</div>
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider ">{{ t('energy.loadConsumption') }}: {{ parseFloat(realtimeStore.summaryData.today_load || 0).toFixed(2) }} kWh</div>
+                <div class="text-base font-bold text-primary">{{ t('dashboard.home') }}</div>
+                <div class="text-xs lowercase tracking-wider text-secondary-400 mt-0.5">{{ t('energy.loadConsumption') }}: {{ parseFloat(realtimeStore.summaryData.today_load || 0).toFixed(2) }} kWh</div>
               </div>
-              <div class="text-right flex-shrink-0">
-                <div class="text-3xl font-bold leading-none">{{ formatPowerValue(currentHomePower) }}</div>
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider  mt-1">{{ t('control.live') }}</div>
+              <div class="text-right shrink-0">
+                <div class="text-3xl font-bold leading-none text-primary">{{ formatPowerValue(currentHomePower) }}</div>
+                <div class="text-xs lowercase tracking-wider text-secondary-400 mt-1">{{ t('control.live') }}</div>
               </div>
-              <div class="absolute bottom-2 right-4 flex items-center gap-1.5 text-[10px] font-bold text-primary-600 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div class="absolute bottom-2 right-4 flex items-center gap-1.5 text-[10px] font-bold text-secondary-400 opacity-0 group-hover:opacity-100 transition-opacity">
                 <i class="fa-duotone fa-circle-info"></i>
                 <span>{{ t('dashboard.clickForDetails') }}</span>
               </div>
             </div>
 
-            <!-- Strategy block — placeholder until backend is wired -->
-            <div class="flex items-center gap-4 p-6 lg:p-8 bg-white transition-all">
-              <div class="w-12 h-12 flex items-center justify-center text-2xl text-gray-800">
+            <!-- Strategy -->
+            <div class="power-card bg-secondary-50">
+              <div class="w-12 h-12 flex items-center justify-center text-2xl text-primary shrink-0">
                 <i class="fa-light fa-layer-group"></i>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-base font-bold text-gray-900">Strategy</div>
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider">not configured</div>
+                <div class="text-base font-bold text-primary">Strategy</div>
+                <div class="text-xs lowercase tracking-wider text-secondary-400 mt-0.5">not configured</div>
               </div>
-              <div class="text-right flex-shrink-0">
-                <div class="text-xs font-mediumbold text-gray-400 lowercase tracking-wider">—</div>
+              <div class="text-right shrink-0">
+                <div class="text-xs lowercase tracking-wider text-secondary-400">—</div>
               </div>
             </div>
 
           </div>
 
-          <div v-else key="devices-list" class="flex flex-col bg-white h-full">
-            <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-100">
-              <div class="w-12 h-12 flex items-center justify-center text-2xl text-gray-800">
+          <!-- Devices list -->
+          <div v-else key="devices-list" class="flex flex-col h-full">
+            <div class="flex items-center gap-4 p-4 bg-background border-b border-secondary-200">
+              <div class="w-12 h-12 flex items-center justify-center text-2xl text-primary shrink-0">
                 <i class="fa-light fa-plug-circle-bolt"></i>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-base font-bold text-gray-900">{{ t('dashboard.home') }}</div>
-              </div>  
-              <button @click="toggleSocketsList" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
+                <div class="text-base font-bold text-primary">{{ t('dashboard.home') }}</div>
+              </div>
+              <button @click="toggleSocketsList" class="w-8 h-8 flex items-center justify-center text-secondary-400 hover:bg-secondary-200 transition-colors">
                 <i class="fa-solid fa-xmark text-lg"></i>
               </button>
             </div>
@@ -165,9 +188,11 @@
               <EnergySocketsList @socket-selected="onSocketSelected" />
             </div>
           </div>
+
         </transition>
       </div>
     </div>
+
   </div>
 </template>
 <script setup>
@@ -303,7 +328,7 @@ const batteryStatusClass = computed(() => {
   switch (batteryStatusKey.value) {
     case 'charging':    return 'text-green-600';
     case 'discharging': return 'text-orange-500';
-    default:            return 'text-gray-400';
+    default:            return 'text-secondary-400';
   }
 });
 
@@ -327,7 +352,7 @@ const gridStatusClass = computed(() => {
   switch (gridStatusKey.value) {
     case 'importing': return 'text-orange-500';
     case 'exporting': return 'text-green-600';
-    default:          return 'text-gray-400';
+    default:          return 'text-secondary-400';
   }
 });
 
@@ -372,67 +397,72 @@ onUnmounted(() => {
 });
 </script>
 <style lang="css" scoped>
-.hero-value           {font-size: 5rem}
+/* Hero value font size — too large for Tailwind's scale */
+.hero-value           { font-size: 5rem; }
 @media (max-width: 768px) {
-  .hero-value         {font-size: 3rem;}
-  .hero-card          {height:auto;}
+  .hero-value         { font-size: 3rem; }
+  .hero-card          { height: auto; }
+}
+
+/* Power card layout — shared by all 5 cards in the right column */
+.power-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  position: relative;
+  border-radius: var(var(--radius-xl));
+  border : var(--border-width) solid var(--color-secondary-200);
+  margin-bottom: 1rem;
 }
 
 /* ── Date navigation ──────────────────────────────────────────────── */
 .date-nav {
   display: inline-flex;
   align-items: center;
-  background: #ffffff;
-  border-radius: 0px;
+  background: var(--color-bg-secondary);
   overflow: hidden;
 }
 .date-btn {
   width: 32px; height: 32px;
   display: flex; align-items: center; justify-content: center;
   background: none; border: none;
-  font-size: 18px; color: #6b7280;
+  font-size: 18px;
+  color: var(--color-text-secondary);
   cursor: pointer; transition: background .12s;
 }
-.date-btn:hover       { background: #f3f4f6; }
-.date-btn.disabled    { opacity: .3; cursor: default; pointer-events: none; }
+.date-btn:hover    { background: var(--color-secondary-subtle); }
+.date-btn.disabled { opacity: .3; cursor: default; pointer-events: none; }
 .date-label {
   padding: 0 14px; height: 32px;
   display: flex; align-items: center;
-  font-size: 13px; font-weight: 500; color: #111827;
+  font-size: 13px; font-weight: 500;
+  color: var(--color-text-primary);
   white-space: nowrap;
-  border-left: 1px solid #e4e7ec;
-  border-right: 1px solid #e4e7ec;
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
 }
 
-/* ── Horizontal flow indicator ───────────────────────────────────── */
-.flow-track                         {position: relative;width: 2rem;height: 5px;background: transparent;border-radius: 999px;overflow: hidden;top: -1rem;}
-.flow-track-placeholder             {width: 2rem;height: 5px;background-color: transparent;}
-.flow-dot                           {position: absolute;top: 0;width: .5rem;height: 5px;border-radius: 999px;}
+/* ── Flow direction indicator ─────────────────────────────────────── */
+.flow-track             { position: relative; width: 2rem; height: 5px; background: transparent; border-radius: 999px; overflow: hidden; top: -1rem; }
+.flow-track-placeholder { width: 2rem; height: 5px; }
+.flow-dot               { position: absolute; top: 0; width: .5rem; height: 5px; border-radius: 999px; }
 
-/* Colors */
-.flow-track.charging    .flow-dot,
-.flow-track.exporting   .flow-dot   {background: #22c55e; }
-.flow-track.discharging .flow-dot,
-.flow-track.importing   .flow-dot   {background: #f97316; }
-
-/* Charging / exporting: dot travels left → right */
 .flow-track.charging   .flow-dot,
-.flow-track.exporting  .flow-dot    {animation: dot-ltr 1.4s ease-in-out infinite; }
-
-/* Discharging / importing: dot travels right → left */
+.flow-track.exporting  .flow-dot  { background: #22c55e; animation: dot-ltr 1.4s ease-in-out infinite; }
 .flow-track.discharging .flow-dot,
-.flow-track.importing   .flow-dot   {animation: dot-rtl 1.4s ease-in-out infinite; }
+.flow-track.importing   .flow-dot { background: #f97316; animation: dot-rtl 1.4s ease-in-out infinite; }
 
 @keyframes dot-ltr {
-  0%   { left: -8px;    opacity: 0; }
-  15%  {                opacity: 1; }
-  85%  {                opacity: 1; }
-  100% { left: 100%;    opacity: 0; }
+  0%   { left: -8px;  opacity: 0; }
+  15%  {               opacity: 1; }
+  85%  {               opacity: 1; }
+  100% { left: 100%;  opacity: 0; }
 }
 @keyframes dot-rtl {
-  0%   { left: 100%;    opacity: 0; }
-  15%  {                opacity: 1; }
-  85%  {                opacity: 1; }
-  100% { left: -8px;    opacity: 0; }
+  0%   { left: 100%;  opacity: 0; }
+  15%  {               opacity: 1; }
+  85%  {               opacity: 1; }
+  100% { left: -8px;  opacity: 0; }
 }
 </style>
