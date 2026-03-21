@@ -1,0 +1,177 @@
+// core/capabilityRouter.js
+//
+// Unified API surface for all capability-based operations.
+// The frontend always calls these endpoints — it never calls module-specific
+// routes directly for business operations.
+//
+// Mount in server.js:
+//   import capabilityRouter from './core/capabilityRouter.js';
+//   app.use('/api/capability', capabilityRouter);
+//
+// All routes follow the same delegation pattern:
+//   1. Look up the handler in capabilityRegistry
+//   2. If not found → 503 with capability name so the frontend knows what's missing
+//   3. If found → call handler(req.body, req) and return the result
+
+import express from 'express';
+import registry from '../../capabilityRegistry.js';
+
+const router = express.Router();
+
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+/**
+ * Wraps a capability dispatch in consistent error handling.
+ * Looks up `type` in the registry, calls the handler, returns JSON.
+ */
+async function dispatch(type, req, res) {
+  const handler = registry.get(type);
+
+  if (!handler) {
+    return res.status(503).json({
+      error:      'capability_unavailable',
+      capability: type,
+      message:    `No module currently provides '${type}'. Enable the required module in Settings.`,
+    });
+  }
+
+  try {
+    const result = await handler(req.body, req);
+    res.json(result ?? { success: true });
+  } catch (e) {
+    console.error(`[CapabilityRouter] Error executing '${type}':`, e.message);
+    res.status(500).json({
+      error:      'capability_error',
+      capability: type,
+      message:    e.message,
+    });
+  }
+}
+
+// ─── Introspection ─────────────────────────────────────────────────────────
+
+/**
+ * GET /api/capabilities
+ * Returns all currently available capability types and their provider module.
+ * The frontend uses this to conditionally show/hide controls.
+ *
+ * Response: { capabilities: [{ type, moduleId, priority }] }
+ */
+router.get('/', (req, res) => {
+  res.json({ capabilities: registry.list() });
+});
+
+// ─── Battery ───────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/capability/battery/read
+ * Full real-time battery metrics (SoC, power, energy today, etc.)
+ */
+router.get('/battery/read', (req, res) =>
+  dispatch('battery:read', req, res)
+);
+
+/**
+ * GET /api/capability/battery/status
+ * Current dispatch state (active, mode, watts, remainingSeconds).
+ * Lightweight — backed by in-memory state, no hardware I/O.
+ */
+router.get('/battery/status', (req, res) =>
+  dispatch('battery:status', req, res)
+);
+
+/**
+ * POST /api/capability/battery/charge-from-grid
+ * Start a timed charge-from-grid session.
+ * Body: { watts: number, targetSOC: number, durationHours: number }
+ */
+router.post('/battery/charge-from-grid', (req, res) =>
+  dispatch('battery:charge-from-grid', req, res)
+);
+
+/**
+ * POST /api/capability/battery/discharge-to-grid
+ * Start a timed discharge-to-grid session.
+ * Body: { watts: number, minimumSOC: number, durationHours: number }
+ */
+router.post('/battery/discharge-to-grid', (req, res) =>
+  dispatch('battery:discharge-to-grid', req, res)
+);
+
+/**
+ * POST /api/capability/battery/stop
+ * Cancel active dispatch and return inverter to Self-Consumption mode.
+ */
+router.post('/battery/stop', (req, res) =>
+  dispatch('battery:stop', req, res)
+);
+
+// ─── Solar ─────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/capability/solar/read
+ * Real-time solar production metrics.
+ */
+router.get('/solar/read', (req, res) =>
+  dispatch('solar:read', req, res)
+);
+
+/**
+ * GET /api/capability/solar/forecast
+ * Solar yield forecast for today and tomorrow.
+ */
+router.get('/solar/forecast', (req, res) =>
+  dispatch('solar:forecast', req, res)
+);
+
+// ─── Grid ──────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/capability/grid/read
+ * Real-time grid metrics (import/export power, voltage).
+ */
+router.get('/grid/read', (req, res) =>
+  dispatch('grid:read', req, res)
+);
+
+/**
+ * GET /api/capability/grid/pricing
+ * Day-ahead electricity prices.
+ */
+router.get('/grid/pricing', (req, res) =>
+  dispatch('grid:pricing', req, res)
+);
+
+// ─── Home ──────────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/capability/home/read
+ * Home load metrics (power, energy today).
+ * Provided at priority 5 by AlphaESS (derived), priority 10 by P1 meter (measured).
+ */
+router.get('/home/read', (req, res) =>
+  dispatch('home:read', req, res)
+);
+
+// ─── Devices ───────────────────────────────────────────────────────────────
+
+/**
+ * GET /api/capability/devices/read
+ * List of all managed smart devices and their current state.
+ */
+router.get('/devices/read', (req, res) =>
+  dispatch('devices:read', req, res)
+);
+
+/**
+ * POST /api/capability/devices/:id/control
+ * Control a specific device.
+ * Body: { action: 'on'|'off'|'toggle', power?: number }
+ */
+router.post('/devices/:id/control', (req, res) => {
+  // Merge the route param into the body so the handler receives everything
+  req.body.deviceId = req.params.id;
+  dispatch('devices:control', req, res);
+});
+
+export default router;

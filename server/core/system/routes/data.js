@@ -156,7 +156,7 @@ router.get('/collector-status', async (req, res) => {
  * Current power values (W)
  */
 router.get('/realtime', async (req, res) => {
-  console.log(`    • Front-End - [${new Date().toLocaleString()}] - Collect Power measurements...`);
+  console.log(`   • Front-End - [${new Date().toLocaleString()}] - Collect Power measurements...`);
   try {
     const [snapshots] = await db.pool.query(
       `SELECT 
@@ -210,7 +210,7 @@ router.get('/realtime', async (req, res) => {
  */
 router.get('/devices', async (req, res) => {
   try {
-    console.log(`    • Front-End - [${new Date().toLocaleString()}] - Fetching device measurements...`);
+    console.log(`   • Front-End - [${new Date().toLocaleString()}] - Fetching device measurements...`);
 
     const [devices] = await db.pool.query(`
       SELECT
@@ -345,7 +345,7 @@ router.get('/schemas/active', async (req, res) => {
 router.get('/devices/:deviceId', async (req, res) => {
   try {
     const { deviceId } = req.params;
-    console.log(`    • FrontEnd - [${new Date().toLocaleString()}] - Fetching measurements for device: ${deviceId}`);
+    console.log(`   • FrontEnd - [${new Date().toLocaleString()}] - Fetching measurements for device: ${deviceId}`);
     
     // Get latest measurement for this specific device
     const [devices] = await db.pool.query(`
@@ -416,7 +416,7 @@ router.get('/devices/:deviceId', async (req, res) => {
 router.get('/devices-list', async (req, res) => {
   try {
     const now = new Date().toLocaleString();
-    console.log(`    • FrontEnd - [${now}] - Fetching aggregated device usage...`);
+    console.log(`   • FrontEnd - [${now}] - Fetching aggregated device usage...`);
 
     // The query joins device_settings with the daily aggregation table.
     // This allows support for HomeWizard, Matter, and other modules in one list.

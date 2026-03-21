@@ -67,6 +67,7 @@ router.get('/', async (req, res) => {
         updated_at,
         last_seen_at
       FROM module_registry
+      WHERE installed = 1
       ORDER BY module_name ASC
     `);
 
@@ -227,12 +228,13 @@ router.get('/:id/verify', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    // Remove from filesystem
+    // Remove files from filesystem
     const destDir = path.join(MODULES_DIR, id);
     await fs.access(destDir);
     await fs.rm(destDir, { recursive: true });
 
-    // Mark as uninstalled in registry (keep the row for history)
+    // Keep registry row for history — mark as uninstalled so it is
+    // excluded from the active module list (GET /api/modules filters installed=1)
     await db.pool.query(`
       UPDATE module_registry
       SET installed = 0, enabled = 0, updated_at = ?
