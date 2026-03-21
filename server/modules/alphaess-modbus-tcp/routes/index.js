@@ -2,15 +2,26 @@
 import express from 'express';
 import api from '../services/api.js';
 import settingsService from '../../../core/system/services/settingsService.js';
-import collectorManager from '../../../core/collectorManager.js';
 
 const router = express.Router();
 
-/**
- * Connection Middleware
- * Ensures the ModBus client is connected using the latest 
- * database settings before processing any request.
- */
+// ─── Dispatch Status ───────────────────────────────────────────────────────
+//
+// Registered BEFORE the connection middleware so the UI status bar keeps
+// working even when the inverter is temporarily offline.
+//
+// GET /api/alphaess-modbus-tcp/dispatch-status
+// Pure in-memory read — no Modbus I/O.
+
+router.get('/dispatch-status', (req, res) => {
+  res.json(api.getDispatchStatus());
+});
+
+// ─── Connection Middleware ─────────────────────────────────────────────────
+//
+// Ensures the ModBus client is connected using the latest database settings
+// before processing any request that touches the inverter.
+
 router.use(async (req, res, next) => {
   try {
     const config = await settingsService.getModuleSettings('alphaess-modbus-tcp');
@@ -20,16 +31,18 @@ router.use(async (req, res, next) => {
     await api.connect(config.host, config.port, config.unit_id);
     next();
   } catch (e) {
-    res.status(503).json({ 
-      error: 'Inverter Connection Failed', 
-      message: 'Could not establish ModBus TCP connection. Ensure the inverter is on the network.' 
+    res.status(503).json({
+      error: 'Inverter Connection Failed',
+      message: 'Could not establish ModBus TCP connection. Ensure the inverter is on the network.',
     });
   }
 });
 
+// ─── Read Routes ───────────────────────────────────────────────────────────
+
 /**
  * GET /api/alphaess-modbus-tcp/metrics
- * Returns full diagnostic data for the UI.
+ * Returns full real-time data for the UI.
  */
 router.get('/metrics', async (req, res) => {
   try {
@@ -40,6 +53,53 @@ router.get('/metrics', async (req, res) => {
   }
 });
 
+// ─── Timed Dispatch Routes ─────────────────────────────────────────────────
+
+/**
+ * POST /api/alphaess-modbus-tcp/charge
+ * Start a timed charge-from-grid session.
+ * Body: { "watts": 2000, "targetSOC": 100, "durationHours": 4 }
+ */
+router.post('/charge', async (req, res) => {
+  try {
+    const { watts, targetSOC, durationHours } = req.body;
+    await api.startCharge(watts, targetSOC, durationHours);
+    res.json({ success: true, command: { mode: 'charge', watts, targetSOC, durationHours } });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/**
+ * POST /api/alphaess-modbus-tcp/discharge
+ * Start a timed discharge-to-grid session.
+ * Body: { "watts": 2000, "minimumSOC": 20, "durationHours": 2 }
+ */
+router.post('/discharge', async (req, res) => {
+  try {
+    const { watts, minimumSOC, durationHours } = req.body;
+    await api.startDischarge(watts, minimumSOC, durationHours);
+    res.json({ success: true, command: { mode: 'discharge', watts, minimumSOC, durationHours } });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+/**
+ * POST /api/alphaess-modbus-tcp/stop
+ * Cancel active dispatch and return inverter to Self-Consumption mode.
+ */
+router.post('/stop', async (req, res) => {
+  try {
+    await api.stopDispatch();
+    res.json({ success: true, mode: 'Self-Consumption' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ─── Hardware Control Routes ───────────────────────────────────────────────
+
 /**
  * POST /api/alphaess-modbus-tcp/ups-control
  * Enable or Disable the UPS (Backup) function.
@@ -48,8 +108,7 @@ router.get('/metrics', async (req, res) => {
 router.post('/ups-control', async (req, res) => {
   try {
     const { enabled } = req.body;
-    const value = enabled ? 1 : 0;
-    await api.writeUPS(value);
+    await api.writeUPS(enabled ? 1 : 0);
     res.json({ success: true, ups_enabled: enabled });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -58,14 +117,14 @@ router.post('/ups-control', async (req, res) => {
 
 /**
  * POST /api/alphaess-modbus-tcp/soc-limits
- * Sets hardware-level SoC limits (Min SoC/Backup Reserve and Battery DoD).
+ * Sets hardware-level SoC limits (Min SoC / Backup Reserve and Battery DoD).
  * Body: { "minSoc": 20, "dod": 90 }
  */
 router.post('/soc-limits', async (req, res) => {
   try {
     const { minSoc, dod } = req.body;
     if (minSoc !== undefined) await api.writeMinSoC(minSoc);
-    if (dod !== undefined) await api.writeDoD(dod);
+    if (dod !== undefined)    await api.writeDoD(dod);
     res.json({ success: true, limits: { minSoc, dod } });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -89,7 +148,8 @@ router.post('/zero-export', async (req, res) => {
 
 /**
  * POST /api/alphaess-modbus-tcp/dispatch
- * Triggers an immediate Charge or Unload (Discharge) command.
+ * Low-level dispatch — charge or discharge without a duration timer.
+ * Use /charge and /discharge for UI-initiated commands with auto-stop.
  * Body: { "mode": "charge"|"discharge", "watts": 3000, "targetSoc": 80 }
  */
 router.post('/dispatch', async (req, res) => {
@@ -105,10 +165,11 @@ router.post('/dispatch', async (req, res) => {
 /**
  * POST /api/alphaess-modbus-tcp/reset-auto
  * Returns the inverter to standard Self-Consumption mode.
+ * Also clears any active dispatch timer.
  */
 router.post('/reset-auto', async (req, res) => {
   try {
-    await api.resetToAuto();
+    await api.stopDispatch();
     res.json({ success: true, mode: 'Self-Consumption' });
   } catch (e) {
     res.status(500).json({ error: e.message });

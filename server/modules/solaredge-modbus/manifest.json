@@ -1,26 +1,36 @@
 {
   "id": "solaredge-modbus",
   "name": "SolarEdge-Modbus",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Local Modbus TCP integration for SolarEdge HD-Wave inverters",
   "author": "Wolffie",
   "type": "data-collector",
+
   "capabilities": {
     "dataCollection": true,
     "api": true,
     "ui": true
   },
+
+  "services": [
+    { "type": "solar:read",    "priority": 15 },
+    { "type": "solar:curtail", "priority": 15 },
+    { "type": "grid:read",     "priority": 6  }
+  ],
+
   "collector": {
     "enabled": true,
     "interval": 20000,
     "priority": 6,
-    "description": "Collects real-time power data every 10 seconds"
+    "description": "Collects real-time power data every 20 seconds via Modbus TCP"
   },
-    "routes": {
+
+  "routes": {
     "enabled": true,
     "prefix": "/api/solaredge-modbus",
     "description": "SolarEdge Modbus API endpoints"
   },
+
   "config": {
     "required": ["host"],
     "optional": ["port", "unit_id"]

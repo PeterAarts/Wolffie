@@ -34,6 +34,10 @@ class AlphaModbusAPI {
     this.lastCallTime = 0;
     this.minDelay = 400; // Hardware safety delay (ms)
     this.queue = Promise.resolve();
+
+    // In-memory dispatch state.
+    // Cleared on restart — resetOnStartup() ensures the inverter is reset too.
+    this._dispatch = { active: false, mode: null, watts: 0, endTime: null, _timer: null };
   }
 
   // ─── Connection ────────────────────────────────────────────────────────────
@@ -63,21 +67,36 @@ class AlphaModbusAPI {
 
   // ─── Queue / Safety ────────────────────────────────────────────────────────
 
+  /**
+   * Serialises all Modbus register reads/writes behind a single promise chain
+   * so that hardware timing (minDelay) is respected even under concurrent calls.
+   *
+   * Fix (v6.8): this.queue must NEVER hold a rejected promise. A rejected queue
+   * causes every subsequent _safeCall to chain a .then() onto a rejection with
+   * no .catch(), producing an unhandled rejection that crashes the Node process.
+   *
+   * The trick: we store a "safe" version of the next slot in this.queue (one
+   * that swallows the error via .catch(() => {})), and separately return a
+   * "live" promise to the caller that DOES reject on error. The queue stays
+   * clean; the caller still receives the thrown error.
+   */
   async _safeCall(operation) {
-    this.queue = this.queue.then(async () => {
+    // Build the next slot: runs after the current queue resolves, performs the
+    // operation, and propagates the result (or error) to whoever awaits it.
+    const next = this.queue.then(async () => {
       const now = Date.now();
       const elapsed = now - this.lastCallTime;
       if (elapsed < this.minDelay) await new Promise(r => setTimeout(r, this.minDelay - elapsed));
-      try {
-        const result = await operation();
-        this.lastCallTime = Date.now();
-        return result;
-      } catch (e) {
-        this.lastCallTime = Date.now();
-        throw e;
-      }
+      this.lastCallTime = Date.now();
+      return operation(); // may resolve or reject
     });
-    return this.queue;
+
+    // this.queue advances to the settled (non-throwing) version of next so that
+    // a future _safeCall always chains onto a resolved promise, never a rejected one.
+    this.queue = next.catch(() => {});
+
+    // Return the live promise so the caller receives the real result or error.
+    return next;
   }
 
   // ─── Low-level Reads ───────────────────────────────────────────────────────
@@ -351,7 +370,9 @@ class AlphaModbusAPI {
   }
 
   /**
-   * Dispatch: Charge or Discharge command
+   * Low-level dispatch: Charge or Discharge command.
+   * Used directly by startCharge() / startDischarge(). Can also be called
+   * from the legacy /dispatch route for raw control without a timer.
    *
    * Dispatch register map (0x0880–0x0888):
    *   0x0880 = 2176  Dispatch Start         1=start, 0=stop
@@ -382,12 +403,119 @@ class AlphaModbusAPI {
   }
 
   /**
-   * Reset to automatic / normal mode
-   * Stops dispatch and sets mode to 5 (Normal Mode per Note7)
+   * Reset to automatic / normal mode.
+   * Stops dispatch and sets mode to 5 (Normal Mode per Note7).
    */
   async resetToAuto() {
     await this._writeReg(2176, 0); // 0x0880 stop dispatch
     await this._writeReg(2181, 5); // 0x0885 Normal Mode
+  }
+
+  // ─── Timed Dispatch ────────────────────────────────────────────────────────
+
+  /**
+   * Start a timed charge-from-grid session.
+   * Sends the Modbus dispatch command, then arms a timer to call resetToAuto()
+   * when durationHours elapses.
+   *
+   * @param {number} watts         Charge power in W
+   * @param {number} targetSoc     Stop charging at this SoC (%)
+   * @param {number} durationHours Auto-stop after this many hours
+   */
+  async startCharge(watts, targetSoc, durationHours) {
+    await this.setDispatch('charge', watts, targetSoc);
+    this._armTimer('charge', watts, durationHours);
+  }
+
+  /**
+   * Start a timed discharge-to-grid session.
+   *
+   * @param {number} watts         Discharge power in W
+   * @param {number} minimumSoc    Stop discharging when SoC hits this floor (%)
+   * @param {number} durationHours Auto-stop after this many hours
+   */
+  async startDischarge(watts, minimumSoc, durationHours) {
+    await this.setDispatch('discharge', watts, minimumSoc);
+    this._armTimer('discharge', watts, durationHours);
+  }
+
+  /**
+   * Cancel any active dispatch and return the inverter to Self-Consumption mode.
+   */
+  async stopDispatch() {
+    this._clearTimer();
+    await this.resetToAuto();
+  }
+
+  /**
+   * Returns the current in-memory dispatch state for the UI status bar.
+   * Pure in-memory read — no Modbus I/O.
+   */
+  getDispatchStatus() {
+    const { active, mode, watts, endTime } = this._dispatch;
+    const remainingSeconds = active && endTime
+      ? Math.max(0, Math.round((endTime - Date.now()) / 1000))
+      : 0;
+    return {
+      active,
+      charging:         active && mode === 'charge',
+      discharging:      active && mode === 'discharge',
+      watts,
+      remainingSeconds,
+    };
+  }
+
+  /**
+   * Called once during module init (after connect()) to ensure the inverter
+   * is in a known state after a crash or restart that may have left a
+   * dispatch command running in the hardware registers.
+   * Safe to call when nothing is active — resetToAuto() is idempotent.
+   */
+  async resetOnStartup() {
+    try {
+      await this.resetToAuto();
+      console.log('     - Startup reset: inverter returned to Self-Consumption mode.');
+    } catch (e) {
+      console.warn('     - Startup reset failed (inverter may be offline):', e.message);
+    }
+  }
+
+  // ─── Internal Timer Helpers ────────────────────────────────────────────────
+
+  /**
+   * Arms the auto-stop timer and updates _dispatch state.
+   * Always cancels any previous timer first so back-to-back commands
+   * don't leave a stale timer running.
+   */
+  _armTimer(mode, watts, durationHours) {
+    this._clearTimer();
+    const ms = Math.round(durationHours * 3600 * 1000);
+    const endTime = Date.now() + ms;
+
+    const _timer = setTimeout(async () => {
+      console.log(`[AlphaModbus] Dispatch timer expired (${mode} ${watts}W), resetting to auto.`);
+      try {
+        await this.resetToAuto();
+      } catch (e) {
+        console.error('[AlphaModbus] Auto-stop failed:', e.message);
+      }
+      this._dispatch = { active: false, mode: null, watts: 0, endTime: null, _timer: null };
+    }, ms);
+
+    // Prevent the timer from keeping the Node process alive on graceful shutdown
+    if (_timer.unref) _timer.unref();
+
+    this._dispatch = { active: true, mode, watts, endTime, _timer };
+  }
+
+  /**
+   * Cancels the active timer (if any) and resets _dispatch state to idle.
+   */
+  _clearTimer() {
+    if (this._dispatch._timer) {
+      clearTimeout(this._dispatch._timer);
+    }
+    this._dispatch = { active: false, mode: null, watts: 0, endTime: null, _timer: null };
   }
 }
 

@@ -1,22 +1,33 @@
 {
   "id": "alphaess-modbus-tcp",
   "name": "AlphaESS ModBus TCP",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "AlphaESS inverter communication via ModBus TCP/IP",
   "author": "Wolffie",
   "type": "data-collector",
-  
+
   "capabilities": {
     "dataCollection": true,
     "api": true,
     "ui": true
   },
 
+  "services": [
+    { "type": "battery:read",              "priority": 10 },
+    { "type": "battery:status",            "priority": 10 },
+    { "type": "battery:charge-from-grid",  "priority": 10 },
+    { "type": "battery:discharge-to-grid", "priority": 10 },
+    { "type": "battery:stop",              "priority": 10 },
+    { "type": "solar:read",                "priority": 5 },
+    { "type": "grid:read",                 "priority": 10 },
+    { "type": "home:read",                 "priority": 5  }
+  ],
+
   "collector": {
     "enabled": true,
     "interval": 10000,
     "priority": 10,
-    "description": "Collects real-time data via ModBus TCP every 20 seconds"
+    "description": "Collects real-time data via ModBus TCP every 10 seconds"
   },
 
   "routes": {

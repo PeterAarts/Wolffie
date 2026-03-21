@@ -17,6 +17,10 @@
         },
         "battery": {
           "title": "Battery Settings"
+        },
+        "grid":{
+          "title": "Grid selector",
+          "description":"The network details of your AlphaESS inverter"
         }
       },
       "fields": {
@@ -47,7 +51,16 @@
         },
         "ups": {
           "label": "Use UPS Reserve"
-        }
+        },
+        "grid_power_source":{
+            "label":"select grid source",
+            "description":"select the source for power",
+            "options":{
+              "internal":"internal",
+              "homewizardP1":"P1-meter",
+              "none":"none"
+            }
+          }
       },
       "actions": {
         "testConnection": "Test Connection"
