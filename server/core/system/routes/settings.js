@@ -224,8 +224,8 @@ router.post('/core', authorize('admin'), async (req, res) => {
   try {
     const updates = req.body;
     const categoryMapping = {
-      system_name: 'system', location: 'system', timezone: 'system',
-      primary_source: 'data_collection', enable_failover: 'data_collection', 
+      system_name: 'system', location: 'system', timezone: 'system', theme: 'system',
+      primary_source: 'data_collection', enable_failover: 'data_collection',
       cache_timeout: 'data_collection', failover_threshold: 'data_collection',
       email_enabled: 'notifications', email_address: 'notifications',
       snapshots_days: 'retention', minutes_days: 'retention', hours_days: 'retention'
@@ -234,7 +234,10 @@ router.post('/core', authorize('admin'), async (req, res) => {
     for (const [key, value] of Object.entries(updates)) {
       const category = categoryMapping[key];
       if (category) {
-        await settingsService.set(category, key, value, req.user.username, 'Core system update');
+        await settingsService.upsert(category, key, value, {
+          changedBy: req.user.username,
+          reason: 'Core system update',
+        });
       }
     }
     res.json({ success: true, message: 'System settings updated successfully' });

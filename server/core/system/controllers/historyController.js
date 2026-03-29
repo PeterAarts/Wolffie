@@ -30,26 +30,68 @@ class HistoryController {
     try {
       const granularity = parseInt(req.query.granularity) || 5;
 
-      // 1. Haal stats op uit de snelle daily tabel
+      // Hardcode Europe/Amsterdam offset (UTC+1 winter, UTC+2 summer)
+      // since MySQL timezone tables may not be populated and server may run in UTC.
+      // DST in NL: last Sunday March → last Sunday October
+      const jan = new Date(new Date().getFullYear(), 0, 1).getTimezoneOffset();
+      const jul = new Date(new Date().getFullYear(), 6, 1).getTimezoneOffset();
+      const isDST = new Date().getTimezoneOffset() < Math.max(jan, jul);
+      const utcOffset = isDST ? '+02:00' : '+01:00';
+
+      // 1. Try energy_daily first (fast, settled data for past days)
       const [daily] = await db.pool.query(
         `SELECT 
-          pv_generation_kwh as pv_generation,
-          load_consumption_kwh as load_consumption,
-          grid_import_kwh as grid_import,
-          grid_export_kwh as grid_export,
-          battery_charge_kwh as battery_charge,
+          pv_generation_kwh     as pv_generation,
+          load_consumption_kwh  as load_consumption,
+          grid_import_kwh       as grid_import,
+          grid_export_kwh       as grid_export,
+          battery_charge_kwh    as battery_charge,
           battery_discharge_kwh as battery_discharge
         FROM energy_daily WHERE date = ?`, [date]
       );
 
-      // 2. Haal gedetailleerde snapshots op voor de grafiek
+      // 2. Fetch snapshots using local-date comparison via CONVERT_TZ
       const [snapshots] = await db.pool.query(
         `SELECT timestamp, solar_power, battery_power, battery_soc, grid_power, load_power 
-         FROM energy_snapshots WHERE DATE(timestamp) = ? ORDER BY timestamp ASC`, [date]
+         FROM energy_snapshots
+         WHERE DATE(CONVERT_TZ(timestamp, '+00:00', ?)) = ?
+         ORDER BY timestamp ASC`,
+        [utcOffset, date]
       );
 
+      let stats;
+
+      // Check if energy_daily has meaningful data (not a zero-filled placeholder row)
+      const dailyHasData = daily[0] &&
+        (parseFloat(daily[0].pv_generation)    > 0 ||
+         parseFloat(daily[0].load_consumption) > 0 ||
+         parseFloat(daily[0].grid_import)      > 0 ||
+         parseFloat(daily[0].grid_export)      > 0);
+
+      if (dailyHasData) {
+        stats = this.formatStats(daily[0]);
+      } else if (snapshots.length > 0) {
+        const [cumulative] = await db.pool.query(
+          `SELECT 
+            MAX(solar_energy_today)        as pv_generation,
+            MAX(load_energy_today)         as load_consumption,
+            MAX(grid_energy_import_today)  as grid_import,
+            MAX(grid_energy_export_today)  as grid_export,
+            MAX(battery_charge_today)      as battery_charge,
+            MAX(battery_discharge_today)   as battery_discharge
+          FROM energy_snapshots
+          WHERE DATE(CONVERT_TZ(timestamp, '+00:00', ?)) = ?`,
+          [utcOffset, date]
+        );
+        stats = cumulative[0]
+          ? this.formatStats(cumulative[0])
+          : this.emptyStats();
+      } else {
+        stats = this.emptyStats();
+      }
+
       res.json({
-        stats: daily[0] ? this.formatStats(daily[0]) : this.emptyStats(),
+        stats,
         data: this.aggregateSnapshots(snapshots, granularity)
       });
     } catch (error) {
@@ -67,6 +109,12 @@ async getRange(req, res) {
     if (!startDate || !endDate) {
       return res.status(400).json({ error: 'startDate and endDate are mandatory' });
     }
+
+    // DST-aware UTC offset for Europe/Amsterdam
+    const jan = new Date(new Date().getFullYear(), 0, 1).getTimezoneOffset();
+    const jul = new Date(new Date().getFullYear(), 6, 1).getTimezoneOffset();
+    const isDST = new Date().getTimezoneOffset() < Math.max(jan, jul);
+    const utcOffset = isDST ? '+02:00' : '+01:00';
 
     // Bereken aantal dagen
     const start = new Date(startDate);
@@ -143,21 +191,37 @@ async getRange(req, res) {
       }));
     }
 
-    // Bereken totalen voor stats
-    const [dailyStats] = await db.pool.query(
-      `SELECT 
-        SUM(pv_generation_kwh) as pv_generation,
-        SUM(load_consumption_kwh) as load_consumption,
-        SUM(grid_import_kwh) as grid_import,
-        SUM(grid_export_kwh) as grid_export,
-        SUM(battery_charge_kwh) as battery_charge,
-        SUM(battery_discharge_kwh) as battery_discharge
-      FROM energy_daily
-      WHERE date BETWEEN ? AND ?`,
-      [startDate, endDate]
+    // Calculate totals from energy_snapshots cumulative counters.
+    // energy_daily rows may contain zeros due to UTC/local timezone mismatch in aggregation.
+    // Instead, take MAX of each daily counter per local day (using UTC offset),
+    // then SUM across days — this gives accurate totals regardless of energy_daily quality.
+    const [snapshotStats] = await db.pool.query(
+      `SELECT
+        SUM(daily_pv)       as pv_generation,
+        SUM(daily_load)     as load_consumption,
+        SUM(daily_import)   as grid_import,
+        SUM(daily_export)   as grid_export,
+        SUM(daily_charge)   as battery_charge,
+        SUM(daily_discharge) as battery_discharge
+       FROM (
+         SELECT
+           DATE(CONVERT_TZ(timestamp, '+00:00', ?)) as local_date,
+           MAX(solar_energy_today)        as daily_pv,
+           MAX(load_energy_today)         as daily_load,
+           MAX(grid_energy_import_today)  as daily_import,
+           MAX(grid_energy_export_today)  as daily_export,
+           MAX(battery_charge_today)      as daily_charge,
+           MAX(battery_discharge_today)   as daily_discharge
+         FROM energy_snapshots
+         WHERE DATE(CONVERT_TZ(timestamp, '+00:00', ?)) BETWEEN ? AND ?
+         GROUP BY local_date
+       ) daily_sums`,
+      [utcOffset, utcOffset, startDate, endDate]
     );
 
-    const stats = dailyStats[0] ? this.formatStats(dailyStats[0]) : this.emptyStats();
+    const stats = snapshotStats[0]
+      ? this.formatStats(snapshotStats[0])
+      : this.emptyStats();
 
     res.json({
       stats,

@@ -21,7 +21,10 @@ import settingsRoutes from './core/system/routes/settings.js';
 import configRoutes from './core/system/routes/config.js';
 import dataRoutes from './core/system/routes/data.js';
 import historyRoutes from './core/system/routes/history.js';
-import strategyManager from './core/strategyManager.js';
+import strategyManager  from './core/strategyManager.js';
+import strategyRoutes   from './core/system/routes/strategies.js';
+import alertRoutes      from './core/system/routes/alerts.js';
+import capabilityRouter from './core/system/routes/capability.js';
 import collectorRoutes from './core/system/routes/collectors.js';
 import modulesRoutes from './core/system/routes/modules.js';
 import aggregatorService from './core/system/services/aggregatorService.js';
@@ -101,6 +104,22 @@ app.use('/api/collectors', collectorRoutes);
 app.use('/api/modules', authorize('admin'), modulesRoutes);
 app.use('/api/system', dataRoutes);
 
+// Capability router — transport-agnostic endpoints delegating to registry
+// GET /api/capabilities        lists all currently registered service types
+// /api/capability/battery/*    battery read + dispatch actions
+// /api/capability/solar/*      solar read + forecast
+// /api/capability/grid/*       grid read + pricing
+// /api/capability/home/*       home load read
+// /api/capability/devices/*    device control
+app.use('/api/capability', capabilityRouter);
+app.use('/api/capabilities', (req, res) => res.redirect(307, '/api/capability'));
+
+// Strategy routes — strategy selection, day plan, decision log
+app.use('/api/strategies', strategyRoutes);
+
+// Generic alert routes — app-wide alerts with per-user dismissal
+app.use('/api/alerts', alertRoutes);
+
 // ============================================================================
 // MODULE INITIALIZATION
 // ============================================================================
@@ -127,7 +146,7 @@ async function initializeModules() {
     const enabledModules = await moduleLoader.getEnabledModules();
     console.log(`   \x1b[32m✓\x1b[37m ${enabledModules.length} modules enabled`);
 
-     // 4. Initialize only enabled modules
+    // 4. Initialize only enabled modules
     for (const module of enabledModules) {
       if (module.initialize) {
         await module.initialize();
@@ -157,6 +176,16 @@ async function initializeModules() {
     console.log(' - \x1b[32mStarting data aggregator...\x1b[37m');
     console.log('   -------------------------------------------');
     aggregatorService.start();
+
+    // 8. Start strategy manager
+    // Must run AFTER collectors start so capability registry is populated
+    console.log(' ');
+    console.log(' - \x1b[32mStarting strategy manager...\x1b[37m');
+    console.log('   -------------------------------------------');
+    await strategyManager.start();
+
+    // Generate today's day plan if not already present
+    await strategyManager.regenerateDayPlan();
     
     console.log('\x1b[32m - All modules initialized\x1b[37m');
     console.log('   -------------------------------------------');
@@ -184,13 +213,8 @@ app.listen(PORT, async () => {
   console.log(' - Checking for default admin user... \x1b[92m✓\x1b[37m ');
   await userService.createDefaultAdminIfNeeded();
   
-  // Initialize modules
+  // Initialize modules (includes strategy manager start)
   await initializeModules();
-
-  // Start strategy engine every 15 minutes
-  setInterval(() => { 
-    strategyManager.run();  
-  }, 15 * 60 * 1000);
 });
 
 // ============================================================================
@@ -200,6 +224,7 @@ app.listen(PORT, async () => {
 process.on('SIGTERM', async () => {
   console.log('\x1b[91m  -------------------------------------------');
   console.log(' - Shutting down gracefully...\x1b[37m');
+  strategyManager.stop();
   await collectorManager.stop();
   process.exit(0);
 });
@@ -207,6 +232,25 @@ process.on('SIGTERM', async () => {
 process.on('SIGINT', async () => {
   console.log('\x1b[91m  -------------------------------------------');
   console.log('- Shutting down gracefully...\x1b[37m');
+  strategyManager.stop();
   await collectorManager.stop();
   process.exit(0);
+});
+
+// ============================================================================
+// PROCESS-LEVEL ERROR GUARDS
+// ============================================================================
+// modbus-serial emits TCP errors (ETIMEDOUT, ECONNREFUSED, ECONNRESET) via its
+// internal socket EventEmitter. When these fire outside an active await chain
+// Node.js escalates them — first to unhandledRejection, then (via
+// triggerUncaughtException fromPromise) to uncaughtException — which by default
+// kills the process. These handlers log and absorb both event types so a
+// temporary inverter network blip can never crash the server.
+
+process.on('unhandledRejection', (reason) => {
+  console.error('\x1b[91m ⚠ Unhandled promise rejection (process kept alive):\x1b[37m', reason?.message ?? reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('\x1b[91m ⚠ Uncaught exception (process kept alive):\x1b[37m', err.message);
 });
