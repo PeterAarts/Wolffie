@@ -8,7 +8,7 @@
           :key="action.label"
           @click="executeGlobalAction(action)"
           :disabled="actionLoading[action.id]"
-          class="flex items-center gap-2 p-4 bg-white border border-gray-200  text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:border-blue-300 transition-all shadow-sm disabled:opacity-50"
+          class="flex items-center gap-2 p-4 bg-white border border-secondary-200  text-sm font-semibold text-secondary-700 hover:bg-secondary-50 hover:border-blue-300 transition-all shadow-sm disabled:opacity-50"
         >
           <i v-if="actionLoading[action.id]" class="fa-light fa-spinner-third fa-spin text-slate-500"></i>
           <i v-else :class="['fa-light', mapIcon(action.icon), 'text-blue-700']"></i>
@@ -22,7 +22,7 @@
           :key="filter.field"
           v-model="filterValues[filter.field]"
           @change="applyFilters"
-          class="bg-white border border-gray-200 p-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+          class="bg-white border border-secondary-200 p-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
         >
           <option value="">{{ filter.placeholder || 'Filter...' }}</option>
           <option v-for="opt in filter.options" :key="opt.value" :value="opt.value">
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Loading state -->
-    <div v-if="loading" class="flex items-center justify-center py-12 text-gray-400 text-sm gap-2">
+    <div v-if="loading" class="flex items-center justify-center py-12 text-secondary-400 text-sm gap-2">
       <i class="fa-duotone fa-spinner-third fa-spin"></i>
       {{ t('common.loading') }}
     </div>
@@ -45,32 +45,32 @@
     </div>
 
     <!-- Empty state -->
-    <div v-else-if="!tableData.length" class="flex flex-col items-center justify-center py-12 text-gray-400 text-sm gap-2">
+    <div v-else-if="!tableData.length" class="flex flex-col items-center justify-center py-12 text-secondary-400 text-sm gap-2">
       <i class="fa-duotone fa-table text-2xl"></i>
       {{ t('common.noData') }}
     </div>
 
     <!-- Table -->
     <div v-else class="overflow-hidden  overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50/50">
+      <table class="min-w-full divide-y divide-secondary-200">
+        <thead class="bg-secondary-50/50">
           <tr :key="headerKey">
             <th
               v-for="col in tableConfig.columns"
               :key="col.field"
-              class="p-4 text-left text-xs font-medium text-gray-400 uppercase tracking-widest"
+              class="p-4 text-left text-xs font-medium text-secondary-400 uppercase tracking-widest"
             >
               {{ r(col.header) }}
             </th>
             <th
               v-if="tableConfig.rowActions?.length"
-              class="p-4text-right text-xs font-extrabold text-gray-400 uppercase tracking-widest"
+              class="p-4text-right text-xs font-extrabold text-secondary-400 uppercase tracking-widest"
             >
               {{ t('common.actions') }}
             </th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-gray-200">
+        <tbody class="divide-y divide-secondary-200">
           <tr
             v-for="(row, rowIndex) in tableData"
             :key="row.id || rowIndex"
@@ -79,10 +79,10 @@
             <td
               v-for="col in tableConfig.columns"
               :key="col.field"
-              class="px-6 py-4 text-sm text-gray-600 font-medium"
+              class="px-6 py-4 text-sm text-secondary-600 font-medium"
             >
               <template v-if="col.template?.type === 'boolean'">
-                <i :class="row[col.field] ? 'fa-solid fa-circle-check text-green-500' : 'fa-solid fa-circle-xmark text-gray-300'"></i>
+                <i :class="row[col.field] ? 'fa-solid fa-circle-check text-green-500' : 'fa-solid fa-circle-xmark text-secondary-300'"></i>
               </template>
 
               <template v-else-if="col.template?.type === 'status-badge'">
@@ -107,9 +107,9 @@
                   :key="btn.label"
                   @click="executeRowAction(btn, row)"
                   :title="btn.label"
-                  class="p-4 hover:bg-gray-100 rounded-lg group"
+                  class="p-4 hover:bg-secondary-100 rounded-lg group"
                 >
-                  <i :class="['fa-light ', mapIcon(btn.icon), 'text-gray-400 group-hover:text-gray-900 ']"></i>
+                  <i :class="['fa-light ', mapIcon(btn.icon), 'text-secondary-400 group-hover:text-secondary-900 ']"></i>
                 </button>
               </div>
             </td>

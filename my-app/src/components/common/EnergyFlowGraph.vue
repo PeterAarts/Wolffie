@@ -1,23 +1,23 @@
 <template>
   <div class="energy-flow-graph-container">
     <!-- Stats Overview Cards (optional) -->
-    <div v-if="showStats && !loading && !error && stats" class="stats-overview mb-8">
+    <div v-if="showStats && !loading && !error && stats" class="stats-overview mb-8 ml-auto">
       <div class="stat-card solar">
-        <span class="label">Solar</span>
+        <span class="label"><span class="tt-dot"></span>Solar</span>
         <span class="value">{{ stats.pv_generation.toFixed(1) }} <small>kWh</small></span>
       </div>
       <div class="stat-card home">
-        <span class="label">Home</span>
+        <span class="label"><span class="tt-dot"></span>Home</span>
         <span class="value">{{ stats.load_consumption.toFixed(1) }} <small>kWh</small></span>
       </div>
       <div class="stat-card grid">
-        <span class="label">Grid</span>
+        <span class="label"><span class="tt-dot"></span>Grid</span>
         <span class="value">
           {{ stats.grid_import.toFixed(1) }} <small>Import</small> / {{ stats.grid_export.toFixed(1) }} <small>export</small>
         </span>
       </div>
       <div class="stat-card battery">
-        <span class="label">Battery</span>
+        <span class="label"><span class="tt-dot"></span>Battery</span>
         <span class="value">
           {{ stats.battery_charge.toFixed(1) }} <small>Charge</small> / {{ stats.battery_discharge.toFixed(1) }} <small>Discharge</small>
         </span>
@@ -157,13 +157,16 @@ const renderChart = () => {
   // Intraday uses plain HH:MM (ASCII colon, zero-padded) so the tick callback
   // can reliably split on ':' regardless of locale.
   const labels = chartData.value.map(d => {
-    const dt = new Date(d.timestamp || d.date);
     if (props.period === 'today' || props.period === 'date') {
+      // Intraday: parse timestamp normally
+      const dt = new Date(d.timestamp);
       const hh = String(dt.getHours()).padStart(2, '0');
       const mm = String(dt.getMinutes()).padStart(2, '0');
       return `${hh}:${mm}`;
     }
-    return dt.toLocaleDateString(currentLanguage.value, { day: '2-digit', month: '2-digit' });
+    // Multi-day: d.date is 'YYYY-MM-DD' — parse as local date to avoid UTC shift
+    const [y, m, day] = (d.date || d.timestamp?.slice(0, 10) || '').split('-');
+    return `${day}/${m}`;
   });
 
   chartInstance.value = new Chart(ctx, {
@@ -330,7 +333,20 @@ const renderChart = () => {
               return;
             }
 
-            const title = tooltip.title?.[0] ?? '';
+            // Always show date + time in tooltip regardless of view mode
+            const dp0 = tooltip.dataPoints?.[0];
+            const rawIdx = dp0?.dataIndex ?? 0;
+            const rawEntry = chartData.value[rawIdx];
+            let title = tooltip.title?.[0] ?? '';
+            if (rawEntry) {
+              const ts = rawEntry.timestamp || (rawEntry.date + 'T00:00:00');
+              const dt = new Date(ts);
+              const dd = String(dt.getDate()).padStart(2, '0');
+              const mo = String(dt.getMonth() + 1).padStart(2, '0');
+              const hh = String(dt.getHours()).padStart(2, '0');
+              const mm = String(dt.getMinutes()).padStart(2, '0');
+              title = `${dd}/${mo} ${hh}:${mm}`;
+            }
             const rows = tooltip.dataPoints.map(dp => {
               const ds = dp.dataset;
               const isSoC = ds.yAxisID === 'y1';
@@ -421,21 +437,26 @@ const renderChart = () => {
                 const [hh, mm] = label.split(':');
                 return (mm === '00' && parseInt(hh, 10) % 2 === 0) ? label : '';
               }
-              // Multi-day: show every other date label
-              return index % 2 === 0 ? label : '';
+              // Multi-day: only show label at the start of each day
+              const prevLabel = index > 0 ? this.getLabelForValue(ticks[index - 1].value) : null;
+              return label !== prevLabel ? label : '';
             },
             color: '#9ca3af',
             padding: 6
           },
           grid: {
             color: function(context) {
-              const label = context.chart.data.labels[context.index];
+              const labels = context.chart.data.labels;
+              const label  = labels[context.index];
+              // Intraday: only draw on even hours
               if (label && /^\d{2}:\d{2}$/.test(label)) {
                 const [hh, mm] = label.split(':');
                 return (mm === '00' && parseInt(hh, 10) % 2 === 0)
                   ? 'rgba(0, 0, 0, 0.07)' : 'transparent';
               }
-              return 'rgba(0, 0, 0, 0.05)';
+              // Multi-day: only draw at start of each day (when label changes)
+              const prevLabel = context.index > 0 ? labels[context.index - 1] : null;
+              return label !== prevLabel ? 'rgba(0, 0, 0, 0.10)' : 'transparent';
             },
             drawTicks: false,
             tickLength: 0
@@ -459,75 +480,32 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.energy-flow-graph-container    {display: flex;flex-direction: column;width: 100%;}
-
+.energy-flow-graph-container    {display: flex;flex-direction: column;width: 100%;overflow: hidden;}
 /* ── HTML Tooltip ─────────────────────────────── */
-.chart-html-tooltip {
-  position: absolute;
-  pointer-events: none;
-  background: #ffffff;
-  border: 1px solid #e4e7ec;
-  border-radius: 10px;
-  padding: 10px 14px;
-  box-shadow: 0 4px 16px rgba(0,0,0,.08);
-  min-width: 170px;
-  z-index: 100;
-  font-family: 'DM Sans', system-ui, sans-serif;
-}
-.tt-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 8px;
-}
-.tt-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 2px 0;
-}
-.tt-icon {
-  flex-shrink: 0;
-}
-.tt-dot {
-  display: inline-block;
-  width: 8px; height: 8px;
-  border-radius: 50%;
-}
-.tt-dash {
-  display: inline-block;
-  width: 14px; height: 0;
-  border-top: 2px dashed;
-  margin-bottom: 1px;
-}
-.tt-label {
-  flex: 1;
-  font-size: 13px;
-  color: #6b7280;
-}
-.tt-value {
-  font-size: 13px;
-  font-weight: 600;
-  color: #111827;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-}
-.stats-overview                 {display: grid;grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));gap: 16px;}
-.stat-card                      {background-color: var(--color-bg-primary, #f8f9fa);padding: 20px;display: flex;flex-direction: column;gap: 8px;border-radius:0; border-width:0px;}
-.stat-card .label               {font-size: 11px;text-transform: uppercase;color: var(--color-text-secondary, #6b7280);font-weight: 600;letter-spacing: 0.5px;}
-.stat-card .value               {font-size: 20px;font-weight: 700;font-family: 'Rubik', sans-serif;color: var(--color-text-primary, #111827);line-height: 1.2;}
-.stat-card .value small         {font-size: 12px;font-weight: 500;opacity: 0.7;margin-left: 4px;}
-.stat-card.solar .value         {color: #f59e0b; }
-.stat-card.home .value          {color: #3b82f6; }
-.stat-card.grid .value          {color: #ef4444; }
-.stat-card.battery .value       {color: #10b981; }
-.energy-flow-graph              {width: 100%;position: relative;height: v-bind(height);}
-.loading-state, .error-state    {display: flex;flex-direction: column;align-items: center;justify-content: center;height: 100%;gap: 12px;font-family: 'Rubik', sans-serif;}
-.loading-state span             {color: var(--color-text-secondary, #6b7280);font-size: 14px;}
-.error-state span               {color: #ef4444;font-size: 14px;text-align: center;}
-.retry-btn                      {padding: 10px 20px;background: var(--color-text-primary, #111827);color: var(--color-bg-primary, #ffffff);border: none;border-radius: 8px;cursor: pointer;font-family: 'Rubik', sans-serif;font-size: 14px;font-weight: 500;transition: all 0.2s ease;}
-.retry-btn:hover                {opacity: 0.9;transform: translateY(-1px);}
-.retry-btn:active               {transform: translateY(0);}
+.chart-html-tooltip             { position: absolute;pointer-events: none;background: #ffffff;border: 1px solid #e4e7ec;border-radius: 10px;padding: 10px 14px;box-shadow: 0 4px 16px rgba(0,0,0,.08);min-width: 170px;z-index: 100;}
+.tt-title                       { font-size: 13px;font-weight: 600;color: #374151;margin-bottom: 8px;}
+.tt-row                         { display: flex;align-items: center;gap: 8px;padding: 2px 0;}
+.tt-icon                        { flex-shrink: 0;}
+.tt-dot                         { display: inline-block;width: 8px; height: 8px;border-radius: 50%;margin-right:0.5rem;}
+.tt-dash                        { display: inline-block;width: 14px; height: 0;border-top: 2px dashed;margin-bottom: 1px;}
+.tt-label                       { flex: 1;font-size: 13px;color: #6b7280;}
+.tt-value                       { font-size: 13px;font-weight: 600;color: #111827;text-align: right;font-variant-numeric: tabular-nums;}
+.stats-overview                 { /*display: grid;grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));*/display:flex;gap: 16px;}
+.stat-card                      { background-color: var(--color-white);padding: 1rem;display: flex;flex-direction: column;gap: 8px;border-radius:var(--radius-lg); border-width:0px;}
+.stat-card .label               { font-size: .9rem;color: var(--color-secondary-600);font-weight: 500;letter-spacing: 0.5px;}
+.stat-card .value               { font-size: 1.25rem;font-weight: 700;font-family: 'Rubik', sans-serif;color: var(--color-text-primary, #111827);line-height: 1.2;}
+.stat-card .value small         { font-size: 12px;font-weight: 500;opacity: 0.7;margin-left: 4px;}
+.stat-card.solar .tt-dot        { background-color: #f59e0b; }
+.stat-card.home .tt-dot         { background-color: #3b82f6; }
+.stat-card.grid .tt-dot         { background-color: #ef4444; }
+.stat-card.battery .tt-dot      { background-color: #10b981; }
+.energy-flow-graph              { width: 100%;position: relative;height: v-bind(height);}
+.loading-state, .error-state    { display: flex;flex-direction: column;align-items: center;justify-content: center;height: 100%;gap: 12px;font-family: 'Rubik', sans-serif;}
+.loading-state span             { color: var(--color-text-secondary, #6b7280);font-size: 14px;}
+.error-state span               { color: #ef4444;font-size: 14px;text-align: center;}
+.retry-btn                      { padding: 10px 20px;background: var(--color-text-primary, #111827);color: var(--color-bg-primary, #ffffff);border: none;border-radius: var(--radius-sm);cursor: pointer;font-family: 'Rubik', sans-serif;font-size: 14px;font-weight: 500;transition: all 0.2s ease;}
+.retry-btn:hover                { opacity: 0.9;transform: translateY(-1px);}
+.retry-btn:active               { transform: translateY(0);}
 
 @media (max-width: 768px) {
   .stats-overview       {grid-template-columns: repeat(2, 1fr);}

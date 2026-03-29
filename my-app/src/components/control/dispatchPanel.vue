@@ -24,7 +24,7 @@
     <div class="dispatch-grid">
 
       <!-- Charge from Grid -->
-      <div class="dcard bg-gray-100">
+      <div class="dcard bg-secondary-100">
         <div class="dcard__header mb-8">
           <div class="dcard__title">{{ t('control.chargeFromGrid') }}</div>
           <div class="dcard__sub">{{ t('control.chargeFromGridDesc') }}</div>
@@ -69,7 +69,7 @@
       </div>
 
       <!-- Discharge to Grid -->
-      <div class="dcard bg-gray-100">
+      <div class="dcard bg-secondary-100">
         <div class="dcard__header mb-8">
           <div class="dcard__title">{{ t('control.dischargeToGrid') }}</div>
           <div class="dcard__sub">{{ t('control.dischargeToGridDesc') }}</div>
@@ -265,57 +265,38 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.dispatch-panel { display: flex; flex-direction: column; gap: 1rem; }
+.dispatch-panel         { display: flex; flex-direction: column; gap: 1rem; }
 
 /* ── Status bar ──────────────────────────────────────────────────────────── */
-.status-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.625rem 0.875rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-}
-
-.status-bar__dot {
-  width: 14px; height: 14px;
-  border-radius: 50%;
-  background: var(--color-primary);
-  flex-shrink: 0;
-  animation: pulse 3s infinite;
-}
-.range::-webkit-slider-thumb {
-    border-radius: 0%!important;
-}
+.status-bar             { display: flex; align-items: center; gap: 0.75rem;padding: 0.625rem 0.875rem; background: #f9fafb; border: 1px solid #e5e7eb;}
+.status-bar__dot        { width: 14px; height: 14px;border-radius: 50%;background: var(--color-primary);flex-shrink: 0;animation: pulse 3s infinite;}
+.range::-webkit-slider-thumb 
+                        { border-radius: 0%!important;background-color: var(--color-primary);}
+.range                  { border-radius: var(--radius-md);}                        
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50%       { opacity: .1; }
 }
 
-.status-bar__text {
-  flex: 1;
-  font-size: 0.8125rem;
-  color: #374151;
-  font-weight: 500;
-}
+.status-bar__text       { flex: 1;font-size: 0.8125rem;color: var(--color-secondary-700);font-weight: 500;}
 
 /* ── Two-column card grid ─────────────────────────────────────────────────── */
-.dispatch-grid        { display: grid;grid-template-columns: 1fr 1fr 1fr;gap: 0.75rem;}
+.dispatch-grid          { display: grid;grid-template-columns: 1fr 1fr 1fr;gap: 0.75rem;}
 
 @media (max-width: 720px) {
   .dispatch-grid { grid-template-columns: 1fr; }
 }
 
 /* ── Individual card ──────────────────────────────────────────────────────── */
-.dcard                { display: flex;flex-direction: column;gap: 1rem;padding: 1.25rem;}
+.dcard                  { display: flex;flex-direction: column;gap: 1rem;padding: 1.25rem;border-radius: var(--radius-lg);}
 
-.dcard__header        { display: flex; flex-direction: column; gap: 0.25rem; }
-.dcard__title         { font-size: 0.875rem; font-weight: 600; color: #111827; }
-.dcard__sub           { font-size: 0.775rem; color: #6b7280; }
+.dcard__header          { display: flex; flex-direction: column; gap: 0.25rem; }
+.dcard__title           { font-size: 0.875rem; font-weight: 600; color: #111827; }
+.dcard__sub             { font-size: 0.775rem; color: #6b7280; }
 
-.fields               { display: flex; flex-direction: column; gap: 0.875rem; }
+.fields                 { display: flex; flex-direction: column; gap: 0.875rem; }
 
 /* ── Summary line ─────────────────────────────────────────────────────────── */
-.dcard__summary       { font-size: 0.775rem;color: #6b7280;background: #fff;padding: 0.5rem 0.75rem;border-radius: 4px;}
+.dcard__summary         { font-size: 0.775rem;color: #6b7280;background: #fff;padding: 0.5rem 0.75rem;border-radius: 4px;}
 </style>

@@ -1,65 +1,74 @@
-/* ============================================
-   CLEAN MODERN DASHBOARD
-   Inspired by screenshot 2
-   Bold, minimal, data-focused
-   ============================================ */
-
 /* src/assets/styles/main.css */
 @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&display=swap');
-
 @import "@fortawesome/fontawesome-pro/css/all.css";
 @import "tailwindcss";
 
+/* ── Tailwind v4 theme tokens ─────────────────────────────────────────────────
+ * theme.js writes the actual values to --color-primary, --color-secondary-*
+ * etc. at runtime. These @theme entries just teach Tailwind what class names
+ * to generate — the color values resolve live from the CSS vars.
+ * Result: bg-primary, text-primary, bg-secondary-100, hover:bg-secondary-200,
+ *         text-secondary-400, bg-background, border-secondary-200, etc.
+ *
+ * IMPORTANT — custom utility classes (.p-2, .p-4, .mb-4, .mt-4 etc.) must
+ * NOT be defined as bare CSS rules. Either delete them (Tailwind generates
+ * them) or wrap them in @layer utilities {} so Tailwind's specificity wins.
+ * ─────────────────────────────────────────────────────────────────────────── */
+/* ── Tailwind v4 @theme — literal hex values only, no var() ──────────────────
+ * @theme is resolved at BUILD time — var() references don't work here.
+ * Use the same hex values as theme.js DEFAULTS.
+ *
+ * How runtime theming still works:
+ * Tailwind v4 generates utility classes as e.g.:
+ *   .bg-secondary-100 { background-color: var(--color-secondary-100) }
+ * theme.js overwrites --color-secondary-100 on :root at runtime,
+ * so the correct live value is used — no rebuild needed when theme changes.
+ * ─────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --font-family-sans: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-@layer base {
-  html, body {
-    @apply h-full m-0 p-0 antialiased bg-slate-50;
-    font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; 
-  }
-  
-  /* Ensure all inputs and buttons have a base height */
+  /* Primary — matches theme.js default */
+  --color-primary:   #0a0a0a;
 
+  /* Secondary scale — default (neutral gray) theme values */
+  --color-secondary-50:  #f9fafb;
+  --color-secondary-100: #f3f4f6;
+  --color-secondary-200: #e5e7eb;
+  --color-secondary-300: #d1d5db;
+  --color-secondary-400: #6b7280;
+
+  /* Page background */
+  --color-background: #f1f5f9;
 }
 
-@layer components {
-  .btn-primary {
-    @apply bg-slate-900 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-900 active:scale-95 transition-all;
-  }
-}
-/* --------------------- ROOT VARIABLES --------------------- */
+/* ── Fallback root vars (theme.js overwrites these at runtime) ────────────────
+ * Keep only what theme.js doesn't manage: spacing, typography, shadows,
+ * energy/status semantic colors, PrimeVue overrides.
+ * ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Clean Color Palette */
-  --color-bg-primary: #F8F9FA;          /* Light gray background */
-  --color-bg-secondary: #FFFFFF;        /* Pure white */
-  --color-bg-dark: #1A1A1A;             /* Dark sections */
-  --color-bg-black: #000000;            /* Pure black */
-  
-  /* Accent Colors - Minimal use */
-  --color-accent: #C5C6C7 ;            /* Bright lime/yellow accent */
-  --color-accent-dark: #C5C6C7 ;       /* Darker accent */
-  
-  /* Text Colors */
-  --color-text-primary: #1A1A1A;        /* Almost black */
-  --color-text-secondary: #6B7280;      /* Medium gray */
-  --color-text-tertiary: #9CA3AF;       /* Light gray */
-  --color-text-white: #FFFFFF;          /* White text */
-  
-  /* Data Visualization */
-  --color-data-primary: #1A1A1A;        /* Main data color */
-  --color-data-secondary: #6B7280;      /* Secondary data */
-  --color-data-accent: var(--color-accent);
-  
-  /* Borders */
-  --color-border: #E5E7EB;              /* Light border */
-  --color-border-dark: #D1D5DB;         /* Darker border */
-  
-  /* Legacy color mapping */
-  --color-battery: var(--color-text-primary);
-  --color-solar: var(--color-accent);
-  --color-grid: var(--color-text-secondary);
-  --color-load: var(--color-text-primary);
-  --color-success: var(--color-accent);
-  
+  /* Theme.js manages these — values here are just safe fallbacks */
+  --color-primary:           #0a0a0a;
+  --color-secondary:         #6b7280;
+  --color-secondary-subtle:  #f3f4f6;
+  --color-secondary-muted:   #e5e7eb;
+  --color-secondary-hover:   #d1d5db;
+  --color-bg-primary:        #f1f5f9;
+  --color-bg-secondary:      #f3f4f6;
+  --color-text-primary:      #0a0a0a;
+  --color-text-secondary:    #6b7280;
+  --color-text-tertiary:     #9ca3af;
+  --color-border:            #e5e7eb;
+  --color-border-dark:       #d1d5db;
+
+  /* Energy/status — fixed, never overridden by theme */
+  --color-solar:    #f59e0b;
+  --color-battery:  #10b981;
+  --color-grid:     #f97316;
+  --color-load:     #3b82f6;
+  --color-success:  #10b981;
+  --color-warning:  #f59e0b;
+  --color-error:    #ef4444;
+
   /* Spacing */
   --gap-xs: 0.25rem;
   --gap-sm: 0.5rem;
@@ -68,48 +77,48 @@
   --gap-xl: 2rem;
   --gap-2xl: 3rem;
   --gap-3xl: 4rem;
-  
+
   /* Typography */
   --font-family: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.875rem;
   --font-size-base: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.5rem;
-  --font-size-2xl: 2rem;
-  --font-size-3xl: 2.5rem;
-  --font-size-4xl: 3.5rem;
-  --font-size-5xl: 4.5rem;
-  
-  --font-weight-light: 300;
-  --font-weight-normal: 400;
-  --font-weight-medium: 500;
+  --font-size-lg:   1.125rem;
+  --font-size-xl:   1.5rem;
+  --font-size-2xl:  2rem;
+  --font-size-3xl:  2.5rem;
+  --font-size-4xl:  3.5rem;
+  --font-size-5xl:  4.5rem;
+
+  --font-weight-light:    300;
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
   --font-weight-semibold: 600;
-  --font-weight-bold: 700;
-  --font-weight-black: 900;
-  
-  /* Border Radius */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
-  
-  /* Shadows - Minimal */
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  
-  /* PrimeVue overrides */
+  --font-weight-bold:     700;
+  --font-weight-black:    900;
+
+  /* Border radius — theme.js manages --radius-sm/md/lg/xl/2xl at runtime */
+  --radius-sm:  0px;
+  --radius-md:  0px;
+  --radius-lg:  0px;
+  --radius-xl:  1rem;
+  --radius-2xl: 0px;
+
+  /* border width */
+  --border-width: 0px;
+
+  /* Shadows */
+  --shadow-sm: none ;
+  --shadow-md: none;
+  --shadow-lg: 0 ;
+  --tw-shadow-color :transparent ;
+
+  /* PrimeVue */
   --p-card-shadow: none;
 }
 
-/* --------------------- BASE RESET --------------------- */
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+/* ── Base reset ───────────────────────────────────────────────────────────── 
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }*/ 
 
 html {
   font-size: 16px;
@@ -128,52 +137,15 @@ body {
   overflow-y: auto;
 }
 
-/* --------------------- APP CONTAINER --------------------- */
 #app {
   max-width: 100%;
-  margin: 0;
-  padding: 0;
+  margin: 0; padding: 0;
   min-height: 100vh;
-  background: #D1D5DB
+  background: var(--color-bg-primary);
 }
 
-/* --------------------- HIDE ICONS COMPLETELY --------------------- */
-img[src*="stat"],
-img[src*="icon"],
-.status-icon,
-.summary-item-icon {
-  display: none !important;
-}
-
-/* --------------------- GRID LAYOUTS --------------------- */
-.grid {
-  display: grid;
-  gap: var(--gap-lg);
-}
-
-.grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
-.grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-.grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-cols-4 { grid-template-columns: repeat(4, 1fr); }
-
-@media (max-width: 1024px) {
-  .grid-cols-4 { grid-template-columns: repeat(2, 1fr); }
-  .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media (max-width: 768px) {
-  .grid-cols-4,
-  .grid-cols-3,
-  .grid-cols-2 { grid-template-columns: repeat(1, 1fr); }
-  
-  .grid {
-    gap: var(--gap-md);
-  }
-}
-
-/* --------------------- CARD STYLES - CLEAN & FLAT --------------------- */
-.energy-card,
-.p-card {
+/* ── Card styles ──────────────────────────────────────────────────────────── */
+.energy-card, .p-card {
   background: var(--color-bg-secondary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-xl);
@@ -181,277 +153,100 @@ img[src*="icon"],
   transition: all 0.2s ease;
   overflow: hidden;
 }
+.energy-card:hover, .p-card:hover 
+                      { border-color: var(--color-border-dark); }
+.energy-card .p-card-content, .p-card-content 
+                      { padding: var(--gap-xl); color: var(--color-text-primary); }
+.p-card-title         { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); font-size: var(--font-size-lg); margin-bottom: var(--gap-md); }
+.p-card-subtitle      { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); }
 
-.energy-card:hover,
-.p-card:hover {
-  border-color: var(--color-border-dark);
-}
+.stat-card            { background: var(--color-white);border: 1px solid var(--color-border);border-radius: var(--radius-lg);padding: var(--gap-lg);transition: all 0.2s ease;}
+.stat-card:hover      { border-color: var(--color-border-dark); }
+.stat-card-value      { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-text-primary); line-height: 1; margin-bottom: var(--gap-xs); }
+.stat-card-label      { font-size: var(--font-size-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); }
 
-.energy-card .p-card-content,
-.p-card-content {
-  padding: var(--gap-xl);
-  color: var(--color-text-primary);
-}
-
-.p-card-title {
-  color: var(--color-text-primary);
-  font-weight: var(--font-weight-semibold);
-  font-size: var(--font-size-lg);
-  margin-bottom: var(--gap-md);
-}
-
-.p-card-subtitle {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-normal);
-}
-
-/* --------------------- STATUS INDICATORS --------------------- */
-.status-positive {
-  color: var(--color-accent-dark);
-}
-
-.status-negative {
-  color: var(--color-text-secondary);
-}
-
-.status-neutral {
-  color: var(--color-text-primary);
-}
-
-/* --------------------- POWER VALUE DISPLAY - BOLD --------------------- */
-.power-value {
-  font-size: var(--font-size-5xl);
-  font-weight: var(--font-weight-black);
-  line-height: 1;
-  margin: var(--gap-md) 0;
-  color: var(--color-text-primary);
-  letter-spacing: -0.03em;
-}
-
-.power-unit {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-medium);
-  margin-left: var(--gap-sm);
-  color: var(--color-text-secondary);
-}
-
-/* --------------------- PERCENTAGE DISPLAYS --------------------- */
-.percentage-display {
-  font-size: var(--font-size-4xl);
-  font-weight: var(--font-weight-black);
-  color: var(--color-text-primary);
-  line-height: 1;
-}
-
-.percentage-label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-  margin-top: var(--gap-xs);
-}
-
-/* --------------------- STAT CARDS --------------------- */
-.stat-card {
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: var(--gap-lg);
-  transition: all 0.2s ease;
-}
-
-.stat-card:hover {
-  border-color: var(--color-border-dark);
-  transform: translateY(-2px);
-}
-
-.stat-card-value {
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-text-primary);
-  line-height: 1;
-  margin-bottom: var(--gap-xs);
-}
-
-.stat-card-label {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  font-weight: var(--font-weight-medium);
-}
-
-.stat-card-accent {
-  background: var(--color-accent);
-  color: var(--color-bg-black);
-  border-color: var(--color-accent);
-}
-
-.stat-card-accent .stat-card-value,
-.stat-card-accent .stat-card-label {
-  color: var(--color-bg-black);
-}
-
-/* --------------------- DARK CARDS --------------------- */
-.card-dark {
-  background: var(--color-bg-black);
-  color: var(--color-text-white);
-  border: none;
-}
-
+.card-dark            { background: var(--color-text-primary); color: #fff; border: none; }
 .card-dark .stat-card-value,
 .card-dark .power-value,
-.card-dark .percentage-display {
-  color: var(--color-text-white);
-}
-
+.card-dark .percentage-display 
+                      { color: #fff; }
 .card-dark .stat-card-label,
-.card-dark .percentage-label {
-  color: var(--color-text-tertiary);
+.card-dark .percentage-label   
+                      { color: var(--color-text-tertiary); }
+
+/* ── Power / data display ─────────────────────────────────────────────────── */
+.power-value          { font-size: var(--font-size-5xl); font-weight: var(--font-weight-black); line-height: 1; margin: var(--gap-md) 0; color: var(--color-text-primary); letter-spacing: -0.03em; }
+.power-unit           { font-size: var(--font-size-xl); font-weight: var(--font-weight-medium); margin-left: var(--gap-sm); color: var(--color-text-secondary); }
+.percentage-display   { font-size: var(--font-size-4xl); font-weight: var(--font-weight-black); color: var(--color-text-primary); line-height: 1; }
+.percentage-label     { font-size: var(--font-size-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); margin-top: var(--gap-xs); }
+
+/* ── Chart / energy flow containers ──────────────────────────────────────── */
+.chart-container      { position: relative; height: 300px; padding: var(--gap-lg);background: var(--color-bg-secondary);border-radius: var(--radius-xl);border: 1px solid var(--color-border);}
+.energy-flow          { padding: var(--gap-xl);background: var(--color-bg-secondary);border-radius: var(--radius-xl);border: 1px solid var(--color-border);}
+
+/* ── Grid ─────────────────────────────────────────────────────────────────── */
+.grid                 { display: grid; gap: var(--gap-lg); }
+.grid-cols-1          { grid-template-columns: repeat(1, 1fr); }
+.grid-cols-2          { grid-template-columns: repeat(2, 1fr); }
+.grid-cols-3          { grid-template-columns: repeat(3, 1fr); }
+.grid-cols-4          { grid-template-columns: repeat(4, 1fr); }
+input                { width: 100%;padding: 0.4375rem 0.75rem;border: 1px solid var(--color-secondary-200);border-radius: var(--radius-sm, 4px);font-size: 0.8125rem;color: var(--color-primary);background: var(--color-secondary-50);outline: none;box-sizing: border-box;transition: border-color 0.15s;}
+input:focus          { border-color: var(--color-secondary-400); }
+@media (max-width: 1024px) {
+  .grid-cols-4, .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 768px) {
+  .grid-cols-4, .grid-cols-3, .grid-cols-2 { grid-template-columns: repeat(1, 1fr); }
+  .grid { gap: var(--gap-md); }
+  .power-value       { font-size: var(--font-size-3xl); }
+  .percentage-display{ font-size: var(--font-size-2xl); }
+  .stat-card-value   { font-size: var(--font-size-2xl); }
+}
+@media (max-width: 480px) {
+  html { font-size: 14px; }
+  .power-value { font-size: var(--font-size-2xl); }
 }
 
-/* --------------------- ENERGY FLOW - SIMPLIFIED --------------------- */
-.energy-flow {
-  padding: var(--gap-xl);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
+/* ── Loading screen ───────────────────────────────────────────────────────── */
+.loading-screen           { position: fixed; inset: 0;background: var(--color-bg-primary);display: flex; align-items: center; justify-content: center;z-index: 9999;}
+.loading-content          { text-align: center; }
+.loading-content i        { font-size: 3rem; color: var(--color-text-primary); margin-bottom: var(--gap-lg); }
+.loading-content p        { font-size: var(--font-size-lg); font-weight: var(--font-weight-medium); color: var(--color-text-primary); }
+.loading-substep          { font-size: var(--font-size-sm); color: var(--color-text-secondary); margin-top: var(--gap-sm); }
+
+/* ── Layout helpers ───────────────────────────────────────────────────────── */
+.info-section             { height: calc(100vh - 4rem); }
+.hero-card                { height: calc(100vh - 7rem);border-radius: var(--radius-lg); }
+.right-section            { min-width: 320px; }
+.canvas                   { min-height: calc(100vh - 4rem); overflow-y: auto; }
+.inner-canvas             { min-height: calc(100vh - 7rem); }
+
+/* ── Table hover ──────────────────────────────────────────────────────────── */
+.bh-table-responsive table.bh-table-hover tbody tr:hover {
+  background-color: var(--color-secondary-subtle);
 }
 
-/* Hide complex diagram */
-.diagram-wrapper,
-.dynamic-system-diagram,
-[class*="DynamicSystem"] {
+/* ── Hide legacy icon elements ────────────────────────────────────────────── */
+img[src*="stat"], img[src*="icon"], .status-icon, .summary-item-icon {
   display: none !important;
 }
+/* ── Range slider ─────────────────────────────────────────────────────────── */
+.range                  {width: 100%;-webkit-appearance: none;appearance: none;height: 3px;border-radius: var(--radius-md)!important;background: var(--color-secondary-50)!important;outline: none;cursor: pointer;}
+.range::-webkit-slider-thumb 
+                        { -webkit-appearance: none;appearance: none;width: 14px; height: 14px;border-radius: 50%;background: var(--color-primary);border: 2px solid var(--color-secondary-100);box-shadow: 0 0 0 1px var(--color-secondary-300);cursor: pointer;}
+.range::-moz-range-thumb 
+                        { width: 14px; height: 14px;border-radius: 50%;background: var(--color-primary);border: 2px solid var(--color-bg-secondary);box-shadow: 0 0 0 1px var(--color-secondary-300);cursor: pointer;}
+.card, .status-card, .chart-container 
+                        { background-color: var(--card-bg-color);border-radius: var(--border-radius);box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
-/* --------------------- CHART CONTAINER --------------------- */
-.chart-container {
-  position: relative;
-  height: 300px;
-  padding: var(--gap-lg);
-  background: var(--color-bg-secondary);
-  border-radius: var(--radius-xl);
-  border: 1px solid var(--color-border);
-}
-
-/* --------------------- UTILITY CLASSES --------------------- */
-.text-center { text-align: center; }
-.text-right { text-align: right; }
-.text-left { text-align: left; }
-
-.font-normal { font-weight: var(--font-weight-normal); }
-.font-medium { font-weight: var(--font-weight-medium); }
-.font-semibold { font-weight: var(--font-weight-semibold); }
-.font-bold { font-weight: var(--font-weight-bold); }
-.font-black { font-weight: var(--font-weight-black); }
-
-.text-primary { color: var(--color-text-primary) !important; }
-.text-secondary { color: var(--color-text-secondary) !important; }
-.text-tertiary { color: var(--color-text-tertiary) !important; }
-.text-white { color: var(--color-text-white) !important; }
-.text-accent { color: var(--color-accent) !important; }
-
-.bg-white { background: var(--color-bg-secondary) !important; }
-.bg-primary { background: var(--color-bg-primary) !important; }
-.bg-dark { background: var(--color-bg-dark) !important; }
-.bg-black { background: var(--color-bg-black) !important; }
-.bg-accent { background: var(--color-accent) !important; }
-
-.border-none { border: none !important; }
-.border { border: 1px solid var(--color-border) !important; }
-.border-dark { border: 1px solid var(--color-border-dark) !important; }
-
-.rounded-sm { border-radius: var(--radius-sm); }
-.rounded-md { border-radius: var(--radius-md); }
-.rounded-lg { border-radius: var(--radius-lg); }
-.rounded-xl { border-radius: var(--radius-xl); }
-.rounded-2xl { border-radius: var(--radius-2xl); }
-
-.shadow-sm { box-shadow: var(--shadow-sm); }
-.shadow-md { box-shadow: var(--shadow-md); }
-.shadow-lg { box-shadow: var(--shadow-lg); }
-.shadow-none { box-shadow: none; }
-
-.mb-2 { margin-bottom: 0.5rem; }
-.mb-4 { margin-bottom: 1rem; }
-.mb-6 { margin-bottom: 1.5rem; }
-.mb-8 { margin-bottom: 2rem; }
-
-.mt-2 { margin-top: 0.5rem; }
-.mt-4 { margin-top: 1rem; }
-.mt-6 { margin-top: 1.5rem; }
-.mt-8 { margin-top: 2rem; }
-
-.p-2 { padding: 0.5rem; }
-.p-4 { padding: 1rem; }
-.p-6 { padding: 1.5rem; }
-.p-8 { padding: 2rem; }
-
-.gap-sm { gap: var(--gap-sm); }
-.gap-md { gap: var(--gap-md); }
-.gap-lg { gap: var(--gap-lg); }
-.gap-xl { gap: var(--gap-xl); }
-
-/* --------------------- LOADING SCREEN --------------------- */
-.loading-screen {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--color-bg-primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-
-.loading-content {
-  text-align: center;
-}
-
-.loading-content i {
-  font-size: 3rem;
-  color: var(--color-bg-black);
-  margin-bottom: var(--gap-lg);
-}
-
-.loading-content p {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-primary);
-}
-
-.loading-substep {
-  font-size: var(--font-size-sm);
-  color: var(--color-text-secondary);
-  margin-top: var(--gap-sm);
-}
-.info-section          {height : calc(100vh - 6rem )}
-.hero-card             {height : calc(100vh - 6rem )}
-.sidebar-menu          {}
-
-/* --------------------- RESPONSIVE --------------------- */
-@media (max-width: 768px) {
-  .power-value          {font-size: var(--font-size-3xl);}
-  .percentage-display   {font-size: var(--font-size-2xl);}
-  .stat-card-value      {font-size: var(--font-size-2xl);}
-  .app-section          {border-radius: 1rem;font-size: 150%;}
-  :root{--text-sm: 1.25rem;}
-}
-
-@media (max-width: 480px) {
-  html {
-    font-size: 14px;
-  }
-  
-  .power-value {
-    font-size: var(--font-size-2xl);
-  }
-}
-
-main                          {height: calc(100vh - 6rem);overflow-y: auto;}
-.switch-toggle                {margin-top: 2rem;}
-.switch-toggle-content        {margin-left: 1rem;}
-.right-section                {min-width: 320px;}
-.bh-table-responsive table.bh-table-hover tbody tr:hover 
-                              {background-color: var(--color-gray-200);}
+/* ── Scrollbar styling ────────────────────────────────────────────────────── */
+/* Webkit (Chrome, Edge, Safari) */
+::-webkit-scrollbar               { width: 6px; height: 6px; }
+::-webkit-scrollbar-track         { background: white; border-radius: var(--radius-md, 3px); }
+::-webkit-scrollbar-thumb         { background: var(--color-secondary-300); border-radius: var(--radius-md, 3px); transition: background 0.15s; }
+::-webkit-scrollbar-thumb:hover   { background: var(--color-secondary-400); }
+::-webkit-scrollbar-corner        { background: var(--color-secondary-100); }
+::-webkit-scrollbar-buttons       { display:none; }
+ 
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: var(--color-secondary-300) var(--color-secondary-100); }

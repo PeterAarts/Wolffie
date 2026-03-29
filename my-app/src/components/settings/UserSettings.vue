@@ -321,16 +321,16 @@ onUnmounted(() => {
 <style scoped>
 .users-panel            { display: flex; flex-direction: column; gap: 0.875rem; }
 /* ── Role badges ─────────────────────────────────────────────────────────── */
-.role-badge             { display: inline-block;padding: 0.125rem 0.5rem;font-size: 0.65rem;font-weight: 600;text-transform: uppercase;letter-spacing: 0.05em;border-radius: 2px;background: var(--color-secondary-200);color: var(--color-text-secondary);}
+.role-badge             { display: inline-block;padding: 0.125rem 0.5rem;font-size: 0.65rem;font-weight: 400;letter-spacing: 0.05em;border-radius: 2px;background: var(--color-secondary-100);color: var(--color-text-secondary);}
 .role-badge--admin      { background: var(--color-primary); color: #fff; }
-.role-badge--user       { background: var(--color-secondary-200); color: var(--color-text-secondary); }
+.role-badge--user       { background: var(--color-secondary-100); color: var(--color-text-secondary); }
 .role-badge--viewer     { background: var(--color-secondary-100); color: var(--color-text-tertiary); }
 
 /* ── Meta cards (edit-mode summary row) ──────────────────────────────────── */
 .meta-section           { padding-bottom: 1.25rem; }
 .meta-grid              { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
-.meta-card              { padding: 0.5rem 0.75rem; }
-.meta-label             { display: block; font-size: 0.6rem; text-transform: uppercase; font-weight: 600; margin-bottom: 0.25rem; letter-spacing: 0.05em; }
+.meta-card              { padding: 0.5rem 0.75rem; border-radius:var(--radius-md); background-color: var(--color-secondary-50);}
+.meta-label             { display: block; font-size: 0.6rem; text-transform: lowercase; font-weight: 400; margin-bottom: 0.25rem; letter-spacing: 0.05em; }
 .meta-value             { font-size: 0.8rem; font-weight: 600; }
 
 /* ── Field helpers ───────────────────────────────────────────────────────── */

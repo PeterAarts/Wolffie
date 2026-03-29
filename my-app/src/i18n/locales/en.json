@@ -51,7 +51,8 @@
     "sourceModbus": "Local ModBus",
     "targetBuffer": "Target buffer",
     "home": "Home",
-    "clickForDetails": "click for details"
+    "clickForDetails": "click for details",
+    "alertConfirm": "Confirm & execute"
   },
   "cards": {
     "homeSolar": "Home & Solar",
@@ -137,6 +138,9 @@
     "connectionSuccess": "Connection successful",
     "connectionFailed": "Connection failed",
     "collectors": "Collectors",
+    "appearance":{
+      "theme": "color scheme"
+    },
     "users": {
       "title": "User Management",
       "description": "Manage accounts and authorization levels for this system.",
@@ -253,7 +257,15 @@
     "updated": "Updated",
     "created": "Created",
     "saved": "Saved",
-    "done": "Done"
+    "done": "Done",
+    "status":"Status",
+    "action":   "Action",
+    "executed": "Executed",
+    "reason":   "Reason",
+    "time":     "Time",
+    "days":     "days",
+    "saving":   "Saving...",
+    "executing": "Executing..."
   },
   "events": {
     "title": "System Events",
@@ -301,6 +313,7 @@
     "confirmCharge": "Charge battery at {watts}W until {targetSOC}% for {durationHours} hours?",
     "dischargeToGrid": "Discharge to Grid",
     "dischargeToGridDesc": "Export battery energy to the grid (useful for peak-rate exporting).",
+    "solarSurplus": "Solar Surplus",
     "minimumSOC": "Minimum SOC",
     "startDischarging": "Start Discharging",
     "dischargingStarted": "Discharging sequence started",
@@ -314,6 +327,46 @@
     "normalRestored": "Normal operation restored",
     "dischargeBlocked": "Battery discharge blocked",
     "strategyUpdated": "Strategy updated",
+    "tabStrategy":          "Strategy",
+    "tabHistory":           "History",
+    "tabEffectiveness":     "Effectiveness",
+    "unavailable":          "Unavailable",
+    "strategyConfig":       "Strategy configuration",
+    "configSaved":          "Configuration saved and applied",
+    "nightlyProfile":       "Nightly profile",
+    "calculatedAt":         "Calculated at",
+    "morningNeed":          "Morning need",
+    "solarStart":           "Solar start",
+    "solarForecast":        "Solar forecast",
+    "forecastConfidence":   "Forecast confidence",
+    "hourLabel":            "h{h}",
+    "last48Decisions":      "Last 48 decisions",
+    "noDecisions":          "No decisions recorded yet",
+    "period":               "Period",
+    "solarSelfConsumption": "Solar self-consumption",
+    "produced":             "produced",
+    "exported":             "exported",
+    "gridImport":           "Grid import",
+    "vsPriorPeriod":        "vs prior period",
+    "forecastAccuracy":     "Forecast accuracy",
+    "avgOverPeriod":        "Avg over {days} days",
+    "decisionAccuracy":     "Decision accuracy",
+    "correctDecisions":     "correct decisions",
+    "avgDailyCycles":       "Avg daily cycles",
+    "forecastTrend":        "Forecast accuracy trend",
+    "recentDecisions":      "Recent decisions",
+    "priceAtDecision":      "Price",
+    "dayAvgPrice":          "Day avg",
+    "correct":              "Correct",
+    "activate":             "Activate",
+    "currentDecision":      "Current decision",
+    "currentlyActive":      "Currently active",
+    "hoverForDetails":      "Hover a slot for details",
+    "noPlanYet":            "No plan generated yet",
+    "optional":             "Optional",
+    "requires":             "Requires",
+    "todaysPlan":           "Today's plan",
+    "validateStrategy":     "Validate with Energy Outlook",
     "strategy": {
       "smartEco": {
         "name": "Smart Eco",
@@ -543,5 +596,17 @@
       "statusErrors": "{n} consecutive error(s)",
       "statusStale": "No recent data",
       "statusHealthy": "Healthy"
-    }
+    },
+  "alerts": {
+    "openDrawer":   "Notifications",
+    "drawerTitle":  "Notifications",
+    "tabActive":    "Active",
+    "tabHistory":   "History",
+    "noActive":     "No active alerts",
+    "noHistory":    "No alert history yet",
+    "confirm":      "Confirm & execute",
+    "dismiss":      "Dismiss",
+    "resolvedAt":   "Resolved",
+    "reResolve":    "Re-resolve"
+  }
 }

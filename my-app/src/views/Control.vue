@@ -1,45 +1,42 @@
 <template>
-  <div class="flex flex-col md:flex-row h-full w-full overflow-hidden text-gray-900 bg-white">
-    
-    <aside class="w-full md:w-64 bg-gray-100 flex-shrink-0 flex flex-col">
-<!--      <div class="p-6 border-b border-gray-200 flex-shrink-0">
-        <h4 class="text-md font-bold text-gray-900 flex items-center gap-3">
-          <span>{{ t('control.title') }}</span>
-        </h4>
-      </div>-->
-
-      <nav class="flex-1 max-w-xs overflow-y-auto p-4 pe-0 space-y-2 controlmenu">
-        <button 
-          v-for="item in menuItems" 
-          :key="item.id"
-          @click="activeSection = item.id"
-          class="w-full flex items-center p-4 transition-all duration-200 group text-sm "
-          :class="activeSection === item.id 
-            ? 'bg-white ' 
-            : 'hover:bg-gray-200 text-gray-700'"
-        >
-          <span class="ms-3 font-medium">{{ item.label }}</span>
-        </button>
-      </nav>
-    </aside>
-
-    <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-white">
+  <div class="p-6">
+    <div class="flex flex-col md:flex-row  w-full overflow-hidden text-secondary-900 bg-secondary-100 p-6 rounded-lg shadow-xl inner-canvas">
       
-      <header class="flex-shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-6">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900">{{ activeLabel }}</h2>
-          <p class="text-sm text-gray-500 mt-1">{{ activeDescription }}</p>
-        </div>
-      </header>
+      <aside class="w-full  bg-secondary-100 flex-shrink-0 p-4 ps-0 flex flex-col">
 
-      <div class="flex-1 overflow-y-auto p-6 lg:p-8">
-        <div class="mx-auto">
-          <transition name="fade" mode="out-in">
-            <component :is="activeComponent" />
-          </transition>
+        <nav class="flex-1 max-w-xs overflow-y-auto  space-y-4 controlmenu">
+          <button 
+            v-for="item in menuItems" 
+            :key="item.id"
+            @click="activeSection = item.id"
+            class="w-full flex items-center p-4 transition-all duration-200 group text-sm "
+            :class="activeSection === item.id 
+              ? 'bg-white ' 
+              : 'hover:bg-secondary-200 text-secondary-700'"
+          >
+            <span class="ms-3 font-medium">{{ item.label }}</span>
+          </button>
+        </nav>
+      </aside>
+
+      <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-white rounded-lg inner-canvas-2">
+        
+        <header class="flex-shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-6">
+          <div>
+            <h2 class="text-xl font-bold text-secondary-900">{{ activeLabel }}</h2>
+            <p class="text-sm text-secondary-500 mt-1">{{ activeDescription }}</p>
+          </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-6 lg:p-8 mr-1">
+          <div class="mx-auto">
+            <transition name="fade" mode="out-in">
+              <component :is="activeComponent" />
+            </transition>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -98,7 +95,11 @@ onMounted(async () => {
 
 <style scoped>
 /* Standard fade transition for content area */
-.fade-enter-active, .fade-leave-active { transition: opacity 0.15s ease; }
-.fade-enter-from, .fade-leave-to { opacity: 0; }
-.controlmenu         {padding-right: 0px!important;;}
+.fade-enter-active, .fade-leave-active 
+                        { transition: opacity 0.15s ease; }
+.fade-enter-from, .fade-leave-to 
+                        { opacity: 0; }
+.controlmenu            { padding-right: 0px!important;}
+.inner-canvas           { height: calc(100vh - 7rem)}
+
 </style>

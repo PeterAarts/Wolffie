@@ -1,10 +1,10 @@
 <!-- src/App.vue - WITH AUTHENTICATION -->
 <template>
-  <div id="app-x" class="p-4">
+  <div id="app-x" class="p-0">
     <!-- Show loading screen during initial load -->
     <div v-if="isInitializing" class="loading-screen">
       <div class="loading-content">
-        <i class="pi pi-spin pi-spinner" style="font-size: 3rem"></i>
+        <i class="fa-light fa-spinner-third fa-spin" style="font-size: 3rem"></i>
         <p> Wolffie</p>
       </div>
     </div>
@@ -19,16 +19,15 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
 import { useConfigStore } from '@/stores/config';
-import { useSystemStore } from '@/stores/system';
+import { useStrategyStore } from '@/stores/strategy';
+import { useThemeStore } from '@/stores/theme';
 import ToastList from '@/components/common/ToastList.vue';
-import { useLocale } from '@/composables/useLocale';
-
 
 const router = useRouter();
 const authStore = useAuthStore();
 const configStore = useConfigStore();
-const systemStore = useSystemStore();
-const { t } = useLocale();
+const strategyStore = useStrategyStore();
+const themeStore = useThemeStore();
 const isInitializing = ref(true);
 
 /**
@@ -38,11 +37,8 @@ onMounted(async () => {
   console.log('- App starting...');
 
   try {
-    // STEP 0: Check authentication
-    console.log('- Checking authentication...');
-    const isAuthenticated = await authStore.initialize();
-
-    if (!isAuthenticated) {
+    // Auth was already initialized in main.js before mount — read the result directly
+    if (!authStore.isAuthenticated) {
       console.log('- Not authenticated, redirecting to login');
       router.push('/login');
       isInitializing.value = false;
@@ -51,11 +47,12 @@ onMounted(async () => {
 
     console.log('- Authenticated as:', authStore.user.username);
 
-    // PHASE 1: Load minimal config (1 API call)
-    // GET /api/setup/status
+    // Load theme from server — overwrites localStorage if DB has a different value
+    await themeStore.loadFromServer();
+
+    // Load minimal config: GET /api/setup/status
     await configStore.loadMinimalConfig();
 
-    // Check if setup is completed
     if (!configStore.setupCompleted) {
       console.log('⚠️  Setup not completed, redirecting to wizard');
       router.push('/setupWizard');
@@ -63,17 +60,12 @@ onMounted(async () => {
       return;
     }
 
-    // PHASE 2: Initialize system store (1 API call)
-    // GET /api/alphaess/collector-status
-    await systemStore.initialize();
-
-    console.log('✅ App initialization complete (3 API calls)');
+    console.log('✅ App initialization complete');
     console.log('📊 Dashboard ready');
+    strategyStore.startPolling();
 
   } catch (error) {
     console.error('❌ App initialization failed:', error);
-    
-    // If error is auth-related, redirect to login
     if (error.response?.status === 401) {
       router.push('/login');
     }

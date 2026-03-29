@@ -1,6 +1,6 @@
 <!-- src/components/settings/UniversalInfoPanel.vue -->
 <template>
-  <div class="grid bg-gray-100 p-4 gap-4 fields-container">
+  <div class="grid bg-secondary-100 p-4 gap-4 fields-container">
     <div 
       v-for="item in displayItems" 
       :key="item.label"
@@ -11,10 +11,10 @@
       </div>
       
       <div class="info-content">
-        <label :key="labelKey" class="text-xs text-gray-500 tracking-wider ml-1">{{ r(item.label) }}</label>
+        <label :key="labelKey" class="text-xs text-secondary-500 tracking-wider ml-1">{{ r(item.label) }}</label>
         
         <!-- Simple Value -->
-        <span v-if="!item.template" class="select-none text-sm font-normal bg-white p-2 text-gray-700 group-hover:text-gray-900 transition-colors">
+        <span v-if="!item.template" class="select-none text-sm font-normal bg-white p-2 text-secondary-700 group-hover:text-secondary-900 transition-colors">
           {{ getValue(item) }}
         </span>
 

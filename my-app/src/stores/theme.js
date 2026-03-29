@@ -7,17 +7,48 @@ export const THEME_PRESETS = {
   default: {
     label:           'Default',
     primaryColor:    '#0a0a0a',
-    secondaryColor:  '#6b7280',
+    secondaryColor:  '#9ca3b3',
     backgroundColor: '#f1f5f9',
+    cardBackgroundColor: '#ffffff',
     borderRadius:    '0px',
   },
-  blue: {
-    label:           'Blue',
-    primaryColor:    '#003d73',   // darker than #00529c
-    secondaryColor:  '#08a9ce',
+  olive: {
+    label:           'Olive',
+    primaryColor:    '#3d3028',
+    secondaryColor:  '#948d83',
     backgroundColor: '#f1f5f9',
-    borderRadius:    '0px',
+    cardBackgroundColor: '#ffffff',
+    borderRadius:    '0.5rem',
   },
+  ocean: {
+    label:           'Ocean',
+    primaryColor:    '#183e5f',
+    secondaryColor:  '#5597d1',
+    backgroundColor: '#f1f5f9',
+    cardBackgroundColor: '#e2e8f0',
+    borderRadius:    '.5rem',
+  },
+  carbon: {
+    label:           'Carbon Forest',
+    primaryColor:    '#3c5242', // Deep near-black for text/headers
+    secondaryColor:  '#8baf95', // High-energy "glowing" mint for power lines/charts
+    backgroundColor: '#1e1e1e', // Dark charcoal background
+    borderRadius:    '.5rem',     // Sharp, technical edge
+  },
+  solar: {
+    label:           'Solar Flare',
+    primaryColor:    '#0f172a', // Deep Navy
+    secondaryColor:  '#f59e0b', // Solar Amber (represents the sun/production)
+    backgroundColor: '#f8fafc', // Very light grey (almost white)
+    borderRadius:    '1rem',    // Soft, modern mobile-app feel
+  },
+  midnight: {
+    label:           'Midnight Rose',
+    primaryColor:    '#471717', // White text for dark mode
+    secondaryColor:  '#fb7185', // Soft Rose/Pink (great for discharge/consumption visibility)
+    backgroundColor: '#0f0f12', // Pure OLED Black
+    borderRadius:    '0.5rem',
+  }
 };
 
 const DEFAULTS = THEME_PRESETS.default;
@@ -48,8 +79,10 @@ function hsl(h, s, l) {
 }
 
 function radiusScale(base) {
-  const px = parseInt(base) || 0;
-  if (px === 0) return { sm: '0px', md: '0px', lg: '0px', xl: '0px', '2xl': '0px' };
+  let px = parseFloat(base);
+  if (base.includes('rem')) px = px * 16;
+  px = Math.round(px);
+  if (!px || px === 0) return { sm: '0px', md: '0px', lg: '0px', xl: '0px', '2xl': '0px' };
   return {
     sm:    `${Math.round(px * 0.5)}px`,
     md:    `${px}px`,
@@ -66,11 +99,12 @@ export const useThemeStore = defineStore('theme', () => {
     catch { return {}; }
   })();
 
-  const primaryColor    = ref(saved.primaryColor    ?? DEFAULTS.primaryColor);
-  const secondaryColor  = ref(saved.secondaryColor  ?? DEFAULTS.secondaryColor);
-  const backgroundColor = ref(saved.backgroundColor ?? DEFAULTS.backgroundColor);
-  const borderRadius    = ref(saved.borderRadius    ?? DEFAULTS.borderRadius);
-  const activePreset    = ref(saved.activePreset    ?? 'default');
+  const primaryColor        = ref(saved.primaryColor    ?? DEFAULTS.primaryColor);
+  const secondaryColor      = ref(saved.secondaryColor  ?? DEFAULTS.secondaryColor);
+  const backgroundColor     = ref(saved.backgroundColor ?? DEFAULTS.backgroundColor);
+  const borderRadius        = ref(saved.borderRadius    ?? DEFAULTS.borderRadius);
+  const cardBackgroundColor = ref(saved.cardBackgroundColor ?? DEFAULTS.cardBackgroundColor);
+  const activePreset        = ref(saved.activePreset    ?? 'default');
 
   function applyTheme() {
     const root = document.documentElement;
@@ -84,37 +118,47 @@ export const useThemeStore = defineStore('theme', () => {
     root.style.setProperty('--color-bg-dark',       primaryColor.value);
     root.style.setProperty('--color-bg-black',      primaryColor.value);
 
-    // ── Secondary scale ───────────────────────────────────────────────────────
-    // These MUST match the @theme names in main.css so Tailwind's generated
-    // classes (.bg-secondary-100 etc.) pick up the runtime values.
-    const s50  = hsl(sec.h, sec.s, sec.l + 44);  // lightest tint
-    const s100 = hsl(sec.h, sec.s, sec.l + 40);  // panel backgrounds
-    const s200 = hsl(sec.h, sec.s, sec.l + 28);  // borders, dividers
-    const s300 = hsl(sec.h, sec.s, sec.l + 14);  // hover borders
-    const s400 = secondaryColor.value;             // base / labels
+    // ── Secondary numbered scale (50–900) ─────────────────────────────────────
+    // sec.l is the lightness of the 500 stop (the base color itself).
+    // Offsets shift lightness up (lighter) or down (darker).
+    const s50  = hsl(sec.h, sec.s, sec.l + 42);
+    const s100 = hsl(sec.h, sec.s, sec.l + 36);
+    const s200 = hsl(sec.h, sec.s, sec.l + 28);
+    const s300 = hsl(sec.h, sec.s, sec.l + 18);
+    const s400 = hsl(sec.h, sec.s, sec.l +  8);
+    const s500 = secondaryColor.value;
+    const s600 = hsl(sec.h, sec.s, sec.l - 10);
+    const s700 = hsl(sec.h, sec.s, sec.l - 20);
+    const s800 = hsl(sec.h, sec.s, sec.l - 30);
+    const s900 = hsl(sec.h, sec.s, sec.l - 40);
 
     root.style.setProperty('--color-secondary-50',  s50);
     root.style.setProperty('--color-secondary-100', s100);
     root.style.setProperty('--color-secondary-200', s200);
     root.style.setProperty('--color-secondary-300', s300);
     root.style.setProperty('--color-secondary-400', s400);
+    root.style.setProperty('--color-secondary-500', s500);
+    root.style.setProperty('--color-secondary-600', s600);
+    root.style.setProperty('--color-secondary-700', s700);
+    root.style.setProperty('--color-secondary-800', s800);
+    root.style.setProperty('--color-secondary-900', s900);
 
-    // Keep legacy aliases in sync for any remaining CSS var references
-    root.style.setProperty('--color-secondary',         s400);
-    root.style.setProperty('--color-secondary-subtle',  s100);
-    root.style.setProperty('--color-secondary-muted',   s200);
-    root.style.setProperty('--color-secondary-hover',   s300);
-    root.style.setProperty('--color-text-secondary',    s400);
-    root.style.setProperty('--color-data-secondary',    s400);
-    root.style.setProperty('--color-text-tertiary',     hsl(sec.h, sec.s, sec.l + 20));
-    root.style.setProperty('--color-border',            s200);
-    root.style.setProperty('--color-border-dark',       s300);
-    root.style.setProperty('--color-bg-secondary',      s100);
+    // ── Named aliases (used by main.css / control.css) ────────────────────────
+    root.style.setProperty('--color-secondary',        s500);
+    root.style.setProperty('--color-secondary-subtle', s50);
+    root.style.setProperty('--color-secondary-muted',  s200);
+    root.style.setProperty('--color-secondary-hover',  s300);
+    root.style.setProperty('--color-text-secondary',   s500);
+    root.style.setProperty('--color-data-secondary',   s500);
+    root.style.setProperty('--color-text-tertiary',    s400);
+    root.style.setProperty('--color-border',           s200);
+    root.style.setProperty('--color-border-dark',      s300);
+    root.style.setProperty('--color-bg-secondary',     s50);
 
-    // ── Background ───────────────────────────────────────────────────────────
+    // ── Background ────────────────────────────────────────────────────────────
     root.style.setProperty('--color-background',  backgroundColor.value);
     root.style.setProperty('--color-bg-primary',  backgroundColor.value);
-
+    root.style.setProperty('--card-bg-color', cardBackgroundColor.value);
     // ── Border radius scale ───────────────────────────────────────────────────
     root.style.setProperty('--radius-sm',     r.sm);
     root.style.setProperty('--radius-md',     r.md);
@@ -132,9 +176,31 @@ export const useThemeStore = defineStore('theme', () => {
     primaryColor.value    = preset.primaryColor;
     secondaryColor.value  = preset.secondaryColor;
     backgroundColor.value = preset.backgroundColor;
+    cardBackgroundColor.value = preset.cardBackgroundColor;
     borderRadius.value    = preset.borderRadius;
     activePreset.value    = presetKey;
     applyTheme();
+    // Persist to server (fire-and-forget)
+    fetch('/api/settings/core', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ theme: presetKey }),
+    }).catch(err => console.warn('[theme] failed to persist to server:', err));
+  }
+
+  async function loadFromServer() {
+    try {
+      const res  = await fetch('/api/settings/core', { credentials: 'include' });
+      const data = await res.json();
+      const settings = data.settings ?? data;
+      const serverPreset = settings.theme ?? settings['system.theme'];
+      if (serverPreset && THEME_PRESETS[serverPreset] && serverPreset !== activePreset.value) {
+        applyPreset(serverPreset);
+      }
+    } catch (err) {
+      console.warn('[theme] could not load theme from server, using localStorage fallback:', err);
+    }
   }
 
   function resetToDefaults() {
@@ -147,21 +213,23 @@ export const useThemeStore = defineStore('theme', () => {
       secondaryColor:  secondaryColor.value,
       backgroundColor: backgroundColor.value,
       borderRadius:    borderRadius.value,
+      cardBackgroundColor: cardBackgroundColor.value,
       activePreset:    activePreset.value,
     }));
   }
 
-  // Auto-apply whenever any value changes
   watch([primaryColor, secondaryColor, backgroundColor, borderRadius], applyTheme);
 
   return {
     primaryColor,
     secondaryColor,
     backgroundColor,
+    cardBackgroundColor,
     borderRadius,
     activePreset,
     applyTheme,
     applyPreset,
+    loadFromServer,
     resetToDefaults,
     PRESETS: THEME_PRESETS,
   };

@@ -14,6 +14,12 @@ const pinia = createPinia();
 app.use(pinia);
 app.use(i18n);
 
+// Apply theme from localStorage immediately — before any component renders.
+// This ensures the login screen already uses the correct theme.
+import { useThemeStore } from '@/stores/theme';
+const themeStore = useThemeStore();
+themeStore.applyTheme();
+
 import { useAuthStore } from './stores/auth';
 const authStore = useAuthStore();
 const schemaStore = useSchemaStore();

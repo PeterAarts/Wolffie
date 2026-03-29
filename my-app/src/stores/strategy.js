@@ -1,73 +1,150 @@
+// src/stores/strategy.js
+// Polls /api/strategies/active every 60 seconds.
+// No WebSocket dependency — strategy state changes are low-frequency.
+
 import { defineStore } from 'pinia';
-import socket from '@/services/websocket'; // Zorg dat je toegang hebt tot je socket instantie
+import { ref, computed } from 'vue';
+import apiClient from '@/services/api';
 
-export const useStrategyStore = defineStore('strategy', {
-  state: () => ({
-    activeStrategy: 'Initialiseert...',
-    targetBufferSoc: null,
-    targetBufferKwh: null,
-    reasoning: 'Wachten op data...',
-    isChargingFromGrid: false,
-    isManualOverride: false, // Nieuw: houdt bij of de gebruiker handmatig ingrijpt
-    lastUpdate: null,
-    forecast: {
-      todayKwh: 0,
-      tomorrowKwh: 0,
-      accuracy: 0
+export const useStrategyStore = defineStore('strategy', () => {
+
+  // ── State ──────────────────────────────────────────────────────────────────
+  const activeStrategy   = ref(null);   // full strategy meta object
+  const decision         = ref(null);   // latest { action, reason, evaluatedAt }
+  const dayPlan          = ref([]);     // rolling plan slots
+  const windowStart      = ref(null);   // ISO datetime when window begins
+  const windowHours      = ref(24);     // planning horizon in hours
+  const config           = ref({});     // active strategy config
+  const isLoading        = ref(false);
+  const lastUpdate       = ref(null);
+  const error            = ref(null);
+
+  let _pollTimer = null;
+
+  // ── Computed ───────────────────────────────────────────────────────────────
+  const activeId = computed(() => activeStrategy.value?.id ?? null);
+
+  // Used by Dashboard.vue battery card
+  const targetBufferSoc = computed(() => {
+    if (!config.value?.nightlyProfile) return null;
+    const profile = config.value.nightlyProfile;
+    if (!profile.morningKwhNeeded) return null;
+    const batteryCapacityKwh = config.value.batteryCapacityKwh ?? 11.2;
+    return Math.ceil((profile.morningKwhNeeded / batteryCapacityKwh) * 100);
+  });
+
+  const formattedTargetBuffer = computed(() => {
+    if (targetBufferSoc.value === null) return null;
+    const kwh = config.value.nightlyProfile?.morningKwhNeeded;
+    return kwh != null
+      ? `${targetBufferSoc.value}% (${kwh.toFixed(1)} kWh)`
+      : `${targetBufferSoc.value}%`;
+  });
+
+  // ── Actions ────────────────────────────────────────────────────────────────
+
+  /**
+   * Safely parse a value that may arrive as a JSON string or already be the
+   * correct type. Returns `fallback` if parsing fails or the type is wrong.
+   *
+   * This handles two backend serialisation quirks:
+   *  - dayPlan  : stored as JSON TEXT in MySQL, arrives as a string
+   *  - config   : double-serialised (JSON.stringify called on an already-string value)
+   */
+  function _safeParse(value, expectedType, fallback) {
+    if (value === null || value === undefined) return fallback;
+    // Already the correct type — return as-is
+    if (expectedType === 'array'  && Array.isArray(value)) return value;
+    if (expectedType === 'object' && typeof value === 'object' && !Array.isArray(value)) return value;
+    // String — attempt JSON.parse
+    if (typeof value === 'string') {
+      try {
+        const parsed = JSON.parse(value);
+        if (expectedType === 'array')  return Array.isArray(parsed) ? parsed : fallback;
+        if (expectedType === 'object') return (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) ? parsed : fallback;
+        return parsed;
+      } catch {
+        console.warn('strategyStore._safeParse: invalid JSON, value starts with:', String(value).slice(0, 60));
+        return fallback;
+      }
     }
-  }),
+    return fallback;
+  }
 
-  actions: {
-    /**
-     * Verwerkt updates die binnenkomen via WebSockets
-     */
-    updateFromSocket(data) {
-      if (data.active_strategy) this.activeStrategy = data.active_strategy;
-      if (data.target_buffer_soc !== undefined) this.targetBufferSoc = data.target_buffer_soc;
-      if (data.target_buffer_kwh !== undefined) this.targetBufferKwh = data.target_buffer_kwh;
-      if (data.reason) this.reasoning = data.reason;
-      if (data.is_charging !== undefined) this.isChargingFromGrid = data.is_charging;
-      if (data.is_manual !== undefined) this.isManualOverride = data.is_manual;
-      
-      this.lastUpdate = new Date();
-    },
+  async function fetchActive() {
+    try {
+      isLoading.value = true;
+      error.value     = null;
 
-    /**
-     * Handmatige override inschakelen of uitschakelen
-     * Stuurt een commando naar de Node.js backend
-     */
-    async toggleManualOverride(status) {
-      this.isManualOverride = status;
-      // Stuur het commando via de websocket naar de StrategyManager op de server
-      socket.emit('strategy_control', {
-        command: status ? 'ENABLE_MANUAL' : 'DISABLE_MANUAL',
-        timestamp: new Date()
-      });
-    },
+      const res  = await apiClient.get('/strategies/active');
+      const data = res.data;
 
-    /**
-     * Update de solar forecast data
-     */
-    updateForecast(data) {
-      this.forecast.todayKwh = data.today_kwh || 0;
-      this.forecast.tomorrowKwh = data.tomorrow_kwh || 0;
-      this.forecast.accuracy = data.accuracy_pct || 0;
-    }
-  },
+      activeStrategy.value = data.strategy    ?? null;
+      decision.value       = data.decision    ?? null;
+      windowStart.value    = data.windowStart ?? null;
+      windowHours.value    = data.windowHours ?? 24;
+      lastUpdate.value     = new Date();
 
-  getters: {
-    isSystemControlled: (state) => state.isChargingFromGrid && !state.isManualOverride,
-    
-    formattedTargetBuffer: (state) => {
-      if (state.targetBufferSoc === null) return 'N/A';
-      return `${state.targetBufferSoc}% (${state.targetBufferKwh?.toFixed(1) || 0} kWh)`;
-    },
+      // dayPlan arrives as a JSON string from MySQL TEXT column — parse to array
+      dayPlan.value = _safeParse(data.dayPlan, 'array', []);
 
-    // Handig voor de UI: bepaal de kleur van de status-indicators
-    statusColor: (state) => {
-      if (state.isManualOverride) return '#ff9800'; // Oranje voor handmatig
-      if (state.isChargingFromGrid) return '#4caf50'; // Groen voor actief laden
-      return '#9e9e9e'; // Grijs voor idle
+      // config may be double-serialised (stored as JSON string, serialised again
+      // by Express) — parse until we have a plain object
+      const rawConfig = data.strategy?.config ?? {};
+      config.value    = _safeParse(rawConfig, 'object', {});
+
+    } catch (e) {
+      error.value = e.message;
+      console.error('strategyStore.fetchActive failed:', e.message);
+    } finally {
+      isLoading.value = false;
     }
   }
+
+  async function setStrategy(strategyId) {
+    try {
+      isLoading.value = true;
+      await apiClient.post('/strategies/active', { strategyId });
+      await fetchActive();
+    } catch (e) {
+      error.value = e.message;
+      throw e;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  async function saveConfig(configPatch) {
+    try {
+      const res = await apiClient.post('/strategies/config', configPatch);
+      config.value = res.data?.config ?? { ...config.value, ...configPatch };
+    } catch (e) {
+      error.value = e.message;
+      throw e;
+    }
+  }
+
+  function startPolling(intervalMs = 60_000) {
+    stopPolling();
+    fetchActive();
+    _pollTimer = setInterval(fetchActive, intervalMs);
+  }
+
+  function stopPolling() {
+    if (_pollTimer) {
+      clearInterval(_pollTimer);
+      _pollTimer = null;
+    }
+  }
+
+  return {
+    // state
+    activeStrategy, decision, dayPlan, config,
+    windowStart, windowHours,
+    isLoading, lastUpdate, error,
+    // computed
+    activeId, targetBufferSoc, formattedTargetBuffer,
+    // actions
+    fetchActive, setStrategy, saveConfig, startPolling, stopPolling,
+  };
 });

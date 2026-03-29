@@ -65,7 +65,7 @@
       :sortable="true"
       :pagination="true"
       :page-size="pageSize"
-      :page-size-options="[10, 25, 50]"
+      :page-size-options="[7, 15, 25, 50]"
       :show-numbers-count="5"
       :no-data-content="emptyText || t('common.noItems')"
       skin="bh-table-hover"
@@ -93,7 +93,7 @@ const props = defineProps({
   columns:    { type: Array,   default: () => [] },
   loading:    { type: Boolean, default: false },
   search:     { type: String,  default: '' },
-  pageSize:   { type: Number,  default: 10 },
+  pageSize:   { type: Number,  default: 7 },
   emptyText:  { type: String,  default: '' },
   showSearch: { type: Boolean, default: true },
 });
@@ -130,20 +130,9 @@ const slotColumns = computed(() =>
  */
 
 /* ── Wrapper ──────────────────────────────────────────────────────────────── */
-.app-table {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
+.app-table                { display: flex;flex-direction: column;gap: 0.75rem;}
 /* ── Toolbar ──────────────────────────────────────────────────────────────── */
-.app-table__toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
-}
+.app-table__toolbar       { display: flex;align-items: center;justify-content: space-between;gap: 0.75rem;flex-wrap: wrap;}
 .app-table__toolbar-left  { display: flex; align-items: center; gap: 0.5rem; flex: 1; }
 .app-table__toolbar-right { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
 
@@ -162,7 +151,7 @@ const slotColumns = computed(() =>
 .app-table__search-input {
   padding: 0.3125rem 0.725rem 0.3125rem 1.5rem;
   border: 1px solid #d1d5db;
-  border-radius: 0px;
+ border-radius : var(--radius-sm);
   font-size: 0.78125rem;
   color: #111827;
   background: #fff;
@@ -170,7 +159,7 @@ const slotColumns = computed(() =>
   width: 30px;
   transition: border-color 0.15s, width 0.2s;
 }
-.app-table__search-input:focus       { border-color: var(--color-gray-200); width: 200px; }
+.app-table__search-input:focus       { border-color: var(--color-secondary-200); width: 200px; }
 .app-table__search-input::-webkit-search-cancel-button { display: none; }
 
 /* ── Strip library card shadow / padding ──────────────────────────────────── */
@@ -212,7 +201,7 @@ const slotColumns = computed(() =>
 }
 
 /* Sort indicators */
-.app-table__datatable th .bh-sort-icon         { color: var(--color-gray-500); margin-left: 3px; }
+.app-table__datatable th .bh-sort-icon         { color: var(--color-secondary-500); margin-left: 3px; }
 .app-table__datatable th.asc  .bh-sort-icon,
 .app-table__datatable th.desc .bh-sort-icon    { color: #374151; }
 
@@ -257,7 +246,7 @@ const slotColumns = computed(() =>
 .app-table__datatable .bh-page-size select {
   padding: 0.25rem 0.5rem;
   border: 1px solid #d1d5db;
-  border-radius: 0px;
+ border-radius : var(--radius-sm);
   font-size: 0.78rem;
   color: #374151;
   background: #fff;
@@ -302,7 +291,7 @@ const slotColumns = computed(() =>
   background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
   background-size: 200% 100%;
   animation: bh-shimmer 1.2s infinite;
-  border-radius: 0px;
+ border-radius : var(--radius-sm);
   height: 14px;
 }
 @keyframes bh-shimmer {
@@ -317,12 +306,12 @@ const slotColumns = computed(() =>
   font-size: 0.875rem;
   color: #9ca3af;
   border: 1px dashed #d1d5db;
-  border-radius: 0px;
+ border-radius : var(--radius-sm);
 }
 .bh-pagination .bh-page-item {
     display: grid;
 
-    border-radius: 0px;
+   border-radius : var(--radius-sm);
     border: 0px solid #0e17264d;
 
 }

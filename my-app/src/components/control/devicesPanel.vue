@@ -24,19 +24,19 @@
       </template>
 
       <template #_status="{ value }">
-        <i :class="value.enabled ? 'fa-solid fa-circle text-gray-500' : 'fa-light fa-circle text-gray-400'" />
+        <i :class="value.enabled ? 'fa-solid fa-circle text-secondary-500' : 'fa-light fa-circle text-secondary-400'" />
       </template>
 
       <template #name="{ value }">
-        <div class="text-sm font-medium text-gray-900">{{ value.name }}</div>
+        <div class="text-sm font-medium text-secondary-900">{{ value.name }}</div>
       </template>
 
       <template #_product="{ value }">
-        <div class="text-sm font-normal text-gray-500">{{ value.module }} - {{ value.product_type }}</div>
+        <div class="text-sm font-normal text-secondary-500">{{ value.module }} - {{ value.product_type }}</div>
       </template>
 
       <template #ip_address="{ value }">
-        <div class="text-xs font-normal text-gray-500">{{ value.ip_address }}</div>
+        <div class="text-xs font-normal text-secondary-500">{{ value.ip_address }}</div>
       </template>
 
       <template #_led="{ value }">
@@ -44,12 +44,12 @@
           <div class="led-bar">
             <div class="led-bar__fill" :style="{ width: ((value.brightness || 0) / 100 * 100) + '%' }" />
           </div>
-          <small class="text-xs text-gray-400">{{ value.brightness || 0 }}%</small>
+          <small class="text-xs text-secondary-400">{{ value.brightness || 0 }}%</small>
         </div>
       </template>
 
       <template #_lock="{ value }">
-        <i v-if="value.switch_lock != null" :class="value.switch_lock === 1 ? 'fa-solid fa-lock text-gray-700' : 'fa-light fa-lock-open text-gray-400'" />
+        <i v-if="value.switch_lock != null" :class="value.switch_lock === 1 ? 'fa-solid fa-lock text-secondary-700' : 'fa-light fa-lock-open text-secondary-400'" />
         <span v-else class="cell-secondary">—</span>
       </template>
 
@@ -90,7 +90,7 @@
             </div>
             <div class="meta-card">
               <label>{{ t('control.devices.usage_today') }}</label>
-              <div class="meta-value text-gray-600 font-bold">{{ activeForm.usage_today?.toFixed(2) }} kWh</div>
+              <div class="meta-value text-secondary-600 font-bold">{{ activeForm.usage_today?.toFixed(2) }} kWh</div>
             </div>
           </div>
         </div>
@@ -267,7 +267,7 @@ const deviceSchemaFields = computed(() => {
 });
 
 const defaultForm = () => ({ 
-  name: '', ip_address: '', port: 80, enabled: true, brightness: 100, switch_lock: 0, priority: 5, module: 'homewizard' 
+  name: '', ip_address: '', port: 80, enabled: true, brightness:250, switch_lock: 0, priority: 5, module: 'homewizard' 
 });
 const form = ref(defaultForm());
 
@@ -414,7 +414,7 @@ onUnmounted(() => {
 .graph-label              { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; color: #9ca3af; margin-bottom: 4px; }
 .drawer-meta-section      { padding-bottom: 1.25rem; }
 .meta-grid                { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
-.meta-card                { background: var(--color-gray-100); padding: 0.5rem;  }
+.meta-card                { background: var(--color-secondary-100); padding: 0.5rem;  }
 .meta-card label          { display: block; font-size: 0.6rem; text-transform: uppercase; color: #6b7280; font-weight: 600; }
 .meta-value               { font-size: 0.75rem; font-weight: 600; color: #111827; }
 .form-field--port         { width: 80px; }

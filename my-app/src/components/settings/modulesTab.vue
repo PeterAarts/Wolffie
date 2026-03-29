@@ -42,13 +42,13 @@
 
       <!-- ── Name + description ────────────────────────────────────────── -->
       <template #name="{ value }">
-        <div class="text-sm font-medium text-gray-900">{{ value.name }}</div>
-        <div class="text-xs text-gray-400 mt-0.5">{{ value.description }}</div>
+        <div class="text-sm font-medium text-secondary-900">{{ value.name }}</div>
+        <div class="text-xs text-secondary-400 mt-0.5">{{ value.description }}</div>
       </template>
 
       <!-- ── Version ───────────────────────────────────────────────────── -->
       <template #version="{ value }">
-        <span class="font-mono text-xs text-gray-600">
+        <span class="font-mono text-xs text-secondary-600">
           {{ value.version ? 'v' + value.version : '—' }}
         </span>
       </template>
@@ -65,7 +65,7 @@
             {{ formatLastRun(value._collector) }}
           </span>
         </template>
-        <span v-else class="text-xs text-gray-300">—</span>
+        <span v-else class="text-xs text-secondary-300">—</span>
       </template>
 
       <!-- ── Next run ──────────────────────────────────────────────────── -->
@@ -73,12 +73,12 @@
         <template v-if="value._collector">
           <span class="meta-value">{{ formatNextRun(value._collector) }}</span>
         </template>
-        <span v-else class="text-xs text-gray-300">—</span>
+        <span v-else class="text-xs text-secondary-300">—</span>
       </template>
 
       <!-- ── Interval ──────────────────────────────────────────────────── -->
       <template #_interval="{ value }">
-        <span class="font-mono text-xs text-gray-500">
+        <span class="font-mono text-xs text-secondary-500">
           {{ value.collector ? formatInterval(value.collector.interval) : '—' }}
         </span>
       </template>
@@ -91,7 +91,7 @@
             {{ value._collector.consecutiveErrors }}
           </span>
         </template>
-        <span v-else class="text-xs text-gray-300">—</span>
+        <span v-else class="text-xs text-secondary-300">—</span>
       </template>
 
       <!-- ── Actions ───────────────────────────────────────────────────── -->
@@ -164,7 +164,7 @@
         : t('modulesTab.install_title')"
     >
       <div class="drawer-section">
-        <p class="text-xs text-gray-400 mb-4">{{ t('modulesTab.install_desc') }}</p>
+        <p class="text-xs text-secondary-400 mb-4">{{ t('modulesTab.install_desc') }}</p>
 
         <div
           class="drop-zone"
@@ -179,21 +179,21 @@
           @click="fileInput.click()"
         >
           <input ref="fileInput" type="file" accept=".zip" class="hidden" @change="onFileSelected" />
-          <i class="fa-light fa-cloud-arrow-up text-2xl text-gray-400" />
+          <i class="fa-light fa-cloud-arrow-up text-2xl text-secondary-400" />
           <div class="text-center">
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-secondary-600">
               {{ t('modulesTab.drop') }}
               <span class="underline cursor-pointer">{{ t('modulesTab.browse') }}</span>
             </p>
-            <p class="text-xs text-gray-400 mt-0.5">{{ t('modulesTab.zip_hint') }}</p>
+            <p class="text-xs text-secondary-400 mt-0.5">{{ t('modulesTab.zip_hint') }}</p>
           </div>
         </div>
 
         <div v-if="pendingFile" class="mt-3 space-y-2">
-          <div class="flex items-center gap-2 p-4 bg-gray-100 border border-gray-200 rounded text-sm text-gray-700 w-fit">
-            <i class="fa-light fa-file-zipper text-gray-400" />
+          <div class="flex items-center gap-2 p-4 bg-secondary-100 border border-secondary-200 rounded text-sm text-secondary-700 w-fit">
+            <i class="fa-light fa-file-zipper text-secondary-400" />
             <span>{{ pendingFile.name }}</span>
-            <button class="ml-1 text-gray-400 hover:text-gray-600" @click.stop="clearPending">
+            <button class="ml-1 text-secondary-400 hover:text-secondary-600" @click.stop="clearPending">
               <i class="fa-solid fa-xmark text-xs" />
             </button>
           </div>
@@ -210,7 +210,7 @@
               {{ t('modulesTab.new') }}: <span class="font-semibold ml-1">{{ pendingManifest.name }}</span>
             </div>
           </div>
-          <div v-else-if="readingManifest" class="flex items-center gap-1.5 text-xs text-gray-400">
+          <div v-else-if="readingManifest" class="flex items-center gap-1.5 text-xs text-secondary-400">
             <i class="fa-duotone fa-spinner-third fa-spin" />
             {{ t('modulesTab.reading') }}
           </div>
@@ -293,7 +293,7 @@
           <div class="meta-card">
             <label>{{ t('common.status') }}</label>
             <div class="meta-value flex items-center gap-1">
-              <i :class="manifestDrawer.module.enabled ? 'fa-solid fa-circle text-green-500' : 'fa-solid fa-circle text-gray-300'" style="font-size:8px" />
+              <i :class="manifestDrawer.module.enabled ? 'fa-solid fa-circle text-green-500' : 'fa-solid fa-circle text-secondary-300'" style="font-size:8px" />
               {{ manifestDrawer.module.enabled ? (te('common.enabled') ? t('common.enabled') : 'Enabled') : (te('common.disabled') ? t('common.disabled') : 'Disabled') }}
             </div>
           </div>
@@ -320,7 +320,7 @@
         </div>
 
         <div v-if="manifestDrawer.module.capabilities" class="space-y-1">
-          <div class="text-xs font-semibold text-gray-500 uppercase tracking-wide">{{ t('modulesTab.capabilities') }}</div>
+          <div class="manifest-section__title">{{ t('modulesTab.capabilities') }}</div>
           <div class="flex flex-wrap gap-1.5">
             <span
               v-for="(val, cap) in manifestDrawer.module.capabilities" :key="cap"
@@ -348,7 +348,7 @@
           <div class="manifest-section__title">{{ t('modulesTab.manifest_routes') }}</div>
           <div v-if="manifestDrawer.module.routes.prefix" class="manifest-row">
             <span>{{ t('modulesTab.manifest_prefix') }}</span>
-            <span class="font-mono text-gray-600">{{ manifestDrawer.module.routes.prefix }}</span>
+            <span class="font-mono text-secondary-600">{{ manifestDrawer.module.routes.prefix }}</span>
           </div>
         </div>
 
@@ -356,13 +356,13 @@
           <div class="manifest-section__title">{{ t('modulesTab.manifest_dependencies') }}</div>
           <div v-for="(ver, dep) in manifestDrawer.module.dependencies" :key="dep" class="manifest-row">
             <span class="font-mono">{{ dep }}</span>
-            <span class="font-mono text-gray-500">{{ ver }}</span>
+            <span class="font-mono text-secondary-500">{{ ver }}</span>
           </div>
         </div>
 
         <div v-if="manifestDrawer.module._lock?.checksum" class="manifest-section">
           <div class="manifest-section__title">SHA-256</div>
-          <p class="font-mono text-[10px] text-gray-400 break-all mt-1">{{ manifestDrawer.module._lock.checksum }}</p>
+          <p class="font-mono text-[10px] text-secondary-400 break-all mt-1">{{ manifestDrawer.module._lock.checksum }}</p>
         </div>
       </div>
 
@@ -739,76 +739,56 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.modules-panel { display: flex; flex-direction: column; gap: 0.875rem; }
-
+.modules-panel            { display: flex; flex-direction: column; gap: 0.875rem; }
 /* Manager badge */
-.manager-badge {
-  display: inline-flex; align-items: center; gap: 0.375rem;
-  font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em;
-  text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 20px;
-}
-.manager-badge--ok  { background: #f0fdf4; color: #16a34a; }
-.manager-badge--err { background: #fef2f2; color: #dc2626; }
-.manager-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+.manager-badge            { display: inline-flex; align-items: center; gap: 0.375rem;font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em;text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 20px;}
+.manager-badge--ok        { background: #f0fdf4; color: #16a34a; }
+.manager-badge--err       { background: #fef2f2; color: #dc2626; }
+.manager-dot              { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
-.last-refresh { font-size: 0.75rem; color: #94a3b8; }
+.last-refresh             { font-size: 0.75rem; color: #94a3b8; }
 
 /* Status dots */
-.status-dot   { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.dot--ok       { background: #22c55e; }
-.dot--error    { background: #ef4444; }
-.dot--paused   { background: #f59e0b; }
-.dot--stale    { background: #94a3b8; }
-.dot--disabled { background: #cbd5e1; }
+.status-dot               { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dot--ok                  { background: #22c55e; }
+.dot--error               { background: #ef4444; }
+.dot--paused              { background: #f59e0b; }
+.dot--stale               { background: #94a3b8; }
+.dot--disabled            { background: #cbd5e1; }
 
 /* Type badge */
-.type-badge {
-  display: inline-block; padding: 0.125rem 0.5rem;
-  font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
-  border-radius: 2px; background: #f3f4f6; color: #374151;
-}
-
+.type-badge               { display: inline-block; padding: 0.125rem 0.5rem;font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;border-radius: 2px; background: var(--color-secondary-100); color: #374151;}
 /* Runtime values */
-.meta-value      { font-size: 0.8125rem; color: #334155; font-weight: 500; }
-.meta-value.stale { color: #94a3b8; }
-.error-count {
-  font-size: 0.75rem; color: #ef4444; font-weight: 500;
-  display: inline-flex; align-items: center; gap: 0.25rem;
-}
-
+.meta-value               { font-size: 0.8125rem; color: var(--color-secondary-300); font-weight: 500; }
+.meta-value.stale         { color: #94a3b8; }
+.meta-grid                { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+.meta-card                { background: var(--color-secondary-50); padding: 0.5rem; border-radius: var(--radius-md); }
+.meta-card label          { display: block; font-size: 0.7rem; text-transform: lowercase; color: var(--color-secondary-400); font-weight: 400; }
+.meta-value               { font-size: 0.75rem; font-weight: 600; color: var(--color-primary); margin-top: 0.125rem; }
+.error-count              { font-size: 0.75rem; color: #ef4444; font-weight: 500;display: inline-flex; align-items: center; gap: 0.25rem;}
 /* Error banner */
-.error-banner {
-  padding: 0.75rem 1.25rem; font-size: 0.8125rem;
-  color: #b91c1c; background: #fef2f2;
-  border: 1px solid #fecaca; border-radius: 4px;
-}
+.error-banner             { padding: 0.75rem 1.25rem; font-size: 0.8125rem;color: #b91c1c; background: #fef2f2;border: 1px solid #fecaca; border-radius:var(--radius-md)}
 
 /* Drop zone */
-.drop-zone {
-  border: 2px dashed #d1d5db; border-radius: 4px; padding: 2rem;
-  display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
-  cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #f9fafb;
-}
-.drop-zone:hover, .drop-zone--drag { border-color: #9ca3af; background: #f3f4f6; }
-.drop-zone--error    { border-color: #fca5a5; background: #fff5f5; }
-.drop-zone--has-file { border-color: #6b7280; }
+.drop-zone                { border: 2px dashed #d1d5db; border-radius: 4px; padding: 2rem;display: flex; flex-direction: column; align-items: center; gap: 0.75rem;cursor: pointer; transition: border-color 0.15s, background 0.15s; background: #f9fafb;}
+.drop-zone:hover, .drop-zone--drag 
+                          { border-color: #9ca3af; background: #f3f4f6; }
+.drop-zone--error         { border-color: #fca5a5; background: #fff5f5; }
+.drop-zone--has-file      { border-color: #6b7280; }
 
 /* Manifest drawer */
-.manifest-section        { border-top: 1px solid #f3f4f6; padding-top: 0.75rem; }
-.manifest-section__title { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; margin-bottom: 0.5rem; }
-.manifest-row            { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.25rem 0; font-size: 0.8rem; color: #374151; border-bottom: 1px solid #f9fafb; }
-.manifest-row:last-child { border-bottom: none; }
-.manifest-row > span:first-child { color: #6b7280; flex-shrink: 0; }
+.manifest-section         { border-top: 1px solid #f3f4f6; padding-top: 0.75rem; }
+.manifest-section__title  { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-primary); margin-bottom: 0.5rem; }
+.manifest-row             { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: 0.25rem; background-color: var(--color-secondary-50);border:1px solid var(--color-secondary-100);font-size: 0.8rem; color: var(--color-primary); border-bottom: 1px solid #f9fafb; }
+.manifest-row:last-child  { border-bottom: none; }
+.manifest-row > span:first-child 
+                          { color: #6b7280; flex-shrink: 0; }
 
-.capability-pill      { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.15rem 0.5rem; border-radius: 2px; }
-.capability-pill--on  { background: #f0fdf4; color: #166534; }
-.capability-pill--off { background: #f3f4f6; color: #9ca3af; }
+.capability-pill          { display: inline-flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; font-weight: 500; text-transform: lowercase; letter-spacing: 0.05em; padding: 0.15rem 0.5rem; border-radius: 2px; }
+.capability-pill--on      { background: #f0fdf4; color: #166534; }
+.capability-pill--off     { background: #f3f4f6; color: #9ca3af; }
 
-.meta-grid       { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
-.meta-card       { background: #f9fafb; padding: 0.5rem; border-radius: 2px; }
-.meta-card label { display: block; font-size: 0.6rem; text-transform: uppercase; color: #6b7280; font-weight: 600; }
-.meta-value      { font-size: 0.75rem; font-weight: 600; color: #111827; margin-top: 0.125rem; }
-
-.field-hint { font-size: 0.7rem; font-weight: 400; color: #9ca3af; margin-left: 4px; }
-.row-actions--always-visible { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
+.field-hint               { font-size: 0.7rem; font-weight: 400; color: #9ca3af; margin-left: 4px; }
+.row-actions--always-visible 
+                          { opacity: 1 !important; visibility: visible !important; pointer-events: auto !important; }
 </style>

@@ -1,6 +1,6 @@
 <!-- src/views/Analytics.vue -->
 <template>
-  <div class="section bg-gray-100">
+  <div class="section bg-secondary-100">
     <h1 class="page-title">Analytics</h1>
 
   </div>

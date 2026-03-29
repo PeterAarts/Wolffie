@@ -13,6 +13,7 @@ export const useRealtimeStore = defineStore('realtime', () => {
   const isConnected = computed(() => connectionSource.value !== 'disconnected');
   const isLoading = ref(false);
   const hasInitialized = ref(false);
+  const wsListenerActive = ref(false);
   const lastUpdate = ref(null);
   const error = ref(null);
   
@@ -75,8 +76,7 @@ export const useRealtimeStore = defineStore('realtime', () => {
   });
   
   const solarPower = computed(() => {
-    const solar = realtimeData.value.components.total?.currentOut || 0;
-    return solar;
+    return realtimeData.value.components.solar?.currentOut || 0;
   });
   
   const gridPower = computed(() => {
@@ -183,27 +183,28 @@ async function fetchSummary() {
     try {
       console.log('📊 Fetching summary data from /api/system/summary...');
       const res = await apiClient.get('/system/summary');
+      const data = res.data;
       
-      if (res) {
+      if (data) {
         // Update daily totals from new response format
         summaryData.value = {
-          today_pv_gen: parseFloat(res.today.pv_generation) || 0,
-          today_load: parseFloat(res.today.load_consumption) || 0,
-          today_grid_export: parseFloat(res.today.grid_export) || 0,
-          today_grid_import: parseFloat(res.today.grid_import) || 0,
-          today_battery_charge: parseFloat(res.today.battery_charge) || 0,
-          today_battery_discharge: parseFloat(res.today.battery_discharge) || 0,
-          total_trees: parseFloat(res.environmental.trees_equivalent) || 0,
-          total_co2: parseFloat(res.environmental.co2_saved) || 0
+          today_pv_gen: parseFloat(data.today.pv_generation) || 0,
+          today_load: parseFloat(data.today.load_consumption) || 0,
+          today_grid_export: parseFloat(data.today.grid_export) || 0,
+          today_grid_import: parseFloat(data.today.grid_import) || 0,
+          today_battery_charge: parseFloat(data.today.battery_charge) || 0,
+          today_battery_discharge: parseFloat(data.today.battery_discharge) || 0,
+          total_trees: parseFloat(data.environmental.trees_equivalent) || 0,
+          total_co2: parseFloat(data.environmental.co2_saved) || 0
         };
         
         console.log('✅ Summary data loaded:', summaryData.value);
         
         // Update realtime data from snapshot
-        if (res.realtime) {
+        if (data.realtime) {
           console.log('📸 Loading realtime data from summary...');
           
-          const rt = res.realtime;
+          const rt = data.realtime;
           
           // Transform to store format
           updateRealtimeData({
@@ -212,29 +213,29 @@ async function fetchSummary() {
               battery_1: {
                 currentIn: rt.battery.power > 0 ? rt.battery.power : 0,
                 currentOut: rt.battery.power < 0 ? Math.abs(rt.battery.power) : 0,
-                dailyIn: parseFloat(res.today.battery_charge) || 0,
-                dailyOut: parseFloat(res.today.battery_discharge) || 0
+                dailyIn: parseFloat(data.today.battery_charge) || 0,
+                dailyOut: parseFloat(data.today.battery_discharge) || 0
               },
               grid: {
                 currentIn: rt.grid.power > 0 ? rt.grid.power : 0,
                 currentOut: rt.grid.power < 0 ? Math.abs(rt.grid.power) : 0,
-                dailyIn: parseFloat(res.today.grid_import) || 0,
-                dailyOut: parseFloat(res.today.grid_export) || 0
+                dailyIn: parseFloat(data.today.grid_import) || 0,
+                dailyOut: parseFloat(data.today.grid_export) || 0
               },
               solar: {
                 currentOut: rt.solar.total || 0,
-                dailyOut: parseFloat(res.today.pv_generation) || 0
+                dailyOut: parseFloat(data.today.pv_generation) || 0
               },
               home_usage: {
                 currentIn: rt.home.power || 0,
-                dailyIn: parseFloat(res.today.load_consumption) || 0
+                dailyIn: parseFloat(data.today.load_consumption) || 0
               }
             }
           });
           
           // Update connection status from collector info
-          if (res.collector) {
-            connectionSource.value = res.collector.connected ? 'modbus' : 'disconnected';
+          if (data.collector) {
+            connectionSource.value = data.collector.connected ? 'modbus' : 'disconnected';
           }
           
           console.log('✅ Realtime data loaded from summary');
@@ -282,7 +283,12 @@ async function fetchSummary() {
    * Start WebSocket listener
    */
   function startWebSocketListener() {
+    if (wsListenerActive.value) {
+      console.log('✓ WebSocket listener already active');
+      return;
+    }
     console.log('🔌 Setting up WebSocket listeners...');
+    wsListenerActive.value = true;
     
     websocketService.on('message', (message) => {
       console.log('📨 WebSocket message type:', message.type);
@@ -341,23 +347,10 @@ async function fetchSummary() {
     error.value = null;
 
     try {
-      // Step 1: Check collector status
-      const isConnectedNow = await checkCollectorStatus();
+      // Step 1: Fetch summary — also sets connectionSource from data.collector.connected
+      fetchSummary();
       
-      // Step 2: Fetch summary + snapshot (this populates both summaryData AND realtimeData)
-      await fetchSummary();
-      
-      // Step 3: Try to fetch fresh data if connected (optional, snapshot already loaded)
-      if (isConnectedNow) {
-        console.log('🔄 Attempting to fetch fresh data...');
-        await fetchInitialData().catch(() => {
-          console.log('⚠️ Fresh data fetch failed, using snapshot data');
-        });
-      } else {
-        console.log('ℹ️ Starting with snapshot data (no live connection)');
-      }
-      
-      // Step 4: Start WebSocket for continuous updates
+      // Step 2: Start WebSocket for continuous updates
       startWebSocketListener();
       
       hasInitialized.value = true;
@@ -384,6 +377,8 @@ async function fetchSummary() {
   async function manualRefresh() {
     console.log('🔄 Manual refresh requested');
     hasInitialized.value = false;
+    wsListenerActive.value = false;
+    websocketService.off('message');
     await initialize();
   }
 
@@ -395,7 +390,6 @@ async function fetchSummary() {
     console.log('🔄 Connection restored:', source);
     connectionSource.value = source || 'cloud';
     error.value = null;
-    fetchInitialData();
     fetchSummary();
   }
 
@@ -408,6 +402,7 @@ async function fetchSummary() {
     console.log('🧹 Cleaning up WebSocket listeners');
     websocketService.off('message');
     websocketService.disconnect();
+    wsListenerActive.value = false;
   }
 
   const connectionInfo = computed(() => {

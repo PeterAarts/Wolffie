@@ -2,12 +2,12 @@
   <div class="app-section flex flex-col overflow-hidden font-sans bg-white text-primary">
 
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
-    <header class="app-header flex items-center justify-between p-2 bg-white z-40 shrink-0 bg-secondary-100 border-b border-secondary-200">
+    <header class="app-header flex items-center justify-between p-2 bg-white z-40 shrink-0 bg-secondary-100 ">
 
       <div class="flex items-center gap-3">
         <button
           @click="sidebarOpen = !sidebarOpen"
-          class="nav-mobile-toggle lg:hidden flex items-center justify-center text-secondary-400 hover:bg-secondary-200 transition-colors"
+          class="nav-mobile-toggle lg:hidden flex items-center justify-center text-secondary-500 hover:bg-secondary-200 transition-colors"
         >
           <i class="fa-light fa-bars text-xl"></i>
         </button>
@@ -26,18 +26,19 @@
               ></span>
               <span
                 :class="['relative inline-flex rounded-full h-2.5 w-2.5',
-                  realtimeStore.isConnected ? 'bg-green-700' : 'bg-amber-500']"
+                  realtimeStore.isConnected ? 'bg-green-500' : 'bg-amber-500']"
               ></span>
             </span>
-            <span class="connection-label text-xs lowercase tracking-wider text-secondary-400 hidden lg:block">
+            <span class="connection-label text-xs lowercase tracking-wider text-secondary-500 hidden lg:block">
               {{ realtimeStore.isConnected ? t('header.connected') : t('header.disconnected') }}
             </span>
           </div>
         </div>
       </div>
 
-      <!-- User menu -->
-      <div class="flex items-center relative">
+      <!-- Alert drawer trigger + User menu -->
+      <div class="flex items-center gap-2 relative">
+        <AlertDrawer />
         <button
           @click="toggleUserMenu"
           class="user-menu-btn flex items-center bg-white hover:bg-secondary-300 transition-colors"
@@ -45,8 +46,8 @@
           <div class="user-avatar flex items-center justify-center text-[10px] font-bold uppercase bg-primary text-white">
             {{ authStore.user?.username?.substring(0,2) || 'me' }}
           </div>
-          <span class="text-sm font-bold text-secondary-400 hidden sm:block">{{ authStore.user?.username }}</span>
-          <i class="fa-solid fa-chevron-down text-[10px] text-secondary-400"></i>
+          <span class="text-sm font-bold text-secondary-700 hidden sm:block">{{ authStore.user?.username }}</span>
+          <i class="fa-solid fa-chevron-down text-[10px] text-secondary-700"></i>
         </button>
 
         <div
@@ -56,13 +57,13 @@
           <div class="dropdown-inner">
             <button
               @click="openProfile"
-              class="dropdown-item w-full text-left flex items-center gap-3 text-sm text-secondary-400 hover:bg-secondary-200 hover:text-primary transition-colors"
+              class="dropdown-item w-full text-left flex items-center gap-3 text-sm text-secondary-700 hover:bg-secondary-200 hover:text-primary transition-colors"
             >
               <i class="fa-light fa-user-pen"></i> {{ t('nav.myProfile') }}
             </button>
             <button
               @click="handleLogout"
-              class="dropdown-item w-full text-left flex items-center gap-3 text-sm text-secondary-400 hover:bg-secondary-200 hover:text-primary transition-colors"
+              class="dropdown-item w-full text-left flex items-center gap-3 text-sm text-secondary-700 hover:bg-secondary-200 hover:text-primary transition-colors"
             >
               <i class="fa-light fa-right-from-bracket"></i> {{ t('header.logout') }}
             </button>
@@ -91,15 +92,15 @@
 
         <div class="profile-fields border-t border-secondary-200 border-b border-secondary-200">
           <div class="profile-field border-b border-secondary-100">
-            <span class="profile-field__label text-secondary-400">{{ t('settings.users.name') }}</span>
+            <span class="profile-field__label text-secondary-500">{{ t('settings.users.name') }}</span>
             <span class="profile-field__value text-primary">{{ authStore.user?.username }}</span>
           </div>
           <div class="profile-field border-b border-secondary-100">
-            <span class="profile-field__label text-secondary-400">{{ t('settings.users.full_name') }}</span>
+            <span class="profile-field__label text-secondary-500">{{ t('settings.users.full_name') }}</span>
             <span class="profile-field__value text-primary">{{ authStore.user?.full_name || '—' }}</span>
           </div>
           <div v-if="authStore.user?.email" class="profile-field">
-            <span class="profile-field__label text-secondary-400">{{ t('settings.users.email') }}</span>
+            <span class="profile-field__label text-secondary-500">{{ t('settings.users.email') }}</span>
             <span class="profile-field__value text-primary">{{ authStore.user?.email }}</span>
           </div>
         </div>
@@ -136,7 +137,7 @@
     </AppDrawer>
 
     <!-- ── Body ────────────────────────────────────────────────────────────── -->
-    <div class="flex flex-1 overflow-hidden relative">
+    <div class="flex flex-1 overflow-hidden relative canvas">
 
       <div
         v-if="sidebarOpen"
@@ -146,7 +147,7 @@
 
       <aside
         :class="[
-          'app-sidebar absolute inset-y-0 left-0 z-40 transition-transform duration-300 lg:translate-x-0 lg:static lg:block shrink-0 flex flex-col bg-white',
+          'app-sidebar absolute inset-y-0 left-0 z-40 mt-6 transition-transform duration-300 lg:translate-x-0 lg:static lg:block shrink-0 flex flex-col bg-white',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         ]"
       >
@@ -161,21 +162,21 @@
               item.disabled ? 'opacity-50 pointer-events-none' : '',
               isActive(item.to)
                 ? 'bg-primary text-white'
-                : 'text-secondary-400 hover:bg-secondary-200 hover:text-primary'
+                : 'text-secondary-500 hover:bg-secondary-100 hover:text-primary'
             ]"
           >
             <div class="nav-item__icon flex justify-center shrink-0">
-              <i :class="[item.icon, 'text-base', isActive(item.to) ? 'text-white' : 'text-secondary-400']"></i>
+              <i :class="[item.icon, 'text-base', isActive(item.to) ? 'text-white' : 'text-secondary-500']"></i>
             </div>
             <span class="nav-item__label text-sm">{{ item.label }}</span>
           </router-link>
         </nav>
       </aside>
 
-      <main class="flex-1 overflow-y-auto bg-background">
+      <main class="flex-1 overflow-y-auto bg-white inner-canvas">
         <router-view v-slot="{ Component }">
           <transition name="fade" mode="out-in">
-            <component :is="Component" />
+            <component :is="Component" :key="$route.fullPath" />
           </transition>
         </router-view>
       </main>
@@ -184,21 +185,68 @@
   </div>
 </template>
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore }     from '@/stores/auth';
 import { useRealtimeStore } from '@/stores/realtime';
-import { useToastStore } from '@/stores/toast';
+import { useToastStore }    from '@/stores/toast';
+import { useAlertStore }    from '@/stores/alerts';
 import ConnectionStatusBanner from '@/components/ConnectionStatusBanner.vue';
-import AppDrawer from '@/components/common/AppDrawer.vue';
+import AppDrawer              from '@/components/common/AppDrawer.vue';
+import AlertDrawer            from '@/components/common/AlertDrawer.vue';
 import { useLocale } from '../composables/useLocale';
+import '@/assets/styles/control.css';
 
 const router = useRouter();
 const route = useRoute();
-const authStore = useAuthStore();
+const authStore     = useAuthStore();
 const realtimeStore = useRealtimeStore();
-const toast = useToastStore();
-const { t } = useLocale();
+const toast         = useToastStore();
+const alertStore    = useAlertStore();
+const { t }         = useLocale();
+
+// Track which alert IDs have already been toasted so we don't re-fire on poll
+const _toastedAlertIds = new Set();
+
+// Watch for new alerts — fire a persistent toast with action buttons
+watch(() => alertStore.alerts, (alerts) => {
+  for (const alert of alerts) {
+    if (_toastedAlertIds.has(alert.id)) continue;
+    _toastedAlertIds.add(alert.id);
+
+    // Build action buttons based on alert action hint
+    const actions = [];
+
+    if (alert.action && alert.action !== null) {
+      actions.push({
+        label  : 'Confirm & execute',
+        icon   : 'fa-bolt-lightning',
+        variant: 'primary',
+        handler: () => {
+          // Resolve globally — clears for all users
+          alertStore.resolveAlert(alert.id);
+        },
+      });
+    }
+
+    actions.push({
+      label  : 'Dismiss',
+      icon   : 'fa-xmark',
+      variant: 'secondary',
+      handler: () => {
+        alertStore.dismissAlert(alert.id);
+      },
+    });
+
+    toast.add({
+      severity: alert.severity === 'warning' ? 'warn' : (alert.severity ?? 'info'),
+      summary : alert.message,
+      detail  : alert.suggestion ?? '',
+      life    : 0,   // persistent — only dismissed via button
+      actions,
+    });
+  }
+}, { deep: false });
 
 // Exact match for '/', prefix match for everything else
 const isActive = (path) => {
@@ -263,9 +311,10 @@ const handleLogout = async () => {
 // MainLayout mounts once and lives for the whole session, making it the right
 // place to own the realtimeStore connection so the indicator stays accurate on
 // every page, not just the Dashboard.
-onMounted(async () => {
-  await realtimeStore.initialize();
+onMounted(() => {
+  realtimeStore.initialize();
   startPolling();
+  alertStore.startPolling(5 * 60 * 1000);
 });
 
 let _pollInterval = null;
@@ -273,18 +322,13 @@ let _pollInterval = null;
 const startPolling = () => {
   if (_pollInterval) return;
   _pollInterval = setInterval(async () => {
-    if (realtimeStore.isConnected) {
-      // Already connected — let the store refresh its data
-      realtimeStore.fetchData?.();
-    } else {
-      // Not connected — try to re-establish
-      await realtimeStore.initialize();
-    }
+    await realtimeStore.refreshSummary();
   }, 10000);
 };
 
 onUnmounted(() => {
   if (_pollInterval) { clearInterval(_pollInterval); _pollInterval = null; }
+  alertStore.stopPolling();
 });
 // ─────────────────────────────────────────────────────────────────────────────
 </script>
@@ -295,26 +339,26 @@ onUnmounted(() => {
 .fade-enter-from,  .fade-leave-to      { opacity: 0; }
 
 /* nav-link needs explicit no-underline since router-link renders as <a> */
-.nav-item { text-decoration: none; }
-
+.nav-item                   { text-decoration: none; }
 /* ── Header ─────────────────────────────────────────────────────────────── */
-.app-header           { height: 4rem; padding: 0 1.5rem; }
-.nav-mobile-toggle    { width: 2.5rem; height: 2.5rem; }
-.connection-label     { padding: 0 0.5rem; }
+.app-header                 { height: 4rem; padding: 0 1.5rem; }
+.nav-mobile-toggle          { width: 2.5rem; height: 2.5rem; }
+.connection-label           { padding: 0 0.5rem; }
 
 /* ── User menu ───────────────────────────────────────────────────────────── */
-.user-menu-btn        { gap: 0.5rem; padding: 0.375rem 0.5rem; }
-.user-avatar          { width: 1.5rem; height: 1.25rem; }
-.user-dropdown        { top: 3rem; right: 0; width: 11rem; }
-.dropdown-inner       { padding: 0.375rem; }
-.dropdown-item        { padding: 0.375rem 0.625rem; gap: 0.625rem; }
+.user-menu-btn              { gap: 0.5rem; padding: 0.5rem 0.5rem; border-radius:var(--radius-sm)}
+.user-avatar                { width: 1.5rem; height: 1.5rem; border-radius:var(--radius-lg)}
+.user-dropdown              { top: 3rem; right: 0; width: 11rem; }
+.dropdown-inner             { padding: 0.375rem; }
+.dropdown-item              { padding: 0.375rem 0.625rem; gap: 0.625rem; }
 
 /* ── Sidebar ─────────────────────────────────────────────────────────────── */
-.app-sidebar          { width: 13rem; }
-.sidebar-nav          { padding: 0.75rem; gap: 0.125rem; flex: 1; }
-.nav-item             { gap: 0; }
-.nav-item__icon       { width: 2.5rem; padding: 0.5rem 0; }
-.nav-item__label      { padding: 0.5rem 0.25rem; }
+.app-sidebar                { width: 13rem; }
+.canvas                     { min-height : calc(1oovh - 2rem);}
+.sidebar-nav                { padding-left: 1.5rem; gap: 0.25rem; flex: 1; }
+.nav-item                   { gap: 0; border-radius:var(--radius-sm)}
+.nav-item__icon             { width: 2.5rem; padding: 0.5rem 0; }
+.nav-item__label            { padding: 0.5rem 0.25rem; }
 
 /* ── Profile drawer ──────────────────────────────────────────────────────── */
 .profile-meta               { display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem 1.25rem; text-align: center; }

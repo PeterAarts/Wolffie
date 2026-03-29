@@ -1,6 +1,6 @@
 <template>
   <div v-if="field.visible !== false" class="flex flex-col gap-1.5 w-full">
-  <label class="text-xs  text-gray-500  tracking-wider ml-1">
+  <label class="text-xs  text-secondary-500  tracking-wider ml-1">
       {{ field.label }}
       <span v-if="field.required" class="text-red-500 ml-1">*</span>
     </label>
@@ -8,7 +8,7 @@
     <div class="relative group">
       <template v-if="['text', 'password', 'email', 'number', 'url'].includes(field.component)">
         <div class="relative flex items-center">
-          <div v-if="field.icon" class="absolute left-4 text-gray-400 group-focus-within:text-blue-500 transition-colors">
+          <div v-if="field.icon" class="absolute left-4 text-secondary-400 group-focus-within:text-blue-500 transition-colors">
             <i :class="['fa-light', field.icon]"></i>
           </div>
 
@@ -23,7 +23,7 @@
             :min="field.validation?.min"
             :max="field.validation?.max"
             :step="field.validation?.step"
-            class="w-full bg-white p-2 text-gray-900 transition-all focus:ring-2 focus:ring-gray-500/20 focus:border-gray-500 outline-none disabled:bg-gray-50 disabled:text-gray-400"
+            class="w-full p-2 transition-all focus:ring-2 focus:ring-secondary-500/20 focus:border-secondary-500 outline-none disabled:bg-secondary-50 disabled:text-secondary-400"
             :class="[field.icon ? 'pl-11' : 'pl-4', validationError ? 'border-red-500 ring-red-500/10' : '']"
           />
         </div>
@@ -37,7 +37,7 @@
         :placeholder="field.placeholder"
         :disabled="field.editable === false || disabled"
         rows="4"
-        class="w-full bg-white  p-2 text-gray-900 transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-gray-50"
+        class="w-full bg-white  p-2 text-secondary-900 transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-secondary-50"
       ></textarea>
 
       <select
@@ -46,7 +46,7 @@
         :value="modelValue"
         @change="emit('update:modelValue', $event.target.value)"
         :disabled="field.editable === false || disabled"
-        class="w-full bg-white p-2 text-gray-900 appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+        class="w-full bg-white p-2 text-secondary-900 appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
       >
         <option v-if="field.placeholder" value="" disabled selected>{{ field.placeholder }}</option>
         <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
@@ -69,18 +69,18 @@
 
         </div>
       </div>
-      <div v-else-if="field.component === 'color'" class="flex items-center gap-3 p-2 bg-white border border-gray-200  shadow-sm">
+      <div v-else-if="field.component === 'color'" class="flex items-center gap-3 p-2 bg-white border border-secondary-200  shadow-sm">
         <input 
           type="color" 
           :value="modelValue" 
           @input="emit('update:modelValue', $event.target.value)"
           class="h-10 w-20 rounded cursor-pointer border-none bg-transparent"
         />
-        <span class="text-sm font-mono text-gray-600 uppercase">{{ modelValue }}</span>
+        <span class="text-sm font-mono text-secondary-600 uppercase">{{ modelValue }}</span>
       </div>
 
       <div v-if="field.description && field.component !== 'switch'" class="mt-1.5 px-1">
-        <p class="text-xs text-gray-400 italic">
+        <p class="text-xs text-secondary-400 italic">
           
           {{ field.description }}
         </p>

@@ -5,11 +5,11 @@
       <template #content>
         <div class="flex justify-between items-center">
           <div>
-            <p class="text-sm text-gray-600">Avg. Usage until 09:00</p>
+            <p class="text-sm text-secondary-600">Avg. Usage until 09:00</p>
             <p class="text-2xl font-bold">{{ projection.avgUsage }} kWh</p>
           </div>
           <div class="text-right">
-            <p class="text-sm text-gray-600">Current Battery</p>
+            <p class="text-sm text-secondary-600">Current Battery</p>
             <p class="text-2xl font-bold" :class="projection.isSafe ? 'text-green-600' : 'text-red-600'">
               {{ projection.currentEnergy }} kWh
             </p>

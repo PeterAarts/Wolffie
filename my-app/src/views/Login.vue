@@ -1,18 +1,17 @@
 <template>
   <div class="loginscreen flex flex-col items-center justify-center app-section font-sans antialiased bg-secondary">
     <div class="login-outer w-full flex justify-center">
-      <div class="login-grid grid lg:grid-cols-2 items-center w-full max-w-3xl">
-
-        <!-- ── Form card ──────────────────────────────────────────────────── -->
-        <div class="login-card bg-white shadow-md">
-
-          <div class="login-logo flex items-center">
-            <img src="@/assets/wolffie.svg" alt="Wolffie Logo" class="w-8 h-8 drop-shadow-sm" />
-            <h2 class="text-4xl font-black uppercase text-primary">Wolffie</h2>
-          </div>
-
-          <form @submit.prevent="handleLogin" autocomplete="off">
-
+      <div class="login-grid grid lg:grid-cols-4 items-center w-full p-10 ">
+        <!-- ── Branding panel ─────────────────────────────────────────────── -->
+        <div class="bg-white rounded-xl shadow-md brand-panel lg:col-span-3 flex flex-col items-center justify-center text-center">
+          <img
+            src="@/assets/wolffie.svg"
+            class="w-4/5 max-w-[400px] aspect-square object-contain grayscale opacity-20 hover:opacity-100 transition-opacity duration-700"
+            alt="Wolffie Logo"
+          />
+          <div class="brand-text">
+            <h2 class="text-2xl font-black tracking-tighter uppercase text-primary">Wolffie</h2>
+                        
             <div class="shout-wrap flex items-center text-center overflow-hidden">
               <transition name="shout" mode="out-in">
                 <div :key="currentShoutIndex" class="text-sm tracking-tight text-secondary-400 w-full">
@@ -20,6 +19,16 @@
                 </div>
               </transition>
             </div>
+          </div>
+        </div>
+        <!-- ── Form card ──────────────────────────────────────────────────── -->
+        <div class="login-card ">
+          <div class="login-logo flex items-center">
+            <h2 class="text-2xl font-black  text-primary">login</h2>
+          </div>
+          <form @submit.prevent="handleLogin" autocomplete="off">
+
+
 
             <!-- Username -->
             <div class="field-wrap group">
@@ -50,7 +59,7 @@
                 :disabled="authStore.loading"
                 @focus="passwordFocused = true"
                 @blur="passwordFocused = false"
-                class="field-input outline-none transition-all disabled:opacity-50 w-full text-sm text-primary"
+                class="field-input outline-none transition-all disabled:opacity-50 border-b w-full text-sm text-primary"
                 placeholder=""
               />
               <label class="field-label" :class="{ 'field-label--active': passwordFocused || password }">password</label>
@@ -84,21 +93,6 @@
               </button>
             </div>
           </form>
-        </div>
-
-        <!-- ── Branding panel ─────────────────────────────────────────────── -->
-        <div class="brand-panel flex flex-col items-center justify-center text-center">
-          <img
-            src="@/assets/wolffie.svg"
-            class="w-4/5 max-w-[400px] aspect-square object-contain grayscale opacity-20 hover:opacity-100 transition-opacity duration-700"
-            alt="Wolffie Logo"
-          />
-          <div class="brand-text">
-            <h2 class="text-2xl font-black tracking-tighter uppercase text-primary">Wolffie</h2>
-            <p class="text-xs tracking-[0.1em] text-secondary-400">
-              your <b>W</b>atts management <b>O</b>n<b>l</b>ine/o<b>ff</b> l <b>i</b> n <b>E</b> system
-            </p>
-          </div>
         </div>
 
       </div>
@@ -159,97 +153,55 @@ onUnmounted(() => {
 
 <style scoped>
 /* ── Screen ──────────────────────────────────────────────────────────────── */
-.loginscreen  { height: calc(100vh - 2rem); box-shadow: 3px 3px 6px var(--color-border-dark); }
+.loginscreen            { height: calc(100vh - 2rem);  }
 
 /* ── Outer wrapper + grid ────────────────────────────────────────────────── */
-.login-outer  { padding: 1.5rem 1rem; }
-.login-grid   { gap: 2.5rem; }
+.login-outer            { padding: 1.5rem 1rem; }
+.login-grid             { gap: 2.5rem; }
 
 /* ── Form card ───────────────────────────────────────────────────────────── */
-.login-card   { padding: 2rem; margin: 0.75rem; }
-.login-logo   { gap: 0.75rem; margin-bottom: 0.5rem; }
+.login-card             { padding: 2rem; margin: 0.75rem; }
+.login-logo             { gap: 0.75rem; margin-bottom: 0.5rem; }
 
 /* ── Shout ───────────────────────────────────────────────────────────────── */
-.shout-wrap   { min-height: 3.5rem; margin-bottom: 2.5rem; }
+.shout-wrap             { min-height: 3.5rem; margin-bottom: 2.5rem; }
 
 /* ── Fields ──────────────────────────────────────────────────────────────── */
-.field-wrap {
-  position: relative;
-  margin-top: 1.5rem;
-  height: 3.25rem;
-  background: var(--color-bg-primary);
-}
-
-.field-input {
-  position: absolute;
-  inset: 0;
-  padding: 1.25rem 2.5rem 0.25rem 0.625rem;
-  height: 100%;
-  background: var(--color-bg-primary);
-  border: none;
-}
-.field-input:focus { background: var(--color-bg-secondary); }
+.field-wrap             { position: relative;margin-top: 1.5rem;height: 3.25rem;background: var(--color-bg-primary);}
+.field-input            { position: absolute;inset: 0;padding: 1.25rem 2.5rem 0.25rem 0.625rem;height: 100%;background: transparent;color: var(--color-primary);border-bottom: 1px solid var(--color-secondary-200);}
+.field-input:focus      { font-weight:500; }
 
 /* Kill browser autofill bg injection */
 .field-input:-webkit-autofill,
 .field-input:-webkit-autofill:hover,
-.field-input:-webkit-autofill:focus {
-  -webkit-box-shadow: 0 0 0 1000px var(--color-bg-primary) inset;
-  -webkit-text-fill-color: var(--color-text-primary);
-  transition: background-color 9999s ease-in-out 0s;
-}
-
-.field-icon {
-  position: absolute;
-  right: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.875rem;
-  line-height: 1;
-}
-.field-icon--btn { padding: 0; }
-
-.field-label {
-  position: absolute;
-  left: 0.625rem;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 0.875rem;
-  color: var(--color-text-tertiary);
-  letter-spacing: 0.05em;
-  text-transform: lowercase;
-  pointer-events: none;
-  transition: top 0.25s ease, font-size 0.25s ease, color 0.25s ease, transform 0.25s ease;
-}
-.field-label--active {
-  top: 0.5rem;
-  transform: translateY(0);
-  font-size: 0.625rem;
-  letter-spacing: 0.08em;
-}
+.field-input:-webkit-autofill:focus 
+                        { -webkit-box-shadow: 0 0 0 1000px var(--color-bg-primary) inset;-webkit-text-fill-color: var(--color-text-primary);transition: background-color 9999s ease-in-out 0s;}
+.field-icon             { position: absolute;right: 0.75rem;top: 50%;transform: translateY(-50%);font-size: 0.875rem;line-height: 1;}
+.field-icon--btn        { padding: 0; }
+.field-label            { position: absolute;left: 0.625rem;top: 50%;transform: translateY(-50%);font-size: 0.875rem;color: var(--color-text-tertiary);letter-spacing: 0.05em;text-transform: lowercase;pointer-events: none;transition: top 0.25s ease, font-size 0.25s ease, color 0.25s ease, transform 0.25s ease;}
+.field-label--active    { top: 0.5rem;transform: translateY(0);font-size: 0.625rem;letter-spacing: 0.08em;}
 
 /* ── Error banner ────────────────────────────────────────────────────────── */
-.error-banner { padding: 1rem; margin-top: 1.5rem; }
+.error-banner           { padding: 1rem; margin-top: 1.5rem; }
 
 /* ── Submit ──────────────────────────────────────────────────────────────── */
-.login-submit { margin-top: 1.5rem; }
-.login-btn {
-  padding: 0.5rem 1rem;
-  background: var(--color-primary);
-  color: #fff;
-}
-.login-btn:hover:not(:disabled) { background: var(--color-secondary-400); }
+.login-submit           { margin-top: 2.5rem; }
+.login-btn              { padding: 0.5rem 1rem;background: var(--color-primary);color: #fff;border-radius:var(--radius-sm);}
+.login-btn:hover:not(:disabled) 
+                        { background: var(--color-secondary-700);}
 
 /* ── Brand panel ─────────────────────────────────────────────────────────── */
-.brand-panel  { padding: 1.5rem; }
-.brand-text   { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+.brand-panel            { padding: 1.5rem; }
+.brand-text             { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
 
 /* ── Transitions ─────────────────────────────────────────────────────────── */
-.fade-enter-active, .fade-leave-active   { transition: opacity 0.3s ease; }
-.fade-enter-from,   .fade-leave-to       { opacity: 0; }
+.fade-enter-active, 
+.fade-leave-active      { transition: opacity 0.3s ease; }
+.fade-enter-from,   
+.fade-leave-to          { opacity: 0; }
 
-.shout-enter-active { transition: opacity 0.6s ease, transform 0.6s ease; }
-.shout-leave-active { transition: opacity 0.4s ease, transform 0.4s ease; }
-.shout-enter-from   { opacity: 0; transform: translateY(8px); }
-.shout-leave-to     { opacity: 0; transform: translateY(-8px); }
+.shout-enter-active     { transition: opacity 0.6s ease, transform 0.6s ease; }
+.shout-leave-active     { transition: opacity 0.4s ease, transform 0.4s ease; }
+.shout-enter-from       { opacity: 0; transform: translateY(8px); }
+.shout-leave-to         { opacity: 0; transform: translateY(-8px); }
 </style>

@@ -14,14 +14,14 @@
       
       <div v-if="schema.groups" class="groups-container">
         <div v-for="(group, gIdx) in schema.groups" :key="gIdx" class="settings-group mb-3">
-          <h3 class="text-md font-medium mb-4">{{ resolve(group.title) }}</h3>
+          <h3 class="text-md border-b border-secondary-200 font-medium mb-4">{{ resolve(group.title) }}</h3>
           
           <div v-for="(section, sIdx) in group.sections" :key="sIdx" class="settings-section   ">
               <div v-if="section.title" class="section-header ">
                 <h4 class=" font-semibold m-0">{{ resolve(section.title) }}</h4>
-                <p v-if="section.description" class="text-gray-400 text-xs font-normal mt-1 mb-0">{{ resolve(section.description) }}</p>
+                <p v-if="section.description" class="text-secondary-400 text-xs font-normal mt-1 mb-0">{{ resolve(section.description) }}</p>
               </div>
-              <div v-if="section.fields?.length" class="grid bg-gray-100 p-4 gap-4 fields-container" :class="{ 'drawer-mode': props.drawerMode }">
+              <div v-if="section.fields?.length" class="grid gap-4 fields-container" :class="{ 'drawer-mode': props.drawerMode }">
                 <div 
                   v-for="field in section.fields" 
                   :key="field.key" 
@@ -373,7 +373,7 @@ onMounted(loadSchema);
 .section-with-border        {padding-bottom: 2rem;border-bottom: 1px solid #e5e7eb;}
 .section-with-border:last-child 
                             {border-bottom: none;padding-bottom: 0;}
-.section-header             {margin-bottom: .5rem;}
+.section-header             {margin-bottom: 1rem;border-bottom:1px solid var(--color-secondary-200);}
 .section-title              {margin: 0 0 0.5rem 0;font-size: 1.1rem;color: #374151;font-weight: 500;}
 .section-description        {margin: 0;color: #6b7280;font-size: 0.95rem;line-height: 1.5;}
 /* Fields Container */

@@ -1,7 +1,7 @@
 <template>
-  <div class="events-view flex flex-col h-full bg-gray-100">
-    <header class="p-6 border-b border-gray-200 flex-shrink-0">
-      <p class="text-sm text-gray-500">{{ t('events.description') }}</p>
+  <div class="events-view flex flex-col h-full bg-secondary-100">
+    <header class="p-6 border-b border-secondary-200 flex-shrink-0">
+      <p class="text-sm text-secondary-500">{{ t('events.description') }}</p>
     </header>
 
     <div class="flex-1 overflow-hidden p-6">
@@ -30,7 +30,7 @@
         <template #user_name="{ value }">
           <div class="flex items-center gap-2">
             <i v-if="value.user_id === 0" class="fa-duotone fa-robot text-blue-500" />
-            <i v-else class="fa-duotone fa-user text-gray-500" />
+            <i v-else class="fa-duotone fa-user text-secondary-500" />
             <span>{{ value.user_id === 0 ? 'System' : value.user_name }}</span>
           </div>
         </template>
@@ -48,14 +48,14 @@
       <div v-if="selectedEvent" class="event-details">
         <section class="drawer-meta-section">
           <h5 class="graph-label">{{ t('events.logicReason') }}</h5>
-          <div class="p-4 bg-gray-50 rounded-lg text-sm italic border-s-4 border-gray-300">
+          <div class="p-4 bg-secondary-50 rounded-lg text-sm italic border-s-4 border-secondary-300">
             "{{ selectedEvent.details?.reason || 'No reason provided.' }}"
           </div>
         </section>
 
         <section class="drawer-meta-section mt-6">
           <h5 class="graph-label">{{ t('events.rawPayload') }}</h5>
-          <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs overflow-x-auto">
+          <pre class="bg-secondary-900 text-secondary-100 p-4 rounded-lg text-xs overflow-x-auto">
 {{ JSON.stringify(selectedEvent.details, null, 2) }}
           </pre>
         </section>
