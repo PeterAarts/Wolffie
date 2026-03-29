@@ -139,7 +139,7 @@ class EnergyChartsAPI {
         throw new Error('No valid price data in API response');
       }
 
-      console.log(`  ✓ Parsed ${prices.length} price points`);
+      console.log(`   • Parsed \x1b[97m   ${prices.length} \x1b[37m   price points`);
       return prices;
 
     } catch (error) {

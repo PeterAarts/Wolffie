@@ -72,6 +72,17 @@ class AlphaESSModbusTCPModule {
   }
 
   async collect() {
+    // Skip collection entirely if a higher-priority module has taken over
+    // all capabilities this module provides. This keeps energy_snapshots clean —
+    // only the winning module writes rows for its owned fields.
+    const ownedCapabilities = capabilityRegistry.list()
+      .filter(c => c.moduleId === MODULE_ID);
+
+    if (ownedCapabilities.length === 0) {
+      console.log(`   • ${MODULE_ID}: no capabilities owned, skipping collection`);
+      return true;
+    }
+
     return await collector.collect();
   }
 

@@ -11,6 +11,16 @@
     "api": true,
     "ui": true
   },
+  "services": [
+    { "type": "battery:read",              "priority": 15 },
+    { "type": "battery:status",            "priority": 15 },
+    { "type": "battery:charge-from-grid",  "priority": 15 },
+    { "type": "battery:discharge-to-grid", "priority": 15 },
+    { "type": "battery:stop",              "priority": 15 },
+    { "type": "solar:read",                "priority": 15 },
+    { "type": "grid:read",                 "priority": 15 },
+    { "type": "home:read",                 "priority": 15  }
+  ],
 
   "collector": {
     "enabled": true,

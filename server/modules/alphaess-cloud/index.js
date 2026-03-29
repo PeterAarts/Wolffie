@@ -1,10 +1,11 @@
 // modules/alphaess-cloud/index.js
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import { fileURLToPath, pathToFileURL } from 'url';
 import collector from './services/collector.js';
 import alphaessAPI from './services/api.js';
 import settingsService from '../../core/system/services/settingsService.js';
+import capabilityRegistry from '../../core/capabilityRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,6 +13,9 @@ const __dirname = path.dirname(__filename);
 // Load manifest
 const manifestPath = path.join(__dirname, 'manifest.json');
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+
+const MODULE_ID = 'alphaess-cloud';
+const PRIORITY  = 10; // Lower than alphaess-modbus-tcp (15) — modbus wins when available
 
 /**
  * AlphaESS Cloud Module
@@ -57,7 +61,11 @@ class AlphaESSCloudModule {
       }
 
       this.initialized = true;
-      //console.log('✅ AlphaESS Cloud module initialized');
+
+      // Register capabilities — always register for cloud (no physical connection to check)
+      // Modbus-TCP registers at priority 15 and will override these when connected
+      this._registerCapabilities();
+
     } catch (error) {
       console.error('❌ Failed to initialize AlphaESS Cloud module:', error.message);
       throw error;
@@ -130,23 +138,110 @@ class AlphaESSCloudModule {
     }
     return null;
   }
-  /**
-   * Re-reads settings from DB and re-injects into collector.
-   * Called by the core settings route after any setting change.
-   */
   async reinitialize() {
-    console.log(`   - ♻️  ${this.manifest.id}: reinitializing with fresh settings`);
-
-    this.config = await settingsService.getCategory(this.manifest.id);
-
-    // Re-inject into collector so next collect() uses the new values
+    console.log(`   - ♻️  ${MODULE_ID}: reinitializing with fresh settings`);
+    this.config = await settingsService.getCategory(MODULE_ID);
     collector.config = this.config;
 
-    // Re-check connection with potentially new host/port
-    const isAlive = await api.checkStatus(this.config.host, this.config.port);
-    this.connected = isAlive;
+    if (this.config?.app_id && this.config?.app_secret && this.config?.system_sn) {
+      this._registerCapabilities();
+    } else {
+      capabilityRegistry.unregister(MODULE_ID);
+    }
+  }
 
-    console.log(`   - ${this.manifest.id}: connection ${isAlive ? '✓' : '✗'} (${this.config.host}:${this.config.port})`);
+  // ── Capability Registration ────────────────────────────────────────────────
+
+  _registerCapabilities() {
+
+    // ── Battery read ───────────────────────────────────────────────────────
+    capabilityRegistry.register(
+      'battery:read',
+      async () => {
+        const data = await alphaessAPI.getLastPowerData();
+        return {
+          soc:   data.soc   ?? data.cbat ?? 0,
+          power: data.pbat  ?? 0,
+        };
+      },
+      PRIORITY,
+      MODULE_ID
+    );
+
+    // ── Solar read ─────────────────────────────────────────────────────────
+    capabilityRegistry.register(
+      'solar:read',
+      async () => {
+        const data = await alphaessAPI.getLastPowerData();
+        return {
+          total_power: data.ppv  ?? 0,
+          pv1:         data.ppv1 ?? 0,
+          pv2:         data.ppv2 ?? 0,
+          pv3:         data.ppv3 ?? 0,
+        };
+      },
+      PRIORITY,
+      MODULE_ID
+    );
+
+    // ── Grid read ──────────────────────────────────────────────────────────
+    capabilityRegistry.register(
+      'grid:read',
+      async () => {
+        const data = await alphaessAPI.getLastPowerData();
+        return {
+          power: data.pgrid ?? 0,
+        };
+      },
+      PRIORITY,
+      MODULE_ID
+    );
+
+    // ── Home read ──────────────────────────────────────────────────────────
+    capabilityRegistry.register(
+      'home:read',
+      async () => {
+        const data = await alphaessAPI.getLastPowerData();
+        return {
+          power: data.pload ?? 0,
+        };
+      },
+      PRIORITY,
+      MODULE_ID
+    );
+
+    // ── Battery control ────────────────────────────────────────────────────
+    // Note: cloud API does not support direct dispatch commands.
+    // These are registered as stubs so the strategy manager doesn't error —
+    // actual dispatch requires alphaess-modbus-tcp at higher priority.
+    capabilityRegistry.register(
+      'battery:charge-from-grid',
+      async () => {
+        throw new Error('battery:charge-from-grid requires alphaess-modbus-tcp (not available via cloud API)');
+      },
+      PRIORITY,
+      MODULE_ID
+    );
+
+    capabilityRegistry.register(
+      'battery:discharge-to-grid',
+      async () => {
+        throw new Error('battery:discharge-to-grid requires alphaess-modbus-tcp (not available via cloud API)');
+      },
+      PRIORITY,
+      MODULE_ID
+    );
+
+    capabilityRegistry.register(
+      'battery:stop',
+      async () => {
+        throw new Error('battery:stop requires alphaess-modbus-tcp (not available via cloud API)');
+      },
+      PRIORITY,
+      MODULE_ID
+    );
+
+    console.log(`     - Capabilities registered (priority ${PRIORITY} — modbus-tcp overrides at 15)`);
   }
 }
 
