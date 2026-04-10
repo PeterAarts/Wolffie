@@ -1,0 +1,2462 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Wolffie Energy Management API",
+    "version": "1.0.0",
+    "description": "Wolffie is a self-hosted home energy management system that orchestrates solar + battery installations.\n\nAuthentication flow:\n1. Call POST /auth/login with your credentials\n2. Copy the returned token\n3. Click Authorize and paste the token",
+    "contact": {
+      "name": "Wolffie Energy",
+      "url": "https://wolffieenergy.nl"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://wolffie.lan/api",
+      "description": "Local instance (SSL)"
+    },
+    {
+      "url": "http://192.168.1.160:3009/api",
+      "description": "Direct IP"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT token from POST /auth/login"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "Something went wrong"
+          }
+        }
+      },
+      "SuccessOk": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "RealtimeSnapshot": {
+        "type": "object",
+        "properties": {
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "battery": {
+            "type": "object",
+            "properties": {
+              "soc": {
+                "type": "number",
+                "description": "State of charge (%)"
+              },
+              "power": {
+                "type": "number",
+                "description": "Battery power (W). Positive = charging"
+              }
+            }
+          },
+          "solar": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "number"
+              },
+              "pv1": {
+                "type": "number"
+              },
+              "pv2": {
+                "type": "number"
+              },
+              "pv3": {
+                "type": "number"
+              }
+            }
+          },
+          "grid": {
+            "type": "object",
+            "properties": {
+              "power": {
+                "type": "number",
+                "description": "Grid power (W). Positive = import"
+              }
+            }
+          },
+          "home": {
+            "type": "object",
+            "properties": {
+              "power": {
+                "type": "number",
+                "description": "Home load (W)"
+              }
+            }
+          }
+        }
+      },
+      "Alert": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "source": {
+            "type": "string",
+            "example": "strategy"
+          },
+          "type": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "suggestion": {
+            "type": "string",
+            "nullable": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolved_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "dismissed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      },
+      "DayPlanSlot": {
+        "type": "object",
+        "properties": {
+          "hour": {
+            "type": "integer",
+            "description": "Hour of day (0-23)"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "IDLE",
+              "CHARGE_FROM_GRID",
+              "DISCHARGE_TO_GRID"
+            ]
+          },
+          "watts": {
+            "type": "number"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "priceCtKwh": {
+            "type": "number",
+            "description": "Day-ahead price in ct/kWh"
+          },
+          "solarForecastW": {
+            "type": "number",
+            "description": "Forecast solar production (W)"
+          }
+        }
+      },
+      "Strategy": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "smart-eco"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "requiredCapabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "optionalCapabilities": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "device_name": {
+            "type": "string"
+          },
+          "device_type": {
+            "type": "string"
+          },
+          "power": {
+            "type": "number",
+            "description": "Current power (W)"
+          },
+          "voltage": {
+            "type": "number"
+          },
+          "current": {
+            "type": "number"
+          },
+          "energy_today": {
+            "type": "number",
+            "description": "Energy today (kWh)"
+          },
+          "energy_total": {
+            "type": "number"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Collector": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "paused": {
+            "type": "boolean"
+          },
+          "intervalMs": {
+            "type": "integer"
+          },
+          "lastRun": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "nextRun": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastError": {
+            "type": "string",
+            "nullable": true
+          },
+          "consecutiveErrors": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "BearerAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Authentication",
+      "description": "Login and token management"
+    },
+    {
+      "name": "Realtime",
+      "description": "Live power metrics and dashboard summary"
+    },
+    {
+      "name": "Strategies",
+      "description": "Smart Eco strategy engine - planning, decisions, config"
+    },
+    {
+      "name": "Capabilities",
+      "description": "Hardware capability dispatch (battery, solar, grid, devices)"
+    },
+    {
+      "name": "Alerts",
+      "description": "System-wide alert feed"
+    },
+    {
+      "name": "History",
+      "description": "Historical energy data"
+    },
+    {
+      "name": "Collectors",
+      "description": "Data collection daemon control"
+    },
+    {
+      "name": "Devices",
+      "description": "Smart plug and device management"
+    },
+    {
+      "name": "Settings",
+      "description": "Module and core system settings (admin)"
+    },
+    {
+      "name": "Modules",
+      "description": "Module installation and registry"
+    },
+    {
+      "name": "System Config",
+      "description": "Low-level system configuration keys"
+    },
+    {
+      "name": "Setup",
+      "description": "Initial setup wizard"
+    }
+  ],
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "tags": [
+          "Authentication"
+        ],
+        "summary": "Login and obtain a JWT token",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "username",
+                  "password"
+                ],
+                "properties": {
+                  "username": {
+                    "type": "string",
+                    "example": "admin"
+                  },
+                  "password": {
+                    "type": "string",
+                    "format": "password"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer"
+                        },
+                        "username": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/system/summary": {
+      "get": {
+        "tags": [
+          "Realtime"
+        ],
+        "summary": "Full dashboard summary",
+        "description": "Returns collector status, today accumulated energy (kWh), real-time power (W), and environmental metrics.",
+        "responses": {
+          "200": {
+            "description": "Dashboard summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "collector": {
+                      "type": "object",
+                      "properties": {
+                        "connected": {
+                          "type": "boolean"
+                        },
+                        "lastUpdate": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "ageSeconds": {
+                          "type": "integer"
+                        },
+                        "source": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "today": {
+                      "type": "object",
+                      "properties": {
+                        "pv_generation": {
+                          "type": "number"
+                        },
+                        "load_consumption": {
+                          "type": "number"
+                        },
+                        "grid_import": {
+                          "type": "number"
+                        },
+                        "grid_export": {
+                          "type": "number"
+                        },
+                        "battery_charge": {
+                          "type": "number"
+                        },
+                        "battery_discharge": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "realtime": {
+                      "ref": "#/components/schemas/RealtimeSnapshot"
+                    },
+                    "environmental": {
+                      "type": "object",
+                      "properties": {
+                        "co2_saved": {
+                          "type": "number"
+                        },
+                        "trees_equivalent": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/realtime": {
+      "get": {
+        "tags": [
+          "Realtime"
+        ],
+        "summary": "Live power values only",
+        "description": "Lightweight endpoint - only current W values. Suitable for polling every 5 seconds.",
+        "responses": {
+          "200": {
+            "description": "Real-time snapshot",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealtimeSnapshot"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "No data yet collected"
+          }
+        }
+      }
+    },
+    "/system/collector-status": {
+      "get": {
+        "tags": [
+          "Realtime"
+        ],
+        "summary": "Collector heartbeat",
+        "responses": {
+          "200": {
+            "description": "Collector status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "connected": {
+                      "type": "boolean"
+                    },
+                    "lastUpdate": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "ageSeconds": {
+                      "type": "integer"
+                    },
+                    "source": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/events": {
+      "get": {
+        "tags": [
+          "Realtime"
+        ],
+        "summary": "Recent system events log",
+        "description": "Returns the last 100 events joined with username.",
+        "responses": {
+          "200": {
+            "description": "Event rows"
+          }
+        }
+      }
+    },
+    "/system/charge": {
+      "post": {
+        "tags": [
+          "Realtime"
+        ],
+        "summary": "Manual grid charge command",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "watts"
+                ],
+                "properties": {
+                  "watts": {
+                    "type": "number",
+                    "example": 2000
+                  },
+                  "targetSoc": {
+                    "type": "number",
+                    "example": 80
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Command accepted"
+          }
+        }
+      }
+    },
+    "/system/architecture": {
+      "get": {
+        "tags": [
+          "Realtime"
+        ],
+        "summary": "System component architecture",
+        "description": "Returns the full component tree and energy flow definitions.",
+        "responses": {
+          "200": {
+            "description": "Architecture graph"
+          }
+        }
+      }
+    },
+    "/strategies": {
+      "get": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "List all strategies",
+        "responses": {
+          "200": {
+            "description": "Strategy list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "strategies": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Strategy"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/strategies/active": {
+      "get": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Active strategy state",
+        "description": "Returns the active strategy with config, latest decision, and today day plan.",
+        "responses": {
+          "200": {
+            "description": "Active strategy state"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Switch the active strategy",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "strategyId"
+                ],
+                "properties": {
+                  "strategyId": {
+                    "type": "string",
+                    "example": "smart-eco"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "New strategy state"
+          },
+          "422": {
+            "description": "Strategy not available - required capabilities missing"
+          }
+        }
+      }
+    },
+    "/strategies/day-plan": {
+      "get": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Day plan (96 slots)",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2025-04-01"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Day plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "date": {
+                      "type": "string"
+                    },
+                    "plan": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DayPlanSlot"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/strategies/day-plan/regenerate": {
+      "post": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Force day plan regeneration",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "date": {
+                    "type": "string",
+                    "format": "date"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Regenerated plan"
+          }
+        }
+      }
+    },
+    "/strategies/decisions": {
+      "get": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Recent decision log",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 48,
+              "maximum": 500
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Decision log",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "decisions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "evaluatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "strategyId": {
+                            "type": "string"
+                          },
+                          "action": {
+                            "type": "string"
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "executed": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/strategies/evaluate": {
+      "post": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Force immediate evaluation (debug)",
+        "responses": {
+          "200": {
+            "description": "Post-evaluation state"
+          }
+        }
+      }
+    },
+    "/strategies/config": {
+      "post": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Update active strategy config",
+        "description": "Merges fields into the active strategy config. Triggers immediate re-evaluation.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "chargeThresholdCt": 8,
+                  "dischargeThresholdCt": 25,
+                  "socMin": 20,
+                  "socMax": 95
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Merged config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "config": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/strategies/effectiveness": {
+      "get": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Strategy effectiveness metrics",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 14,
+              "maximum": 90
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Effectiveness KPIs"
+          }
+        }
+      }
+    },
+    "/strategies/alerts": {
+      "get": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Strategy alert feed",
+        "responses": {
+          "200": {
+            "description": "Alerts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "alerts": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Alert"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/strategies/alerts/{id}/resolve": {
+      "post": {
+        "tags": [
+          "Strategies"
+        ],
+        "summary": "Resolve a strategy alert",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "execute": {
+                    "type": "boolean",
+                    "example": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resolved"
+          }
+        }
+      }
+    },
+    "/capabilities": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "List registered capabilities",
+        "responses": {
+          "200": {
+            "description": "Capability registry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "capabilities": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "moduleId": {
+                            "type": "string"
+                          },
+                          "priority": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/capability/battery/read": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Battery - real-time metrics",
+        "responses": {
+          "200": {
+            "description": "Battery metrics"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/battery/status": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Battery - dispatch status",
+        "responses": {
+          "200": {
+            "description": "Dispatch status"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/solar/read": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Solar - real-time production",
+        "responses": {
+          "200": {
+            "description": "Solar metrics"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/solar/forecast": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Solar - yield forecast",
+        "responses": {
+          "200": {
+            "description": "Solar forecast"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/grid/read": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Grid - real-time metrics",
+        "responses": {
+          "200": {
+            "description": "Grid metrics"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/grid/pricing": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Grid - day-ahead prices",
+        "responses": {
+          "200": {
+            "description": "Price schedule"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/home/read": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Home - load metrics",
+        "responses": {
+          "200": {
+            "description": "Home load metrics"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/devices/read": {
+      "get": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Devices - list all devices",
+        "responses": {
+          "200": {
+            "description": "Device list"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/battery/stop": {
+      "post": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Battery - stop active dispatch",
+        "responses": {
+          "200": {
+            "description": "Stopped"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/battery/charge-from-grid": {
+      "post": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Battery - start charge from grid",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "watts",
+                  "targetSOC",
+                  "durationHours"
+                ],
+                "properties": {
+                  "watts": {
+                    "type": "number",
+                    "example": 2500
+                  },
+                  "targetSOC": {
+                    "type": "number",
+                    "example": 90,
+                    "description": "Stop charging at this SoC %"
+                  },
+                  "durationHours": {
+                    "type": "number",
+                    "example": 2
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session started"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/battery/discharge-to-grid": {
+      "post": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Battery - start discharge to grid",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "watts",
+                  "minimumSOC",
+                  "durationHours"
+                ],
+                "properties": {
+                  "watts": {
+                    "type": "number",
+                    "example": 2000
+                  },
+                  "minimumSOC": {
+                    "type": "number",
+                    "example": 20,
+                    "description": "Stop discharging below this SoC %"
+                  },
+                  "durationHours": {
+                    "type": "number",
+                    "example": 1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session started"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/capability/devices/{id}/control": {
+      "post": {
+        "tags": [
+          "Capabilities"
+        ],
+        "summary": "Devices - control a device",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "on",
+                      "off",
+                      "toggle"
+                    ]
+                  },
+                  "power": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Command accepted"
+          },
+          "503": {
+            "description": "Capability unavailable"
+          }
+        }
+      }
+    },
+    "/alerts": {
+      "get": {
+        "tags": [
+          "Alerts"
+        ],
+        "summary": "Active alerts for current user",
+        "parameters": [
+          {
+            "name": "source",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "example": "strategy"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Alert list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "alerts": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Alert"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/alerts/history": {
+      "get": {
+        "tags": [
+          "Alerts"
+        ],
+        "summary": "Alert history (resolved / dismissed)",
+        "responses": {
+          "200": {
+            "description": "Historical alerts"
+          }
+        }
+      }
+    },
+    "/alerts/{id}/dismiss": {
+      "post": {
+        "tags": [
+          "Alerts"
+        ],
+        "summary": "Dismiss alert (per-user)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dismissed"
+          }
+        }
+      }
+    },
+    "/alerts/{id}/resolve": {
+      "post": {
+        "tags": [
+          "Alerts"
+        ],
+        "summary": "Resolve alert globally (admin)",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resolved"
+          },
+          "403": {
+            "description": "Admin role required"
+          }
+        }
+      }
+    },
+    "/history/today": {
+      "get": {
+        "tags": [
+          "History"
+        ],
+        "summary": "Today energy data",
+        "responses": {
+          "200": {
+            "description": "Today aggregated data"
+          }
+        }
+      }
+    },
+    "/history/date/{date}": {
+      "get": {
+        "tags": [
+          "History"
+        ],
+        "summary": "Energy data for a specific date",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2025-03-28"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daily energy data"
+          }
+        }
+      }
+    },
+    "/history/range": {
+      "get": {
+        "tags": [
+          "History"
+        ],
+        "summary": "Energy data for a date range",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "example": 7
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Range data"
+          }
+        }
+      }
+    },
+    "/collectors/status": {
+      "get": {
+        "tags": [
+          "Collectors"
+        ],
+        "summary": "All collector schedules",
+        "responses": {
+          "200": {
+            "description": "Collector status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "ok": {
+                      "type": "boolean"
+                    },
+                    "running": {
+                      "type": "boolean"
+                    },
+                    "count": {
+                      "type": "integer"
+                    },
+                    "collectors": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Collector"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collectors/{id}/restart": {
+      "post": {
+        "tags": [
+          "Collectors"
+        ],
+        "summary": "Restart a collector",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "alphaess-modbus-tcp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Restarted"
+          },
+          "404": {
+            "description": "Collector not found"
+          }
+        }
+      }
+    },
+    "/collectors/{id}/enabled": {
+      "patch": {
+        "tags": [
+          "Collectors"
+        ],
+        "summary": "Enable or disable a collector at runtime",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enabled"
+                ],
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "State updated"
+          },
+          "404": {
+            "description": "Collector not found"
+          }
+        }
+      }
+    },
+    "/system/devices": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "All device measurements (latest snapshot)",
+        "responses": {
+          "200": {
+            "description": "Device list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer"
+                    },
+                    "devices": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Device"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/devices/{deviceId}": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Single device measurement",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Device measurement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Device"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Device not found"
+          }
+        }
+      }
+    },
+    "/system/devices-list": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "All devices with today aggregated usage",
+        "responses": {
+          "200": {
+            "description": "Device list with usage"
+          }
+        }
+      }
+    },
+    "/system/schemas/active": {
+      "get": {
+        "tags": [
+          "Devices"
+        ],
+        "summary": "Active module device schemas",
+        "responses": {
+          "200": {
+            "description": "Schemas by module name"
+          }
+        }
+      }
+    },
+    "/settings/core": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Core system settings - schema + values",
+        "description": "Returns schema and current values for: system, data_collection, retention, notifications, energy. Admin only.",
+        "responses": {
+          "200": {
+            "description": "Core settings"
+          },
+          "403": {
+            "description": "Admin role required"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update core system settings",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "system_name": "Wolffie Home",
+                  "timezone": "Europe/Amsterdam"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved"
+          }
+        }
+      }
+    },
+    "/settings/modules": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "List all loaded modules",
+        "responses": {
+          "200": {
+            "description": "Module list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "modules": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "module_id": {
+                            "type": "string"
+                          },
+                          "module_name": {
+                            "type": "string"
+                          },
+                          "enabled": {
+                            "type": "boolean"
+                          },
+                          "has_schema": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/settings/module/{moduleId}": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Module settings - schema + values + translations",
+        "parameters": [
+          {
+            "name": "moduleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "alphaess-modbus-tcp"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Module settings"
+          },
+          "404": {
+            "description": "Module not found"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Save module settings",
+        "parameters": [
+          {
+            "name": "moduleId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "example": {
+                  "enabled": true,
+                  "host": "192.168.3.156",
+                  "port": 502
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved"
+          }
+        }
+      }
+    },
+    "/settings/users/list": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "List all users",
+        "responses": {
+          "200": {
+            "description": "User list"
+          }
+        }
+      }
+    },
+    "/settings/users/create": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Create a user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "new_username",
+                  "new_password",
+                  "new_role"
+                ],
+                "properties": {
+                  "new_username": {
+                    "type": "string"
+                  },
+                  "new_password": {
+                    "type": "string",
+                    "format": "password"
+                  },
+                  "new_email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "new_role": {
+                    "type": "string",
+                    "enum": [
+                      "admin",
+                      "user"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/settings/users/update": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update a user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "user_id"
+                ],
+                "properties": {
+                  "user_id": {
+                    "type": "integer"
+                  },
+                  "new_username": {
+                    "type": "string"
+                  },
+                  "new_password": {
+                    "type": "string"
+                  },
+                  "new_email": {
+                    "type": "string"
+                  },
+                  "new_role": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          }
+        }
+      }
+    },
+    "/settings/users/delete": {
+      "post": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Delete a user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "user_id"
+                ],
+                "properties": {
+                  "user_id": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Deleted"
+          }
+        }
+      }
+    },
+    "/settings/day-ahead-chart": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Day-ahead price threshold settings",
+        "responses": {
+          "200": {
+            "description": "Thresholds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "green_below": {
+                      "type": "number",
+                      "example": 30
+                    },
+                    "red_above": {
+                      "type": "number",
+                      "example": 70
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Update day-ahead price thresholds",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "green_below",
+                  "red_above"
+                ],
+                "properties": {
+                  "green_below": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "red_above": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        }
+      }
+    },
+    "/modules": {
+      "get": {
+        "tags": [
+          "Modules"
+        ],
+        "summary": "List installed modules",
+        "responses": {
+          "200": {
+            "description": "Module registry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "module_id": {
+                        "type": "string"
+                      },
+                      "module_name": {
+                        "type": "string"
+                      },
+                      "module_version": {
+                        "type": "string"
+                      },
+                      "enabled": {
+                        "type": "boolean"
+                      },
+                      "installed": {
+                        "type": "boolean"
+                      },
+                      "has_collector": {
+                        "type": "boolean"
+                      },
+                      "has_api": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/modules/upload": {
+      "post": {
+        "tags": [
+          "Modules"
+        ],
+        "summary": "Upload and install a module ZIP",
+        "parameters": [
+          {
+            "name": "overwrite",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "module"
+                ],
+                "properties": {
+                  "module": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Module ZIP file"
+                  },
+                  "checksum": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "SHA-256 checksum file (optional)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Installed"
+          },
+          "400": {
+            "description": "Invalid ZIP or checksum mismatch"
+          },
+          "409": {
+            "description": "Already installed - add ?overwrite=true"
+          }
+        }
+      }
+    },
+    "/modules/{id}/verify": {
+      "get": {
+        "tags": [
+          "Modules"
+        ],
+        "summary": "Verify module checksum",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lock file data"
+          }
+        }
+      }
+    },
+    "/modules/{id}": {
+      "delete": {
+        "tags": [
+          "Modules"
+        ],
+        "summary": "Uninstall a module",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Uninstalled"
+          },
+          "404": {
+            "description": "Module not found"
+          }
+        }
+      }
+    },
+    "/system/config": {
+      "get": {
+        "tags": [
+          "System Config"
+        ],
+        "summary": "Get full system configuration",
+        "responses": {
+          "200": {
+            "description": "System config"
+          }
+        }
+      }
+    },
+    "/system/config/{key}": {
+      "get": {
+        "tags": [
+          "System Config"
+        ],
+        "summary": "Get a specific config key",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Key value"
+          },
+          "404": {
+            "description": "Key not found"
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "System Config"
+        ],
+        "summary": "Update a config key (admin)",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "value"
+                ],
+                "properties": {
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated"
+          },
+          "403": {
+            "description": "Admin role required"
+          }
+        }
+      }
+    },
+    "/system/config/category/{category}": {
+      "get": {
+        "tags": [
+          "System Config"
+        ],
+        "summary": "Get all keys in a category",
+        "parameters": [
+          {
+            "name": "category",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "strategy"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Category config"
+          }
+        }
+      }
+    },
+    "/system/config/cache/clear": {
+      "post": {
+        "tags": [
+          "System Config"
+        ],
+        "summary": "Clear config cache (admin)",
+        "responses": {
+          "200": {
+            "description": "Cache cleared"
+          }
+        }
+      }
+    },
+    "/system/health": {
+      "get": {
+        "tags": [
+          "System Config"
+        ],
+        "summary": "System health check",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Health status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "healthy",
+                        "unhealthy"
+                      ]
+                    },
+                    "database": {
+                      "type": "string"
+                    },
+                    "setupCompleted": {
+                      "type": "boolean"
+                    },
+                    "uptime": {
+                      "type": "number"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/setup/status": {
+      "get": {
+        "tags": [
+          "Setup"
+        ],
+        "summary": "Setup completion status",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Status"
+          }
+        }
+      }
+    },
+    "/setup/models": {
+      "get": {
+        "tags": [
+          "Setup"
+        ],
+        "summary": "Available inverter models",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Model list"
+          }
+        }
+      }
+    },
+    "/setup/complete": {
+      "post": {
+        "tags": [
+          "Setup"
+        ],
+        "summary": "Mark setup as complete",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Completed"
+          }
+        }
+      }
+    },
+    "/setup/select-model": {
+      "post": {
+        "tags": [
+          "Setup"
+        ],
+        "summary": "Select an inverter model",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "modelId"
+                ],
+                "properties": {
+                  "modelId": {
+                    "type": "integer"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Model saved"
+          },
+          "404": {
+            "description": "Model not found"
+          }
+        }
+      }
+    },
+    "/setup/step": {
+      "get": {
+        "tags": [
+          "Setup"
+        ],
+        "summary": "Get current setup step (1-5)",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Current step"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Setup"
+        ],
+        "summary": "Set current setup step",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "step"
+                ],
+                "properties": {
+                  "step": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Step updated"
+          },
+          "400": {
+            "description": "Invalid step"
+          }
+        }
+      }
+    }
+  }
+}

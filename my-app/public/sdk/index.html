@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wolffie API — Developer Reference</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui.css" />
+  <style>
+    /* ── Brand tokens ───────────────────────────────────────── */
+    :root {
+      --w-bg:       #0f1117;
+      --w-surface:  #181c27;
+      --w-border:   #252a38;
+      --w-accent:   #f5a623;
+      --w-accent2:  #4fc3f7;
+      --w-green:    #43d98c;
+      --w-red:      #f06070;
+      --w-text:     #e4e9f2;
+      --w-muted:    #7a869a;
+      --w-radius:   10px;
+    }
+
+    /* ── Reset ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--w-bg);
+      color: var(--w-text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── Top nav ────────────────────────────────────────────── */
+    #wolffie-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 32px;
+      height: 62px;
+      background: var(--w-surface);
+      border-bottom: 1px solid var(--w-border);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+
+    #wolffie-header .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    #wolffie-header .logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, var(--w-accent), #e8832a);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+
+    #wolffie-header .logo-text {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--w-text);
+      letter-spacing: -0.3px;
+    }
+
+    #wolffie-header .logo-text span {
+      color: var(--w-accent);
+    }
+
+    #wolffie-header .badge {
+      font-size: 11px;
+      background: rgba(245,166,35,.15);
+      color: var(--w-accent);
+      border: 1px solid rgba(245,166,35,.3);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    #wolffie-header .spacer { flex: 1; }
+
+    #wolffie-header .meta {
+      font-size: 12px;
+      color: var(--w-muted);
+    }
+
+    /* ── Swagger UI overrides ───────────────────────────────── */
+    #swagger-ui {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+
+    /* Topbar hide */
+    .swagger-ui .topbar { display: none !important; }
+
+    /* Info block */
+    .swagger-ui .info {
+      margin: 0 0 24px !important;
+    }
+    .swagger-ui .info .title {
+      color: var(--w-text) !important;
+      font-size: 26px !important;
+      font-weight: 700 !important;
+    }
+    .swagger-ui .info p,
+    .swagger-ui .info li,
+    .swagger-ui .info table td {
+      color: var(--w-muted) !important;
+    }
+    .swagger-ui .info a { color: var(--w-accent2) !important; }
+    .swagger-ui .info .description { color: var(--w-muted) !important; }
+    .swagger-ui .info hgroup.main h2.title small { color: var(--w-muted) !important; }
+
+    /* Scheme/server selector */
+    .swagger-ui .scheme-container {
+      background: var(--w-surface) !important;
+      border: 1px solid var(--w-border) !important;
+      border-radius: var(--w-radius) !important;
+      padding: 12px 16px !important;
+      margin-bottom: 24px !important;
+      box-shadow: none !important;
+    }
+    .swagger-ui .scheme-container label { color: var(--w-muted) !important; }
+    .swagger-ui select {
+      background: var(--w-bg) !important;
+      color: var(--w-text) !important;
+      border-color: var(--w-border) !important;
+    }
+
+    /* Authorize button */
+    .swagger-ui .btn.authorize {
+      background: var(--w-accent) !important;
+      border-color: var(--w-accent) !important;
+      color: #000 !important;
+      font-weight: 700 !important;
+      border-radius: 6px !important;
+    }
+    .swagger-ui .btn.authorize svg { fill: #000 !important; }
+
+    /* Tag sections */
+    .swagger-ui .opblock-tag {
+      border-bottom: 1px solid var(--w-border) !important;
+      color: var(--w-text) !important;
+      font-size: 15px !important;
+      font-weight: 600 !important;
+    }
+    .swagger-ui .opblock-tag:hover { background: rgba(255,255,255,.02) !important; }
+    .swagger-ui .opblock-tag small { color: var(--w-muted) !important; }
+
+    /* Operation blocks */
+    .swagger-ui .opblock {
+      border-radius: var(--w-radius) !important;
+      border: 1px solid var(--w-border) !important;
+      background: var(--w-surface) !important;
+      box-shadow: none !important;
+      margin: 6px 0 !important;
+    }
+
+    /* Method colours */
+    .swagger-ui .opblock.opblock-get    { border-left: 3px solid var(--w-accent2) !important; background: rgba(79,195,247,.04) !important; }
+    .swagger-ui .opblock.opblock-post   { border-left: 3px solid var(--w-green)   !important; background: rgba(67,217,140,.04) !important; }
+    .swagger-ui .opblock.opblock-put    { border-left: 3px solid var(--w-accent)  !important; background: rgba(245,166,35,.04) !important; }
+    .swagger-ui .opblock.opblock-patch  { border-left: 3px solid #a78bfa          !important; background: rgba(167,139,250,.04) !important; }
+    .swagger-ui .opblock.opblock-delete { border-left: 3px solid var(--w-red)     !important; background: rgba(240,96,112,.04) !important; }
+
+    .swagger-ui .opblock .opblock-summary-method {
+      border-radius: 4px !important;
+      font-weight: 700 !important;
+      min-width: 70px !important;
+      text-align: center !important;
+    }
+    .swagger-ui .opblock.opblock-get    .opblock-summary-method { background: var(--w-accent2) !important; color: #000 !important; }
+    .swagger-ui .opblock.opblock-post   .opblock-summary-method { background: var(--w-green)   !important; color: #000 !important; }
+    .swagger-ui .opblock.opblock-put    .opblock-summary-method { background: var(--w-accent)  !important; color: #000 !important; }
+    .swagger-ui .opblock.opblock-patch  .opblock-summary-method { background: #a78bfa          !important; color: #000 !important; }
+    .swagger-ui .opblock.opblock-delete .opblock-summary-method { background: var(--w-red)     !important; color: #fff !important; }
+
+    .swagger-ui .opblock .opblock-summary-path {
+      color: var(--w-text) !important;
+      font-family: 'Courier New', monospace !important;
+      font-size: 13px !important;
+    }
+    .swagger-ui .opblock .opblock-summary-description {
+      color: var(--w-muted) !important;
+      font-size: 12px !important;
+    }
+    .swagger-ui .opblock .opblock-summary { background: transparent !important; }
+
+    /* Expanded body */
+    .swagger-ui .opblock-body {
+      background: var(--w-bg) !important;
+      border-top: 1px solid var(--w-border) !important;
+    }
+    .swagger-ui .opblock-section-header {
+      background: transparent !important;
+    }
+    .swagger-ui .opblock-section-header label,
+    .swagger-ui .opblock-section-header h4 {
+      color: var(--w-muted) !important;
+      font-size: 11px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+    }
+    .swagger-ui table thead tr td,
+    .swagger-ui table thead tr th {
+      color: var(--w-muted) !important;
+      border-bottom: 1px solid var(--w-border) !important;
+    }
+    .swagger-ui .parameter__name { color: var(--w-text) !important; }
+    .swagger-ui .parameter__type { color: var(--w-accent2) !important; }
+    .swagger-ui .parameter__deprecated { color: var(--w-red) !important; }
+    .swagger-ui table.model tr td { color: var(--w-muted) !important; }
+
+    /* Response code pills */
+    .swagger-ui .response-col_status { color: var(--w-green) !important; font-weight: 700 !important; }
+    .swagger-ui .responses-table .response-col_description { color: var(--w-muted) !important; }
+
+    /* Code / JSON blocks */
+    .swagger-ui .highlight-code,
+    .swagger-ui .microlight {
+      background: #0a0d14 !important;
+      border: 1px solid var(--w-border) !important;
+      border-radius: 6px !important;
+      color: #c9d1e0 !important;
+    }
+    .swagger-ui .model-box { background: #0a0d14 !important; border: 1px solid var(--w-border) !important; }
+
+    /* Try-it inputs */
+    .swagger-ui input[type=text],
+    .swagger-ui textarea {
+      background: var(--w-bg) !important;
+      border-color: var(--w-border) !important;
+      color: var(--w-text) !important;
+      border-radius: 6px !important;
+    }
+    .swagger-ui input[type=text]:focus,
+    .swagger-ui textarea:focus {
+      border-color: var(--w-accent) !important;
+      outline: none !important;
+      box-shadow: 0 0 0 2px rgba(245,166,35,.2) !important;
+    }
+
+    /* Execute button */
+    .swagger-ui .btn.execute {
+      background: var(--w-accent) !important;
+      border-color: var(--w-accent) !important;
+      color: #000 !important;
+      font-weight: 700 !important;
+      border-radius: 6px !important;
+    }
+    .swagger-ui .btn { border-radius: 6px !important; }
+    .swagger-ui .btn:hover { opacity: .9 !important; }
+
+    /* Auth modal */
+    .swagger-ui .dialog-ux .modal-ux {
+      background: var(--w-surface) !important;
+      border: 1px solid var(--w-border) !important;
+      border-radius: var(--w-radius) !important;
+    }
+    .swagger-ui .dialog-ux .modal-ux-header {
+      background: var(--w-surface) !important;
+      border-bottom: 1px solid var(--w-border) !important;
+    }
+    .swagger-ui .dialog-ux .modal-ux-header h3 { color: var(--w-text) !important; }
+    .swagger-ui .dialog-ux .modal-ux-content { color: var(--w-muted) !important; }
+    .swagger-ui .dialog-ux .modal-ux-content p { color: var(--w-muted) !important; }
+    .swagger-ui .dialog-ux .modal-ux-content label { color: var(--w-text) !important; }
+
+    /* Misc text */
+    .swagger-ui .markdown p,
+    .swagger-ui .markdown li { color: var(--w-muted) !important; }
+    .swagger-ui section.models { border: 1px solid var(--w-border) !important; border-radius: var(--w-radius) !important; }
+    .swagger-ui section.models h4 { color: var(--w-text) !important; }
+    .swagger-ui .model-title { color: var(--w-text) !important; }
+    .swagger-ui .model { color: var(--w-muted) !important; }
+    .swagger-ui .prop-type { color: var(--w-accent2) !important; }
+    .swagger-ui .prop-format { color: var(--w-muted) !important; }
+
+    /* Lock icon for secured */
+    .swagger-ui .opblock-summary-lock { fill: var(--w-accent) !important; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--w-bg); }
+    ::-webkit-scrollbar-thumb { background: var(--w-border); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- ── Wolffie header ─────────────────────────────────────────── -->
+<header id="wolffie-header">
+  <a class="logo" href="#">
+    <div class="logo-icon">⚡</div>
+    <span class="logo-text">Wolff<span>ie</span></span>
+  </a>
+  <span class="badge">API v1</span>
+  <div class="spacer"></div>
+  <span class="meta">Home Energy Management System</span>
+</header>
+
+<!-- ── Swagger UI mount ──────────────────────────────────────── -->
+<div id="swagger-ui"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-bundle.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/5.17.14/swagger-ui-standalone-preset.js"></script>
+<script>
+const spec = {
+  openapi: "3.0.3",
+  info: {
+    title: "Wolffie Energy Management API",
+    version: "1.0.0",
+    description: `
+**Wolffie** is a self-hosted home energy management system that orchestrates solar + battery installations.
+This reference covers all core API endpoints. Authentication is required for most routes — use the **Authorize** button to supply your Bearer token.
+
+**Base URL:** \`https://wolffie.lan/api\`
+
+**Authentication flow:**
+1. Call \`POST /auth/login\` with your credentials
+2. Copy the returned \`token\`
+3. Click **Authorize → BearerAuth** and paste the token
+    `,
+    contact: {
+      name: "Wolffie Energy",
+      url: "https://wolffieenergy.nl"
+    },
+    license: { name: "Private" }
+  },
+  servers: [
+    { url: "https://wolffie.lan/api", description: "Local instance (default)" },
+    { url: "http://192.168.1.160:3009/api", description: "Direct IP (no SSL)" }
+  ],
+  components: {
+    securitySchemes: {
+      BearerAuth: {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        description: "JWT token obtained from `POST /auth/login`. Prefix with `Bearer ` is handled automatically."
+      }
+    },
+    schemas: {
+      Error: {
+        type: "object",
+        properties: {
+          error: { type: "string", example: "Something went wrong" }
+        }
+      },
+      SuccessOk: {
+        type: "object",
+        properties: {
+          success: { type: "boolean", example: true }
+        }
+      },
+      RealtimeSnapshot: {
+        type: "object",
+        properties: {
+          timestamp: { type: "string", format: "date-time" },
+          battery: {
+            type: "object",
+            properties: {
+              soc:   { type: "number", description: "State of charge (%)" },
+              power: { type: "number", description: "Battery power (W). Positive = charging" }
+            }
+          },
+          solar:  { type: "object", properties: { total: { type: "number" }, pv1: { type: "number" }, pv2: { type: "number" }, pv3: { type: "number" } } },
+          grid:   { type: "object", properties: { power: { type: "number", description: "Grid power (W). Positive = import" } } },
+          home:   { type: "object", properties: { power: { type: "number", description: "Home load (W)" } } }
+        }
+      },
+      Alert: {
+        type: "object",
+        properties: {
+          id:          { type: "integer" },
+          source:      { type: "string", example: "strategy" },
+          source_id:   { type: "string" },
+          type:        { type: "string" },
+          severity:    { type: "string", enum: ["info", "warning", "error"] },
+          message:     { type: "string" },
+          suggestion:  { type: "string", nullable: true },
+          action:      { type: "string", nullable: true },
+          created_at:  { type: "string", format: "date-time" },
+          resolved_at: { type: "string", format: "date-time", nullable: true },
+          dismissed_at:{ type: "string", format: "date-time", nullable: true }
+        }
+      },
+      DayPlanSlot: {
+        type: "object",
+        properties: {
+          hour:           { type: "integer", description: "Hour of day (0–23)" },
+          action:         { type: "string", enum: ["IDLE","CHARGE_FROM_GRID","DISCHARGE_TO_GRID"] },
+          watts:          { type: "number" },
+          reason:         { type: "string" },
+          priceCtKwh:     { type: "number", description: "Day-ahead price in ct/kWh" },
+          solarForecastW: { type: "number", description: "Forecast solar production (W)" }
+        }
+      },
+      Strategy: {
+        type: "object",
+        properties: {
+          id:                    { type: "string", example: "smart-eco" },
+          name:                  { type: "string" },
+          description:           { type: "string" },
+          active:                { type: "boolean" },
+          available:             { type: "boolean" },
+          requiredCapabilities:  { type: "array", items: { type: "string" } },
+          optionalCapabilities:  { type: "array", items: { type: "string" } }
+        }
+      },
+      Device: {
+        type: "object",
+        properties: {
+          id:           { type: "integer" },
+          device_id:    { type: "string" },
+          device_name:  { type: "string" },
+          device_type:  { type: "string" },
+          power:        { type: "number", description: "Current power (W)" },
+          voltage:      { type: "number" },
+          current:      { type: "number" },
+          energy_today: { type: "number", description: "Energy today (kWh)" },
+          energy_total: { type: "number" },
+          enabled:      { type: "boolean" },
+          timestamp:    { type: "string", format: "date-time" }
+        }
+      },
+      Collector: {
+        type: "object",
+        properties: {
+          id:                { type: "string" },
+          name:              { type: "string" },
+          enabled:           { type: "boolean" },
+          paused:            { type: "boolean" },
+          intervalMs:        { type: "integer" },
+          lastRun:           { type: "string", format: "date-time", nullable: true },
+          nextRun:           { type: "string", format: "date-time", nullable: true },
+          lastError:         { type: "string", nullable: true },
+          consecutiveErrors: { type: "integer" }
+        }
+      }
+    }
+  },
+  security: [{ BearerAuth: [] }],
+  tags: [
+    { name: "Authentication",  description: "Login and token management" },
+    { name: "Realtime",        description: "Live power metrics and dashboard summary" },
+    { name: "Strategies",      description: "Smart Eco strategy engine — planning, decisions, config" },
+    { name: "Capabilities",    description: "Hardware capability dispatch (battery, solar, grid, devices)" },
+    { name: "Alerts",          description: "System-wide alert feed" },
+    { name: "History",         description: "Historical energy data" },
+    { name: "Collectors",      description: "Data collection daemon control" },
+    { name: "Devices",         description: "Smart plug and device management" },
+    { name: "Settings",        description: "Module and core system settings (admin)" },
+    { name: "Modules",         description: "Module installation and registry" },
+    { name: "System Config",   description: "Low-level system configuration keys" },
+    { name: "Setup",           description: "Initial setup wizard" }
+  ],
+  paths: {
+
+    // ── AUTH ──────────────────────────────────────────────────
+    "/auth/login": {
+      post: {
+        tags: ["Authentication"],
+        summary: "Login and obtain a JWT token",
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["username","password"],
+                properties: {
+                  username: { type: "string", example: "admin" },
+                  password: { type: "string", format: "password", example: "your-password" }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          "200": {
+            description: "Login successful",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    token:    { type: "string", description: "JWT — pass as Bearer token in Authorization header" },
+                    user:     { type: "object", properties: { id: { type: "integer" }, username: { type: "string" }, role: { type: "string" } } }
+                  }
+                }
+              }
+            }
+          },
+          "401": { description: "Invalid credentials", content: { "application/json": { schema: { "$ref": "#/components/schemas/Error" } } } }
+        }
+      }
+    },
+
+    // ── REALTIME / SUMMARY ────────────────────────────────────
+    "/system/summary": {
+      get: {
+        tags: ["Realtime"],
+        summary: "Full dashboard summary from latest snapshot",
+        description: "Returns collector status, today's accumulated energy (kWh), real-time power (W), and environmental metrics. Data age >5 min → `collector.connected = false`.",
+        responses: {
+          "200": {
+            description: "Dashboard summary",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    collector:     { type: "object", properties: { connected: { type: "boolean" }, lastUpdate: { type: "string", format: "date-time" }, ageSeconds: { type: "integer" }, source: { type: "string" } } },
+                    today:         { type: "object", properties: { pv_generation: { type: "number" }, load_consumption: { type: "number" }, grid_import: { type: "number" }, grid_export: { type: "number" }, battery_charge: { type: "number" }, battery_discharge: { type: "number" } } },
+                    realtime:      { "$ref": "#/components/schemas/RealtimeSnapshot" },
+                    environmental: { type: "object", properties: { co2_saved: { type: "number", description: "kg CO₂ offset" }, trees_equivalent: { type: "number" } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/realtime": {
+      get: {
+        tags: ["Realtime"],
+        summary: "Live power values only",
+        description: "Lightweight endpoint — only current W values, no accumulated kWh. Suitable for polling every 5 s.",
+        responses: {
+          "200": { description: "Real-time snapshot", content: { "application/json": { schema: { "$ref": "#/components/schemas/RealtimeSnapshot" } } } },
+          "503": { description: "No data yet collected" }
+        }
+      }
+    },
+    "/system/collector-status": {
+      get: {
+        tags: ["Realtime"],
+        summary: "Collector heartbeat",
+        description: "Returns whether data collection is active and the age of the most recent snapshot.",
+        responses: {
+          "200": {
+            description: "Collector status",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    connected:   { type: "boolean" },
+                    lastUpdate:  { type: "string", format: "date-time" },
+                    ageSeconds:  { type: "integer" },
+                    source:      { type: "string" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/events": {
+      get: {
+        tags: ["Realtime"],
+        summary: "Recent system events log",
+        description: "Returns the last 100 events (charges, discharges, strategy changes, etc.) joined with username.",
+        responses: {
+          "200": { description: "Event rows", content: { "application/json": { schema: { type: "array", items: { type: "object" } } } } }
+        }
+      }
+    },
+    "/system/charge": {
+      post: {
+        tags: ["Realtime"],
+        summary: "Manual grid charge command",
+        description: "Triggers a charge-from-grid action and logs the event against the requesting user.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["watts"],
+                properties: {
+                  watts:     { type: "number", example: 2000 },
+                  targetSoc: { type: "number", example: 80 }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          "200": { description: "Command accepted", content: { "application/json": { schema: { "$ref": "#/components/schemas/SuccessOk" } } } }
+        }
+      }
+    },
+    "/system/architecture": {
+      get: {
+        tags: ["Realtime"],
+        summary: "System component architecture",
+        description: "Returns the full component tree (inverters, panels, meters, battery modules) and energy flow definitions as stored in `system_components` and `component_flows`.",
+        responses: {
+          "200": {
+            description: "Architecture graph",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    levels: { type: "array", items: { type: "object", properties: { type: { type: "string" }, label: { type: "string" }, components: { type: "array", items: { type: "object" } } } } },
+                    flows:  { type: "array", items: { type: "object", properties: { from: { type: "string" }, to: { type: "string" }, type: { type: "string" }, direction: { type: "string" }, color: { type: "string" } } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    // ── STRATEGIES ────────────────────────────────────────────
+    "/strategies": {
+      get: {
+        tags: ["Strategies"],
+        summary: "List all available strategies",
+        description: "Returns all known strategies with their availability (based on registered capabilities) and active flag. Use this to populate the strategy selector UI.",
+        responses: {
+          "200": {
+            description: "Strategy list",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: { strategies: { type: "array", items: { "$ref": "#/components/schemas/Strategy" } } }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/strategies/active": {
+      get: {
+        tags: ["Strategies"],
+        summary: "Active strategy state",
+        description: "Returns the active strategy with config, latest decision, and today's day plan.",
+        responses: {
+          "200": {
+            description: "Active strategy state",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    strategy: { type: "object", properties: { id: { type: "string" }, name: { type: "string" }, config: { type: "object" } } },
+                    decision: { type: "object", properties: { action: { type: "string" }, reason: { type: "string" }, evaluatedAt: { type: "string" }, executed: { type: "boolean" } } },
+                    dayPlan:  { type: "array", items: { "$ref": "#/components/schemas/DayPlanSlot" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      post: {
+        tags: ["Strategies"],
+        summary: "Switch the active strategy",
+        description: "Changes the active strategy. Triggers immediate re-evaluation and day plan regeneration.",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", required: ["strategyId"], properties: { strategyId: { type: "string", example: "smart-eco" } } } } }
+        },
+        responses: {
+          "200": { description: "New strategy state (same shape as GET /strategies/active)" },
+          "400": { description: "Missing strategyId" },
+          "422": { description: "Strategy not available (required capabilities missing)" }
+        }
+      }
+    },
+    "/strategies/day-plan": {
+      get: {
+        tags: ["Strategies"],
+        summary: "Today's 96-slot day plan",
+        description: "Returns the hourly (or 15-minute) plan for a given date. Defaults to today. Source for the Strategy Chart.",
+        parameters: [
+          { name: "date", in: "query", schema: { type: "string", format: "date", example: "2025-04-01" }, description: "Plan date (YYYY-MM-DD). Defaults to today." }
+        ],
+        responses: {
+          "200": {
+            description: "Day plan",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    date:   { type: "string", format: "date" },
+                    plan:   { type: "array", items: { "$ref": "#/components/schemas/DayPlanSlot" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/strategies/day-plan/regenerate": {
+      post: {
+        tags: ["Strategies"],
+        summary: "Force day plan regeneration",
+        description: "Discards the cached plan and rebuilds it from current price data and solar forecast. Use after new prices arrive or after a strategy config change.",
+        requestBody: {
+          content: { "application/json": { schema: { type: "object", properties: { date: { type: "string", format: "date", example: "2025-04-01" } } } } }
+        },
+        responses: {
+          "200": {
+            description: "Regenerated plan",
+            content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, date: { type: "string" }, plan: { type: "array", items: { "$ref": "#/components/schemas/DayPlanSlot" } } } } } }
+          }
+        }
+      }
+    },
+    "/strategies/decisions": {
+      get: {
+        tags: ["Strategies"],
+        summary: "Recent decision log",
+        description: "Returns the latest strategy evaluations including action, reason, executed flag, and full context.",
+        parameters: [
+          { name: "limit", in: "query", schema: { type: "integer", default: 48, maximum: 500 }, description: "Max results to return" }
+        ],
+        responses: {
+          "200": {
+            description: "Decision log",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    decisions: {
+                      type: "array",
+                      items: {
+                        type: "object",
+                        properties: {
+                          evaluatedAt: { type: "string", format: "date-time" },
+                          strategyId:  { type: "string" },
+                          action:      { type: "string" },
+                          reason:      { type: "string" },
+                          executed:    { type: "boolean" },
+                          context:     { type: "object" },
+                          result:      { type: "object" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/strategies/evaluate": {
+      post: {
+        tags: ["Strategies"],
+        summary: "Force immediate evaluation (debug)",
+        description: "Triggers a full evaluation cycle outside the normal schedule. Returns the resulting state.",
+        responses: {
+          "200": { description: "Post-evaluation state" }
+        }
+      }
+    },
+    "/strategies/config": {
+      post: {
+        tags: ["Strategies"],
+        summary: "Update active strategy config",
+        description: "Merges the provided fields into the active strategy's stored config. Numeric strings are coerced to numbers. Triggers immediate re-evaluation.",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                description: "Any subset of the strategy's config fields",
+                example: { chargeThresholdCt: 8, dischargeThresholdCt: 25, socMin: 20, socMax: 95 }
+              }
+            }
+          }
+        },
+        responses: {
+          "200": {
+            description: "Merged config",
+            content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, config: { type: "object" } } } } }
+          }
+        }
+      }
+    },
+    "/strategies/effectiveness": {
+      get: {
+        tags: ["Strategies"],
+        summary: "Strategy effectiveness metrics",
+        description: "Energy-based KPIs over a rolling window: solar self-consumption, grid import delta vs prior period, battery utilisation, forecast accuracy, and decision accuracy (CHARGE at low price / DISCHARGE at high price).",
+        parameters: [
+          { name: "days", in: "query", schema: { type: "integer", default: 14, maximum: 90 }, description: "Analysis window in days" }
+        ],
+        responses: {
+          "200": {
+            description: "Effectiveness KPIs",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    period:    { type: "object", properties: { days: { type: "integer" } } },
+                    solar:     { type: "object", properties: { selfConsumptionPct: { type: "integer", nullable: true }, totalPvKwh: { type: "number" }, totalExportKwh: { type: "number" } } },
+                    grid:      { type: "object", properties: { totalImportKwh: { type: "number" }, gridImportDelta: { type: "number", nullable: true } } },
+                    battery:   { type: "object", properties: { avgDailyCycles: { type: "number" }, totalChargeKwh: { type: "number" }, totalDischargeKwh: { type: "number" } } },
+                    forecast:  { type: "object", properties: { avgAccuracyPct: { type: "integer", nullable: true }, trend: { type: "array", items: { type: "object" } } } },
+                    decisions: { type: "object", properties: { accuracyPct: { type: "integer", nullable: true }, total: { type: "integer" }, correct: { type: "integer" }, log: { type: "array", items: { type: "object" } } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/strategies/alerts": {
+      get: {
+        tags: ["Strategies"],
+        summary: "Strategy alert feed",
+        description: "Returns unresolved strategy alerts. Polled by the dashboard banner.",
+        responses: {
+          "200": { description: "Alerts", content: { "application/json": { schema: { type: "object", properties: { alerts: { type: "array", items: { "$ref": "#/components/schemas/Alert" } } } } } } }
+        }
+      }
+    },
+    "/strategies/alerts/{id}/resolve": {
+      post: {
+        tags: ["Strategies"],
+        summary: "Resolve a strategy alert",
+        description: "Marks the alert resolved globally. If `execute: true` is passed, immediately triggers a new evaluation so the strategy can act on the confirmation.",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        requestBody: {
+          content: { "application/json": { schema: { type: "object", properties: { execute: { type: "boolean", description: "Trigger immediate evaluation after resolve", example: true } } } } }
+        },
+        responses: {
+          "200": { description: "Resolved", content: { "application/json": { schema: { "$ref": "#/components/schemas/SuccessOk" } } } }
+        }
+      }
+    },
+
+    // ── CAPABILITIES ──────────────────────────────────────────
+    "/capabilities": {
+      get: {
+        tags: ["Capabilities"],
+        summary: "List registered capabilities",
+        description: "Returns all capability types currently provided by active modules, with module ID and priority. The frontend uses this to conditionally show/hide controls.",
+        responses: {
+          "200": {
+            description: "Capability registry snapshot",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    capabilities: {
+                      type: "array",
+                      items: { type: "object", properties: { type: { type: "string" }, moduleId: { type: "string" }, priority: { type: "integer" } } }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/capability/battery/read": {
+      get: {
+        tags: ["Capabilities"],
+        summary: "Battery — real-time metrics",
+        description: "Full battery metrics via the highest-priority registered provider (AlphaESS Modbus or Cloud API).",
+        responses: {
+          "200": { description: "Battery metrics" },
+          "503": { description: "No module registered for `battery:read`" }
+        }
+      }
+    },
+    "/capability/battery/status": {
+      get: {
+        tags: ["Capabilities"],
+        summary: "Battery — dispatch status",
+        description: "Lightweight in-memory state: whether a charge/discharge session is active, the mode, watts, and remaining seconds.",
+        responses: { "200": { description: "Dispatch status" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/battery/charge-from-grid": {
+      post: {
+        tags: ["Capabilities"],
+        summary: "Battery — start charge from grid",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["watts","targetSOC","durationHours"],
+                properties: {
+                  watts:         { type: "number", example: 2500 },
+                  targetSOC:     { type: "number", example: 90, description: "Stop charging when SoC reaches this %" },
+                  durationHours: { type: "number", example: 2 }
+                }
+              }
+            }
+          }
+        },
+        responses: { "200": { description: "Charge session started" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/battery/discharge-to-grid": {
+      post: {
+        tags: ["Capabilities"],
+        summary: "Battery — start discharge to grid",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["watts","minimumSOC","durationHours"],
+                properties: {
+                  watts:         { type: "number", example: 2000 },
+                  minimumSOC:    { type: "number", example: 20, description: "Stop discharging below this SoC %" },
+                  durationHours: { type: "number", example: 1 }
+                }
+              }
+            }
+          }
+        },
+        responses: { "200": { description: "Discharge session started" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/battery/stop": {
+      post: {
+        tags: ["Capabilities"],
+        summary: "Battery — stop active dispatch",
+        description: "Cancels any active charge/discharge session and returns the inverter to Self-Consumption mode.",
+        responses: { "200": { description: "Dispatch stopped" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/solar/read": {
+      get: {
+        tags: ["Capabilities"],
+        summary: "Solar — real-time production",
+        responses: { "200": { description: "Solar metrics" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/solar/forecast": {
+      get: {
+        tags: ["Capabilities"],
+        summary: "Solar — yield forecast",
+        description: "Returns today's and tomorrow's solar forecast from Forecast.Solar.",
+        responses: { "200": { description: "Solar forecast" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/grid/read": {
+      get: {
+        tags: ["Capabilities"],
+        summary: "Grid — real-time metrics",
+        description: "Current grid import/export power and voltage.",
+        responses: { "200": { description: "Grid metrics" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/grid/pricing": {
+      get: {
+        tags: ["Capabilities"],
+        summary: "Grid — day-ahead prices",
+        description: "Returns hourly day-ahead electricity prices from the Energy Charts API.",
+        responses: { "200": { description: "Price schedule" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/home/read": {
+      get: {
+        tags: ["Capabilities"],
+        summary: "Home — load metrics",
+        description: "Home consumption power and energy today. Priority 10 = P1 meter (measured), priority 5 = AlphaESS (derived).",
+        responses: { "200": { description: "Home load metrics" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/devices/read": {
+      get: {
+        tags: ["Capabilities"],
+        summary: "Devices — list all managed devices",
+        responses: { "200": { description: "Device list" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+    "/capability/devices/{id}/control": {
+      post: {
+        tags: ["Capabilities"],
+        summary: "Devices — control a device",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" }, description: "Device serial / ID" }],
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                required: ["action"],
+                properties: {
+                  action: { type: "string", enum: ["on","off","toggle"] },
+                  power:  { type: "number", description: "Target watt limit (optional)" }
+                }
+              }
+            }
+          }
+        },
+        responses: { "200": { description: "Command accepted" }, "503": { description: "Capability unavailable" } }
+      }
+    },
+
+    // ── ALERTS ────────────────────────────────────────────────
+    "/alerts": {
+      get: {
+        tags: ["Alerts"],
+        summary: "Active alerts for current user",
+        description: "Returns unresolved alerts not yet dismissed by the requesting user. Optional `?source=strategy` filter.",
+        parameters: [
+          { name: "source", in: "query", schema: { type: "string", example: "strategy" }, description: "Filter by alert source" }
+        ],
+        responses: {
+          "200": { description: "Alert list", content: { "application/json": { schema: { type: "object", properties: { alerts: { type: "array", items: { "$ref": "#/components/schemas/Alert" } } } } } } }
+        }
+      }
+    },
+    "/alerts/history": {
+      get: {
+        tags: ["Alerts"],
+        summary: "Alert history",
+        description: "Returns resolved or user-dismissed alerts, newest first, up to 100 rows.",
+        responses: {
+          "200": { description: "Historical alerts", content: { "application/json": { schema: { type: "object", properties: { alerts: { type: "array", items: { "$ref": "#/components/schemas/Alert" } } } } } } }
+        }
+      }
+    },
+    "/alerts/{id}/dismiss": {
+      post: {
+        tags: ["Alerts"],
+        summary: "Dismiss alert (per-user)",
+        description: "Dismisses the alert for the requesting user only. Other users continue to see it.",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: {
+          "200": { description: "Dismissed", content: { "application/json": { schema: { "$ref": "#/components/schemas/SuccessOk" } } } }
+        }
+      }
+    },
+    "/alerts/{id}/resolve": {
+      post: {
+        tags: ["Alerts"],
+        summary: "Resolve alert globally (admin)",
+        description: "Globally resolves an alert — removes it for all users. Requires `admin` role.",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "integer" } }],
+        responses: {
+          "200": { description: "Resolved", content: { "application/json": { schema: { "$ref": "#/components/schemas/SuccessOk" } } } },
+          "403": { description: "Forbidden — admin role required" }
+        }
+      }
+    },
+
+    // ── HISTORY ───────────────────────────────────────────────
+    "/history/today": {
+      get: {
+        tags: ["History"],
+        summary: "Today's energy data",
+        responses: { "200": { description: "Today's aggregated energy data" } }
+      }
+    },
+    "/history/date/{date}": {
+      get: {
+        tags: ["History"],
+        summary: "Energy data for a specific date",
+        parameters: [{ name: "date", in: "path", required: true, schema: { type: "string", format: "date", example: "2025-03-28" } }],
+        responses: { "200": { description: "Daily energy data" } }
+      }
+    },
+    "/history/range": {
+      get: {
+        tags: ["History"],
+        summary: "Energy data for a date range",
+        description: "Returns aggregated energy data for a period — e.g. last 7 or 30 days, or a custom range.",
+        parameters: [
+          { name: "from",  in: "query", schema: { type: "string", format: "date" } },
+          { name: "to",    in: "query", schema: { type: "string", format: "date" } },
+          { name: "days",  in: "query", schema: { type: "integer", example: 7 }, description: "Shorthand for last N days (overrides from/to)" }
+        ],
+        responses: { "200": { description: "Range data" } }
+      }
+    },
+
+    // ── COLLECTORS ────────────────────────────────────────────
+    "/collectors/status": {
+      get: {
+        tags: ["Collectors"],
+        summary: "All collector schedules",
+        description: "Returns live state for every registered collector: enabled, paused, interval, last/next run, error count.",
+        responses: {
+          "200": {
+            description: "Collector status",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    ok:         { type: "boolean" },
+                    running:    { type: "boolean" },
+                    count:      { type: "integer" },
+                    timestamp:  { type: "string", format: "date-time" },
+                    collectors: { type: "array", items: { "$ref": "#/components/schemas/Collector" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/collectors/{id}/restart": {
+      post: {
+        tags: ["Collectors"],
+        summary: "Restart a collector",
+        description: "Clears the pause state and immediately re-runs the named collector.",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", example: "alphaess-modbus-tcp" } }],
+        responses: {
+          "200": { description: "Restarted", content: { "application/json": { schema: { type: "object", properties: { ok: { type: "boolean" }, message: { type: "string" } } } } } },
+          "404": { description: "Collector not found" }
+        }
+      }
+    },
+    "/collectors/{id}/enabled": {
+      patch: {
+        tags: ["Collectors"],
+        summary: "Enable / disable a collector at runtime",
+        description: "Updates live collector state. Persist the change in module settings before calling this endpoint.",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", example: "solaredge-modbus-tcp" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", required: ["enabled"], properties: { enabled: { type: "boolean" } } } } }
+        },
+        responses: {
+          "200": { description: "State updated", content: { "application/json": { schema: { type: "object", properties: { ok: { type: "boolean" }, collector: { type: "object" } } } } } },
+          "400": { description: "`enabled` must be a boolean" },
+          "404": { description: "Collector not found" }
+        }
+      }
+    },
+
+    // ── DEVICES ───────────────────────────────────────────────
+    "/system/devices": {
+      get: {
+        tags: ["Devices"],
+        summary: "All device measurements (latest snapshot)",
+        description: "Returns the latest measurement for every enabled device, including energy_today calculated from yesterday's baseline.",
+        responses: {
+          "200": {
+            description: "Device list",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    count:     { type: "integer" },
+                    timestamp: { type: "string", format: "date-time" },
+                    devices:   { type: "array", items: { "$ref": "#/components/schemas/Device" } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/devices/{deviceId}": {
+      get: {
+        tags: ["Devices"],
+        summary: "Single device measurement",
+        parameters: [{ name: "deviceId", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Device measurement", content: { "application/json": { schema: { "$ref": "#/components/schemas/Device" } } } },
+          "404": { description: "No measurements for this device" }
+        }
+      }
+    },
+    "/system/devices-list": {
+      get: {
+        tags: ["Devices"],
+        summary: "All devices with today's aggregated usage",
+        description: "Joins `device_settings` with `device_daily_usage` to return full device registry with `usage_today` (kWh). Covers HomeWizard, Matter, and any other module.",
+        responses: {
+          "200": {
+            description: "Device list with usage",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    count:   { type: "integer" },
+                    devices: { type: "array", items: { type: "object", properties: { id: { type: "integer" }, name: { type: "string" }, serial: { type: "string" }, module: { type: "string" }, product_type: { type: "string" }, usage_today: { type: "number" }, enabled: { type: "boolean" } } } }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/schemas/active": {
+      get: {
+        tags: ["Devices"],
+        summary: "Active module device schemas",
+        description: "Returns JSON schemas for all modules that currently have devices in `device_settings`. Used to render dynamic device UI.",
+        responses: { "200": { description: "Schemas by module name" } }
+      }
+    },
+
+    // ── SETTINGS ──────────────────────────────────────────────
+    "/settings/core": {
+      get: {
+        tags: ["Settings"],
+        summary: "Core system settings (schema + values)",
+        description: "Returns the full schema definition and current values for all core categories: system, data_collection, retention, notifications, energy. **Admin only.**",
+        responses: {
+          "200": {
+            description: "Core settings",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success: { type: "boolean" },
+                    schema:  { type: "object", description: "UI field schema with groups/sections/fields" },
+                    values:  { type: "object", description: "Current setting values keyed by setting_key" }
+                  }
+                }
+              }
+            }
+          },
+          "403": { description: "Admin role required" }
+        }
+      },
+      post: {
+        tags: ["Settings"],
+        summary: "Update core system settings",
+        description: "Saves one or more core settings. Keys are mapped to their category automatically. **Admin only.**",
+        requestBody: {
+          required: true,
+          content: {
+            "application/json": {
+              schema: {
+                type: "object",
+                example: { system_name: "Wolffie Home", timezone: "Europe/Amsterdam", email_enabled: true, email_address: "owner@example.com" }
+              }
+            }
+          }
+        },
+        responses: {
+          "200": { description: "Settings saved", content: { "application/json": { schema: { "$ref": "#/components/schemas/SuccessOk" } } } }
+        }
+      }
+    },
+    "/settings/modules": {
+      get: {
+        tags: ["Settings"],
+        summary: "List all loaded modules",
+        description: "Returns module_id, name, enabled flag, and whether a settings schema exists. **Admin only.**",
+        responses: {
+          "200": {
+            description: "Module list",
+            content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, modules: { type: "array", items: { type: "object", properties: { module_id: { type: "string" }, module_name: { type: "string" }, enabled: { type: "boolean" }, has_schema: { type: "boolean" } } } } } } } }
+          }
+        }
+      }
+    },
+    "/settings/module/{moduleId}": {
+      get: {
+        tags: ["Settings"],
+        summary: "Module settings — schema + values + translations",
+        description: "Returns the module's JSON settings schema, current DB values, and i18n messages from the module's `locales/` directory. **Admin only.**",
+        parameters: [{ name: "moduleId", in: "path", required: true, schema: { type: "string", example: "alphaess-modbus-tcp" } }],
+        responses: {
+          "200": {
+            description: "Module settings",
+            content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, schema: { type: "object" }, values: { type: "object" }, messages: { type: "object", description: "i18n messages keyed by language code" } } } } }
+          },
+          "404": { description: "Module not found" }
+        }
+      },
+      post: {
+        tags: ["Settings"],
+        summary: "Save module settings",
+        description: "Persists settings for the given module. Calls `reinitialize()` on the module if available. Notifies collectorManager if `enabled` flag changed. **Admin only.**",
+        parameters: [{ name: "moduleId", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", example: { enabled: true, host: "192.168.3.156", port: 502, poll_interval: 30 } } } }
+        },
+        responses: {
+          "200": { description: "Settings saved", content: { "application/json": { schema: { "$ref": "#/components/schemas/SuccessOk" } } } }
+        }
+      }
+    },
+    "/settings/users": {
+      get: {
+        tags: ["Settings"],
+        summary: "User management schema",
+        description: "Returns the dynamic table schema for the users management UI. **Admin only.**",
+        responses: { "200": { description: "Schema definition" } }
+      }
+    },
+    "/settings/users/list": {
+      get: {
+        tags: ["Settings"],
+        summary: "List all users",
+        responses: {
+          "200": {
+            description: "User list",
+            content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, data: { type: "array", items: { type: "object", properties: { id: { type: "integer" }, username: { type: "string" }, email: { type: "string" }, role: { type: "string" } } } } } } } }
+          }
+        }
+      }
+    },
+    "/settings/users/create": {
+      post: {
+        tags: ["Settings"],
+        summary: "Create a user",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", required: ["new_username","new_password","new_role"], properties: { new_username: { type: "string" }, new_password: { type: "string", format: "password" }, new_email: { type: "string", format: "email" }, new_role: { type: "string", enum: ["admin","user"] } } } } }
+        },
+        responses: { "200": { description: "Created" }, "400": { description: "Validation error" } }
+      }
+    },
+    "/settings/users/update": {
+      post: {
+        tags: ["Settings"],
+        summary: "Update a user",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", required: ["user_id"], properties: { user_id: { type: "integer" }, new_username: { type: "string" }, new_password: { type: "string", format: "password" }, new_email: { type: "string", format: "email" }, new_role: { type: "string", enum: ["admin","user"] } } } } }
+        },
+        responses: { "200": { description: "Updated" } }
+      }
+    },
+    "/settings/users/delete": {
+      post: {
+        tags: ["Settings"],
+        summary: "Delete a user",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", required: ["user_id"], properties: { user_id: { type: "integer" } } } } }
+        },
+        responses: { "200": { description: "Deleted" }, "400": { description: "Error" } }
+      }
+    },
+    "/settings/day-ahead-chart": {
+      get: {
+        tags: ["Settings"],
+        summary: "Day-ahead price threshold settings",
+        description: "Returns the percentile thresholds used to colour price bars on the chart (green = cheap, red = expensive).",
+        responses: {
+          "200": {
+            description: "Thresholds",
+            content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, green_below: { type: "number", example: 30, description: "Percentile below which bars are green" }, red_above: { type: "number", example: 70, description: "Percentile above which bars are red" } } } } }
+          }
+        }
+      },
+      put: {
+        tags: ["Settings"],
+        summary: "Update day-ahead price thresholds",
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", required: ["green_below","red_above"], properties: { green_below: { type: "number", minimum: 0, maximum: 100, example: 25 }, red_above: { type: "number", minimum: 0, maximum: 100, example: 75 } } } } }
+        },
+        responses: {
+          "200": { description: "Saved", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, green_below: { type: "number" }, red_above: { type: "number" } } } } } },
+          "400": { description: "Validation error (out of range or green_below >= red_above)" }
+        }
+      }
+    },
+
+    // ── MODULES ───────────────────────────────────────────────
+    "/modules": {
+      get: {
+        tags: ["Modules"],
+        summary: "List installed modules",
+        description: "Returns all modules with `installed = 1`, enriched with `_lock` data from `manifest.lock.json` if the module was installed via upload.",
+        responses: {
+          "200": {
+            description: "Module registry",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      module_id:      { type: "string" },
+                      module_name:    { type: "string" },
+                      module_version: { type: "string" },
+                      module_type:    { type: "string" },
+                      enabled:        { type: "boolean" },
+                      installed:      { type: "boolean" },
+                      has_collector:  { type: "boolean" },
+                      has_api:        { type: "boolean" },
+                      _lock:          { type: "object", nullable: true }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/modules/upload": {
+      post: {
+        tags: ["Modules"],
+        summary: "Upload and install a module ZIP",
+        description: "Uploads a `.zip` file, validates `manifest.json`, verifies SHA-256 checksum (optional), and installs the module. Add `?overwrite=true` to replace an existing module.",
+        parameters: [
+          { name: "overwrite", in: "query", schema: { type: "boolean" }, description: "Replace existing module with same id" }
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            "multipart/form-data": {
+              schema: {
+                type: "object",
+                required: ["module"],
+                properties: {
+                  module:   { type: "string", format: "binary", description: "Module ZIP file" },
+                  checksum: { type: "string", format: "binary", description: "SHA-256 checksum file (optional)" }
+                }
+              }
+            }
+          }
+        },
+        responses: {
+          "200": { description: "Module installed", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, module: { type: "object" }, checksum: { type: "string" }, checksumVerified: { type: "boolean" }, hotLoaded: { type: "boolean" }, message: { type: "string" } } } } } },
+          "400": { description: "Invalid ZIP, missing manifest, or checksum mismatch" },
+          "409": { description: "Module already installed (add ?overwrite=true)" }
+        }
+      }
+    },
+    "/modules/{id}/verify": {
+      get: {
+        tags: ["Modules"],
+        summary: "Verify module checksum",
+        description: "Returns the `manifest.lock.json` data showing when the module was installed and whether the checksum was verified.",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Lock file contents or `verified: false` if module was not installed via upload" }
+        }
+      }
+    },
+    "/modules/{id}": {
+      delete: {
+        tags: ["Modules"],
+        summary: "Uninstall a module",
+        description: "Removes module files from disk and marks the registry row as `installed=0, enabled=0`. The registry entry is kept for history.",
+        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" } }],
+        responses: {
+          "200": { description: "Uninstalled", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, message: { type: "string" } } } } } },
+          "404": { description: "Module not found on disk" }
+        }
+      }
+    },
+
+    // ── SYSTEM CONFIG ─────────────────────────────────────────
+    "/system/config": {
+      get: {
+        tags: ["System Config"],
+        summary: "Get full system configuration",
+        description: "Returns high-level config: setupCompleted, setupStep, selectedModel, manufacturer, modelName.",
+        responses: {
+          "200": {
+            description: "System config",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    success:       { type: "boolean" },
+                    config: {
+                      type: "object",
+                      properties: {
+                        setupCompleted: { type: "boolean" },
+                        setupStep:      { type: "integer" },
+                        selectedModel:  { type: "string", nullable: true },
+                        manufacturer:   { type: "string", nullable: true },
+                        modelName:      { type: "string", nullable: true }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system/config/{key}": {
+      get: {
+        tags: ["System Config"],
+        summary: "Get a specific config key",
+        parameters: [{ name: "key", in: "path", required: true, schema: { type: "string", example: "modbus_manufacturer" } }],
+        responses: {
+          "200": { description: "Key value", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, key: { type: "string" }, value: { type: "string" } } } } } },
+          "404": { description: "Key not found" }
+        }
+      },
+      put: {
+        tags: ["System Config"],
+        summary: "Update a config key (admin)",
+        parameters: [{ name: "key", in: "path", required: true, schema: { type: "string" } }],
+        requestBody: {
+          required: true,
+          content: { "application/json": { schema: { type: "object", required: ["value"], properties: { value: { type: "string" } } } } }
+        },
+        responses: {
+          "200": { description: "Updated" },
+          "403": { description: "Admin role required" }
+        }
+      }
+    },
+    "/system/config/category/{category}": {
+      get: {
+        tags: ["System Config"],
+        summary: "Get all keys in a category",
+        parameters: [{ name: "category", in: "path", required: true, schema: { type: "string", example: "strategy" } }],
+        responses: { "200": { description: "Category config object" } }
+      }
+    },
+    "/system/config/cache/clear": {
+      post: {
+        tags: ["System Config"],
+        summary: "Clear config cache (admin)",
+        responses: { "200": { description: "Cache cleared" }, "403": { description: "Admin role required" } }
+      }
+    },
+    "/system/health": {
+      get: {
+        tags: ["System Config"],
+        summary: "System health check",
+        description: "Returns database connectivity, setup status, and process uptime.",
+        security: [],
+        responses: {
+          "200": {
+            description: "Health status",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    status:         { type: "string", enum: ["healthy","unhealthy"] },
+                    database:       { type: "string", example: "connected" },
+                    setupCompleted: { type: "boolean" },
+                    hasModel:       { type: "boolean" },
+                    uptime:         { type: "number", description: "Process uptime in seconds" },
+                    timestamp:      { type: "string", format: "date-time" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    // ── SETUP ─────────────────────────────────────────────────
+    "/setup/status": {
+      get: {
+        tags: ["Setup"],
+        summary: "Setup completion status",
+        security: [],
+        responses: { "200": { description: "Status", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, setupCompleted: { type: "boolean" }, selectedModel: { type: "string", nullable: true } } } } } } }
+      }
+    },
+    "/setup/models": {
+      get: {
+        tags: ["Setup"],
+        summary: "Available inverter models",
+        security: [],
+        responses: { "200": { description: "Model list", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, models: { type: "array", items: { type: "object" } } } } } } }
+      }
+    },
+    "/setup/select-model": {
+      post: {
+        tags: ["Setup"],
+        summary: "Select an inverter model",
+        security: [],
+        requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["modelId"], properties: { modelId: { type: "integer", example: 1 } } } } } },
+        responses: { "200": { description: "Model saved" }, "404": { description: "Model not found" } }
+      }
+    },
+    "/setup/complete": {
+      post: {
+        tags: ["Setup"],
+        summary: "Mark setup as complete",
+        security: [],
+        responses: { "200": { description: "Setup completed" } }
+      }
+    },
+    "/setup/step": {
+      get: {
+        tags: ["Setup"],
+        summary: "Get current setup step",
+        security: [],
+        responses: { "200": { description: "Current step (1–5)", content: { "application/json": { schema: { type: "object", properties: { success: { type: "boolean" }, currentStep: { type: "integer" } } } } } }
+      },
+      post: {
+        tags: ["Setup"],
+        summary: "Set current setup step",
+        security: [],
+        requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["step"], properties: { step: { type: "integer", minimum: 1, maximum: 5 } } } } } },
+        responses: { "200": { description: "Step updated" }, "400": { description: "Invalid step number" } }
+      }
+    }
+
+  }
+}
+  }};
+
+SwaggerUIBundle({
+  spec,
+  dom_id: '#swagger-ui',
+  deepLinking: true,
+  presets: [
+    SwaggerUIBundle.presets.apis,
+    SwaggerUIStandalonePreset
+  ],
+  plugins: [SwaggerUIBundle.plugins.DownloadUrl],
+  layout: "StandaloneLayout",
+  defaultModelsExpandDepth: 1,
+  defaultModelExpandDepth: 2,
+  docExpansion: "list",
+  filter: true,
+  tryItOutEnabled: false,
+  requestInterceptor(req) {
+    // Strip the '/api' double-prefix if already in the server URL
+    return req;
+  }
+});
+</script>
+</body>
+</html>
