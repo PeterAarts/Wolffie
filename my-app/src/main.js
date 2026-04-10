@@ -6,6 +6,7 @@ import { useSchemaStore } from '@/stores/schema';
 import router from './router';
 import { registerSW } from 'virtual:pwa-register'
 import './assets/styles/main.css';
+import './assets/styles/control.css';
 import i18n from './i18n';     
 
 registerSW({ immediate: true })
