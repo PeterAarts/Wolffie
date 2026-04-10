@@ -11,6 +11,7 @@
 // POST /api/strategies/evaluate     — trigger manual evaluation (debug)
 // POST /api/strategies/day-plan/regenerate — force day plan regeneration
 
+
 import express         from 'express';
 import strategyManager from '../../strategyManager.js';
 
@@ -18,22 +19,6 @@ const router = express.Router();
 
 // ─── List all strategies ───────────────────────────────────────────────────
 
-/**
- * GET /api/strategies
- * Returns all known strategies with availability and active flags.
- * The frontend uses this to render the strategy selector and
- * grey out unavailable options.
- *
- * Response:
- * {
- *   strategies: [
- *     {
- *       id, name, description, active, available,
- *       requiredCapabilities, optionalCapabilities, activeOptional
- *     }
- *   ]
- * }
- */
 router.get('/', async (req, res) => {
   try {
     const strategies = await strategyManager.listStrategies();
@@ -45,18 +30,6 @@ router.get('/', async (req, res) => {
 
 // ─── Active strategy ───────────────────────────────────────────────────────
 
-/**
- * GET /api/strategies/active
- * Returns the active strategy, its current config, latest decision,
- * and today's day plan.
- *
- * Response:
- * {
- *   strategy: { id, name, description, config, available },
- *   decision: { action, reason, evaluatedAt, executed },
- *   dayPlan:  [{ hour, action, watts, reason, priceCtKwh, solarForecastW }]
- * }
- */
 router.get('/active', async (req, res) => {
   try {
     const state = await strategyManager.getActiveStrategyState();
@@ -66,25 +39,14 @@ router.get('/active', async (req, res) => {
   }
 });
 
-/**
- * POST /api/strategies/active
- * Switch the active strategy.
- * Body: { strategyId: 'smart-eco' }
- *
- * Returns the new active strategy state (same shape as GET /active).
- * Triggers immediate re-evaluation and day plan regeneration.
- */
 router.post('/active', async (req, res) => {
   try {
     const { strategyId } = req.body;
-    if (!strategyId) {
-      return res.status(400).json({ error: 'strategyId is required' });
-    }
+    if (!strategyId) return res.status(400).json({ error: 'strategyId is required' });
 
     const state = await strategyManager.setActiveStrategy(strategyId, 'user');
     res.json({ success: true, ...state });
   } catch (e) {
-    // setActiveStrategy throws descriptive errors for unknown/unavailable strategies
     const status = e.message.includes('not available') ? 422 : 400;
     res.status(status).json({ error: e.message });
   }
@@ -92,17 +54,6 @@ router.post('/active', async (req, res) => {
 
 // ─── Day plan ──────────────────────────────────────────────────────────────
 
-/**
- * GET /api/strategies/day-plan?date=YYYY-MM-DD
- * Returns the hourly day plan for the given date (defaults to today).
- * This is the data source for the Energy Outlook chart.
- *
- * Response:
- * {
- *   date, strategyId, generatedAt,
- *   plan: [{ hour, action, watts, reason, priceCtKwh, solarForecastW }]
- * }
- */
 router.get('/day-plan', async (req, res) => {
   try {
     const date    = req.query.date ?? new Date().toISOString().slice(0, 10);
@@ -113,13 +64,6 @@ router.get('/day-plan', async (req, res) => {
   }
 });
 
-/**
- * POST /api/strategies/day-plan/regenerate
- * Force regeneration of the day plan for today (or a given date).
- * Body: { date?: 'YYYY-MM-DD' }
- *
- * Used after new price data arrives or after a strategy change.
- */
 router.post('/day-plan/regenerate', async (req, res) => {
   try {
     const date = req.body?.date ?? null;
@@ -133,15 +77,6 @@ router.post('/day-plan/regenerate', async (req, res) => {
 
 // ─── Decision log ──────────────────────────────────────────────────────────
 
-/**
- * GET /api/strategies/decisions?limit=48
- * Returns recent strategy decisions for the Events view.
- *
- * Response:
- * {
- *   decisions: [{ evaluatedAt, strategyId, action, reason, executed, context, result }]
- * }
- */
 router.get('/decisions', async (req, res) => {
   try {
     const limit     = Math.min(parseInt(req.query.limit ?? 48), 500);
@@ -152,13 +87,8 @@ router.get('/decisions', async (req, res) => {
   }
 });
 
-// ─── Manual evaluation (debug) ────────────────────────────────────────────
+// ─── Manual evaluation ────────────────────────────────────────────────────
 
-/**
- * POST /api/strategies/evaluate
- * Trigger an immediate evaluation cycle outside the normal schedule.
- * Useful for testing strategy logic without waiting for the timer.
- */
 router.post('/evaluate', async (req, res) => {
   try {
     await strategyManager._evaluate();
@@ -170,18 +100,16 @@ router.post('/evaluate', async (req, res) => {
 });
 
 // ─── Strategy config ──────────────────────────────────────────────────────
+//
+// Wijziging:
+//   ON DUPLICATE KEY UPDATE config = ?
+//   → ON CONFLICT(strategy_id) DO UPDATE SET config = excluded.config
 
-/**
- * POST /api/strategies/config
- * Save config for the active strategy. Merges with existing config.
- * Triggers immediate re-evaluation after save.
- */
 router.post('/config', async (req, res) => {
   try {
     const activeId = await strategyManager._getActiveId();
     const incoming = req.body ?? {};
 
-    // Coerce numeric strings to numbers
     const coerced = {};
     for (const [k, v] of Object.entries(incoming)) {
       coerced[k] = v !== '' && !isNaN(v) ? Number(v) : v;
@@ -194,8 +122,8 @@ router.post('/config', async (req, res) => {
     await db.pool.query(
       `INSERT INTO strategy_config (strategy_id, config)
        VALUES (?, ?)
-       ON DUPLICATE KEY UPDATE config = ?`,
-      [activeId, JSON.stringify(merged), JSON.stringify(merged)]
+       ON CONFLICT(strategy_id) DO UPDATE SET config = excluded.config`,
+      [activeId, JSON.stringify(merged)]
     );
 
     await strategyManager._evaluate();
@@ -206,17 +134,18 @@ router.post('/config', async (req, res) => {
 });
 
 // ─── Effectiveness ─────────────────────────────────────────────────────────
+//
+// Wijzigingen:
+//   DATE_SUB(CURDATE(), INTERVAL ? DAY)  →  date('now', '-' || ? || ' days')
+//   CURDATE()                            →  date('now')
+//   DATE_SUB(NOW(), INTERVAL ? DAY)      →  datetime('now', '-' || ? || ' days')
+//   NOW()                                →  datetime('now')
 
-/**
- * GET /api/strategies/effectiveness?days=14
- * Energy-based effectiveness metrics — no cost calculations.
- */
 router.get('/effectiveness', async (req, res) => {
   try {
     const days = Math.min(parseInt(req.query.days ?? 14), 90);
     const db   = (await import('../../database.js')).default;
 
-    // Solar self-consumption + grid/battery totals
     const [solarRows] = await db.pool.query(`
       SELECT
         SUM(pv_generation_kwh)     AS total_pv,
@@ -225,44 +154,41 @@ router.get('/effectiveness', async (req, res) => {
         SUM(battery_charge_kwh)    AS total_charge,
         SUM(battery_discharge_kwh) AS total_discharge
       FROM energy_daily
-      WHERE date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-        AND date <  CURDATE()
+      WHERE date >= date('now', '-' || ? || ' days')
+        AND date <  date('now')
     `, [days]);
 
-    const s            = solarRows[0] ?? {};
-    const totalPv      = parseFloat(s.total_pv)       || 0;
-    const totalExport  = parseFloat(s.total_export)    || 0;
-    const totalImport  = parseFloat(s.total_import)    || 0;
-    const totalCharge  = parseFloat(s.total_charge)    || 0;
+    const s              = solarRows[0] ?? {};
+    const totalPv        = parseFloat(s.total_pv)        || 0;
+    const totalExport    = parseFloat(s.total_export)    || 0;
+    const totalImport    = parseFloat(s.total_import)    || 0;
+    const totalCharge    = parseFloat(s.total_charge)    || 0;
     const totalDischarge = parseFloat(s.total_discharge) || 0;
     const selfConsumed   = Math.max(0, totalPv - totalExport);
     const selfConsumptionPct = totalPv > 0
       ? Math.round((selfConsumed / totalPv) * 100) : null;
 
-    // Grid import delta vs prior equal-length period
     const [priorRows] = await db.pool.query(`
       SELECT SUM(grid_import_kwh) AS prior_import
       FROM energy_daily
-      WHERE date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-        AND date <  DATE_SUB(CURDATE(), INTERVAL ? DAY)
+      WHERE date >= date('now', '-' || ? || ' days')
+        AND date <  date('now', '-' || ? || ' days')
     `, [days * 2, days]);
 
-    const priorImport    = parseFloat(priorRows[0]?.prior_import) || null;
+    const priorImport     = parseFloat(priorRows[0]?.prior_import) || null;
     const gridImportDelta = priorImport !== null
       ? Math.round((totalImport - priorImport) * 10) / 10 : null;
 
-    // Battery utilisation (avg daily cycles vs 11.2 kWh capacity)
     const batteryCapacityKwh = 11.2;
     const avgDailyCycles = days > 0
       ? Math.round(((totalCharge + totalDischarge) / 2 / days / batteryCapacityKwh) * 100) / 100
       : 0;
 
-    // Forecast accuracy trend
     const [forecastRows] = await db.pool.query(`
       SELECT date, expected_kwh, actual_kwh, accuracy_percentage
       FROM solar_forecasts
-      WHERE date >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
-        AND date <  CURDATE()
+      WHERE date >= date('now', '-' || ? || ' days')
+        AND date <  date('now')
         AND actual_kwh IS NOT NULL
       ORDER BY date ASC
     `, [days]);
@@ -274,9 +200,6 @@ router.get('/effectiveness', async (req, res) => {
         )
       : null;
 
-    // Decision accuracy:
-    // CHARGE is correct if price at decision ≤ daily median price
-    // DISCHARGE is correct if price at decision ≥ daily median price
     const [decisionRows] = await db.pool.query(`
       SELECT
         sd.id,
@@ -285,11 +208,11 @@ router.get('/effectiveness', async (req, res) => {
         sd.context,
         (SELECT AVG(price_eur_per_mwh)
            FROM day_ahead_prices
-          WHERE DATE(datetime) = DATE(sd.evaluated_at)
+          WHERE date(datetime) = date(sd.evaluated_at)
         ) AS day_avg_price_mwh
       FROM strategy_decisions sd
-      WHERE sd.evaluated_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
-        AND sd.action IN ('CHARGE_FROM_GRID','DISCHARGE_TO_GRID','IDLE')
+      WHERE sd.evaluated_at >= datetime('now', '-' || ? || ' days')
+        AND sd.action IN ('CHARGE_FROM_GRID', 'DISCHARGE_TO_GRID', 'IDLE')
       ORDER BY sd.evaluated_at DESC
       LIMIT 200
     `, [days]);
@@ -297,29 +220,27 @@ router.get('/effectiveness', async (req, res) => {
     const decisionLog = decisionRows.map(row => {
       const ctx = typeof row.context === 'string'
         ? JSON.parse(row.context) : (row.context ?? {});
-      // context.currentPrice is in ct/kWh; day_ahead_prices in €/MWh = ct/kWh × 0.1
       const priceAtDecision = ctx.currentPrice ?? null;
       const medianPriceCt   = row.day_avg_price_mwh !== null
         ? Math.round(row.day_avg_price_mwh / 10) : null;
 
       let correct = null;
       if (priceAtDecision !== null && medianPriceCt !== null) {
-        if (row.action === 'CHARGE_FROM_GRID')   correct = priceAtDecision <= medianPriceCt;
+        if (row.action === 'CHARGE_FROM_GRID')       correct = priceAtDecision <= medianPriceCt;
         else if (row.action === 'DISCHARGE_TO_GRID') correct = priceAtDecision >= medianPriceCt;
-        else correct = null; // IDLE not scored
       }
 
       return {
-        date: row.evaluated_at,
-        action: row.action,
+        date:            row.evaluated_at,
+        action:          row.action,
         priceAtDecision,
-        medianPrice: medianPriceCt,
+        medianPrice:     medianPriceCt,
         correct,
       };
     });
 
-    const scoredRows       = decisionLog.filter(d => d.correct !== null);
-    const correctCount     = scoredRows.filter(d => d.correct).length;
+    const scoredRows          = decisionLog.filter(d => d.correct !== null);
+    const correctCount        = scoredRows.filter(d => d.correct).length;
     const decisionAccuracyPct = scoredRows.length > 0
       ? Math.round((correctCount / scoredRows.length) * 100) : null;
 
@@ -327,7 +248,7 @@ router.get('/effectiveness', async (req, res) => {
       period: { days },
       solar: {
         selfConsumptionPct,
-        totalPvKwh:     Math.round(totalPv * 10) / 10,
+        totalPvKwh:     Math.round(totalPv     * 10) / 10,
         totalExportKwh: Math.round(totalExport * 10) / 10,
       },
       grid: {
@@ -336,7 +257,7 @@ router.get('/effectiveness', async (req, res) => {
       },
       battery: {
         avgDailyCycles,
-        totalChargeKwh:    Math.round(totalCharge * 10) / 10,
+        totalChargeKwh:    Math.round(totalCharge    * 10) / 10,
         totalDischargeKwh: Math.round(totalDischarge * 10) / 10,
       },
       forecast: {

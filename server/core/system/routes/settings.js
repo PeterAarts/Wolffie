@@ -103,8 +103,8 @@ router.get('/module/:moduleId', authorize('admin'), async (req, res) => {
  */
 
 router.post('/module/:moduleId', authorize('admin'), async (req, res) => {
+  const { moduleId } = req.params;  // buiten try — zichtbaar in catch blok
   try {
-    const { moduleId } = req.params;
     const settings = req.body;
 
     // 1. Persist to DB
@@ -151,7 +151,7 @@ router.post('/module/:moduleId', authorize('admin'), async (req, res) => {
  */
 router.get('/core', authorize('admin'), async (req, res) => {
   try {
-    const coreCategories = ['system', 'data_collection', 'retention', 'notifications'];
+    const coreCategories = ['system', 'data_collection', 'retention', 'notifications', 'energy'];
     let values = {};
 
     for (const cat of coreCategories) {
@@ -207,6 +207,20 @@ router.get('/core', authorize('admin'), async (req, res) => {
                 { key: 'hours_days',     component: 'number', label: 'settings.core.fields.hours_days',     column: 3, editable: true }
               ]
             }]
+          },
+          {
+            title: 'settings.core.groups.energy.title',
+            sections: [{
+              fields: [
+                { key: 'contract_type',      component: 'dropdown', label: 'settings.core.fields.contract_type', column: 2, editable: true,
+                  options: [
+                    { label: 'settings.core.fields.contract_type_dynamic', value: 'dynamic' },
+                    { label: 'settings.core.fields.contract_type_fixed',   value: 'fixed'   }
+                  ]
+                },
+                { key: 'fixed_price_ct_kwh', component: 'number', label: 'settings.core.fields.fixed_price_ct_kwh', column: 2, editable: true, suffix: 'ct/kWh' }
+              ]
+            }]
           }
         ]
       },
@@ -228,7 +242,8 @@ router.post('/core', authorize('admin'), async (req, res) => {
       primary_source: 'data_collection', enable_failover: 'data_collection',
       cache_timeout: 'data_collection', failover_threshold: 'data_collection',
       email_enabled: 'notifications', email_address: 'notifications',
-      snapshots_days: 'retention', minutes_days: 'retention', hours_days: 'retention'
+      snapshots_days: 'retention', minutes_days: 'retention', hours_days: 'retention',
+      contract_type: 'energy', fixed_price_ct_kwh: 'energy'
     };
 
     for (const [key, value] of Object.entries(updates)) {
@@ -308,13 +323,8 @@ router.get('/users/list', authorize('admin'), async (req, res) => {
 
 router.post('/users/create', authorize('admin'), async (req, res) => {
   try {
-    const { new_username, new_password, new_email, new_role } = req.body;
-    await userService.createUser({
-      username: new_username,
-      password: new_password,
-      email: new_email,
-      role: new_role
-    });
+    const { username, email, password, role, full_name } = req.body;
+    await userService.createUser({ username, email, password, role, full_name });
     res.json({ success: true, message: 'user created' });
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
@@ -343,6 +353,28 @@ router.post('/users/delete', authorize('admin'), async (req, res) => {
   } catch (error) {
     res.status(400).json({ success: false, error: error.message });
   } 
+});
+
+// REST-stijl routes — gebruikt door de frontend via AppTable rowActions
+router.put('/users/:id', authorize('admin'), async (req, res) => {
+  try {
+    const id      = parseInt(req.params.id);
+    const updates = req.body;
+    const user    = await userService.updateUser(id, updates);
+    res.json({ success: true, user });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+router.delete('/users/:id', authorize('admin'), async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    await userService.deleteUser(id);
+    res.json({ success: true, message: 'User deleted' });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
 });
 
 // ============================================================================

@@ -121,12 +121,13 @@ class SmartEcoStrategy {
       solarSurplusThresholdKwh = 5,
       dischargeFloorCt         = 5.0,   // never discharge to grid below this price
       // Curtailment alert parameters
-      curtailmentSocTrigger      = 80,
+      curtailmentSocTrigger      = 90,
       curtailmentPricePercentile = 20,
       curtailmentSocStep         = 5,
       curtailmentLookaheadHours  = 2,
-      dischargePercentile        = 80,   // only discharge at this price percentile or above
+      dischargePercentile        = 90,   // only discharge at this price percentile or above
       dischargeLookaheadHours    = 2,    // only discharge when solar is forecast within this window
+      dischargeSocMinPct         = 95,   // minimum SoC required before discharging to make room for solar
     } = config;
 
     const { soc, currentPrice, prices = [], solarForecast = [] } = context;
@@ -236,7 +237,7 @@ class SmartEcoStrategy {
         alert: {
           type:       'negative_price_full_battery',
           severity:   'info',
-          message:    `Negative day-ahead prices expected. Battery is ${soc}% — grid charging blocked.`,
+          message:    `Negative day-ahead prices expected. Battery is ${soc}% — grid discharging blocked.`,
           suggestion: `Battery is near full. No action needed unless you want to discharge to home loads.`,
           action:     null,
         },
@@ -247,19 +248,25 @@ class SmartEcoStrategy {
     // Only fires when ALL conditions are met:
     //   1. Current price ≥ Nth percentile of remaining prices
     //   2. Price ≥ absolute floor (dischargeFloorCt)
-    //   3. Solar is forecast within dischargeLookaheadHours
-    //   4. Battery has meaningful headroom above minSocPct
+    //   3. Solar is forecast within dischargeLookaheadHours (min 0.5 kWh — filters night noise)
+    //   4. Solar start is imminent — current hour is within dischargeLookaheadHours of solarStartHour
+    //   5. Battery SoC is above dischargeSocMinPct (no point making room from a half-full battery)
+    //   6. Battery has meaningful headroom above minSocPct
     // Amount discharged = only enough to absorb expected solar, not a full dump.
     {
       const dischargeThreshold = this._pricePercentile(prices, hour, dischargePercentile);
       const nowMs              = Date.now();
       const solarInWindowKwh   = this._solarKwhInWindow(solarForecast, nowMs, dischargeLookaheadHours);
-      const solarIsComing      = solarInWindowKwh > 0.1; // at least 100Wh expected
+      const solarIsComing      = solarInWindowKwh > 0.5; // at least 500Wh — filters pre-dawn forecast noise
+      // solarIsImminent: only true in the window just before solar starts (not all day after 07:00)
+      const solarIsImminent    = hour >= (profile.solarStartHour - dischargeLookaheadHours)
+                              && hour <   profile.solarStartHour;
+      const aboveSocMin        = soc >= dischargeSocMinPct;
       const headroomKwh        = currentKwh - minKwh;
       const isPeakPrice        = dischargeThreshold !== null && currentPrice >= dischargeThreshold;
       const aboveFloor         = currentPrice >= dischargeFloorCt;
 
-      if (isPeakPrice && aboveFloor && solarIsComing && headroomKwh > 0.5) {
+      if (isPeakPrice && aboveFloor && solarIsComing && solarIsImminent && aboveSocMin && headroomKwh > 0.5) {
         // Only discharge what solar will replace — don't dump more than incoming solar
         const dischargeKwh = Math.min(solarInWindowKwh, headroomKwh);
         const targetSoc    = Math.max(
@@ -377,6 +384,7 @@ class SmartEcoStrategy {
       dischargeFloorCt         = 5.0,
       dischargePercentile      = 80,
       dischargeLookaheadHours  = 2,
+      dischargeSocMinPct       = 80,   // minimum SoC % before discharging to make room for solar
     } = config;
 
     const { prices = [], solarForecast = [], soc: currentSoc = 50 } = context;
@@ -398,15 +406,28 @@ class SmartEcoStrategy {
       if (p.datetime) priceBySlot[p.datetime.slice(0, 16)] = p.price;
     }
 
-    // ── Index solar forecast by hour key (YYYY-MM-DDTHH) ─────────────────────
+    // ── Index solar forecast by LOCAL hour key (YYYY-MM-DDTHH, local time) ─────
+    // forecast datetimes are UTC strings (e.g. "2025-03-30T06:00" = local 08:00 CEST).
+    // slotTime.getHours() in the slot loop returns local hours, so we must key by
+    // local hour to avoid a 2-hour mismatch (UTC+2 in summer, UTC+1 in winter).
+    const _localHourKey = (d) => {
+      const yyyy = d.getFullYear();
+      const mm   = String(d.getMonth() + 1).padStart(2, '0');
+      const dd   = String(d.getDate()).padStart(2, '0');
+      const hh   = String(d.getHours()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}T${hh}`;
+    };
+
     const solarByHour = {};
     for (const f of solarForecast) {
       if (f.datetime) {
-        solarByHour[f.datetime.slice(0, 13)] = f.watts ?? 0;
+        // Parse UTC datetime string → Date object → local hour key
+        const d = new Date(f.datetime);
+        solarByHour[_localHourKey(d)] = f.watts ?? 0;
       } else if (f.hour !== undefined) {
         const base = new Date(windowStart);
         base.setHours(f.hour, 0, 0, 0);
-        solarByHour[base.toISOString().slice(0, 13)] = f.watts ?? 0;
+        solarByHour[_localHourKey(base)] = f.watts ?? 0;
       }
     }
 
@@ -428,7 +449,7 @@ class SmartEcoStrategy {
       let solarAhead = 0;
       for (let j = i; j < Math.min(i + lookaheadSlotCount, totalSlots); j++) {
         const t   = new Date(windowStart.getTime() + j * 15 * 60 * 1000);
-        const key = t.toISOString().slice(0, 13);
+        const key = _localHourKey(t);
         solarAhead += (solarByHour[key] ?? 0) * slotHours / 1000; // W → kWh per slot
       }
       solarLookaheadKwh[i] = solarAhead;
@@ -441,7 +462,7 @@ class SmartEcoStrategy {
       const hour     = slotTime.getHours();
       const minute   = slotTime.getMinutes();
       const datetime = slotTime.toISOString().slice(0, 16);
-      const hourKey  = slotTime.toISOString().slice(0, 13);
+      const hourKey  = _localHourKey(slotTime);
 
       const price  = priceBySlot[datetime] ?? null;
       const solarW = solarByHour[hourKey]  ?? 0;
@@ -484,13 +505,21 @@ class SmartEcoStrategy {
         const isPeak          = dischargeThreshold !== null && price >= dischargeThreshold;
         const aboveFloor      = price >= dischargeFloorCt;
         const solarAhead      = solarLookaheadKwh[i] ?? 0;
-        const solarIsComing   = solarAhead > 0.1;
+        const solarIsComing   = solarAhead > 0.5; // at least 500Wh — filters pre-dawn forecast noise
+        // solarIsImminent: only discharge to make room in the window JUST BEFORE solar starts.
+        // hour must be within dischargeLookaheadHours BEFORE solarStartHour.
+        // e.g. solarStartHour=9, lookahead=2 → only true from 07:00–08:59.
+        // Without the upper bound, this is true all day (15:00 >= 7 is trivially true).
+        const solarIsImminent = hour >= (profile.solarStartHour - dischargeLookaheadHours)
+                             && hour <   profile.solarStartHour;
+        const simSocPct       = (simSocKwh / batteryCapacityKwh) * 100;
+        const aboveSocMin     = simSocPct >= dischargeSocMinPct;
         const headroomKwh     = simSocKwh - minKwh;
 
         if (isNegative) {
           // ── Negative price: block all grid charging ─────────────────────────
           action = 'IDLE';
-          reason = `Negative price (${price.toFixed(1)}ct) — grid charging blocked.`;
+          reason = `Negative price (${price.toFixed(1)}ct) — grid discharging blocked.`;
           alert  = adjustedSolarKwh >= solarSurplusThresholdKwh
             ? 'negative_price_solar'
             : 'negative_price';
@@ -507,7 +536,7 @@ class SmartEcoStrategy {
                    `Charging ${chargeKwh.toFixed(2)} kWh at ${price.toFixed(1)}ct.`;
           simSocKwh = Math.min(batteryCapacityKwh, projectedSocKwh + chargeKwh);
 
-        } else if (isPeak && aboveFloor && solarIsComing && headroomKwh > 0.5) {
+        } else if (isPeak && aboveFloor && solarIsComing && solarIsImminent && aboveSocMin && headroomKwh > 0.5) {
           // ── Peak price + solar incoming: discharge only to make room ─────────
           // Cap discharge at: expected solar kWh in lookahead window (not per-slot)
           // Spread evenly: discharge budget ÷ number of remaining peak slots.

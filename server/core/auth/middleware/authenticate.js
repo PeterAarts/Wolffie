@@ -33,9 +33,6 @@ export function authenticate(req, res, next) {
         return next();
       } catch (tokenError) {
         // Token invalid/expired, fall through to check session
-        if (process.env.NODE_ENV === 'development') {
-          console.log('\x1b[91m   • JWT verification failed, checking session...  \x1b[37m');
-        }
       }
     }
     

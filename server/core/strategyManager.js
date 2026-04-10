@@ -1,55 +1,31 @@
 // core/strategyManager.js
 //
-// The brain of Wolffie. Evaluates the active strategy on a schedule,
-// executes resulting actions via the capability registry, and persists
-// decisions + day plans to the database.
+// Wijzigingen t.o.v. MySQL-versie:
+//   NOW()                              →  datetime('now')
+//   ON DUPLICATE KEY UPDATE = VALUES() →  ON CONFLICT DO UPDATE SET = excluded.
+//   DATE_SUB(NOW(), INTERVAL ? DAY)    →  datetime('now', '-' || ? || ' days')
+//   DATE_SUB(CURDATE(), INTERVAL ? DAY)→  date('now', '-' || ? || ' days')
 //
-// Lifecycle (called from server startup):
-//   strategyManager.start()   — begins evaluation loop
-//   strategyManager.stop()    — clears timers on shutdown
-//
-// Evaluation flow (every `evaluation_interval` seconds):
-//   1. Read active strategy ID from system_settings
-//   2. Build context (SoC, current price, solar forecast, capabilities)
-//   3. Call strategy.decide(context)
-//   4. Persist decision to strategy_decisions
-//   5. If actionable + auto_execute enabled → call capability registry handler
-//   6. Persist execution result
-//
-// Day plan regeneration (hourly, on the hour):
-//   - Fired once immediately at startup (via server.js → regenerateDayPlan())
-//   - Then scheduled to fire at the top of every hour using a setTimeout
-//     aligned to the clock, followed by a fixed hourly setInterval.
-//   - Each regeneration builds a fresh 24h rolling window from current SoC,
-//     live prices, and solar forecast — so the plan always reflects reality.
-//   - On strategy change: triggered immediately via setActiveStrategy().
-//   - Guard: if prices are unavailable and a plan already exists, the existing
-//     plan is preserved rather than overwritten with an empty/degraded one.
+// getEffectiveness(): history_daily en solar_forecast_accuracy (met forecast_date/
+// accuracy_pct) bestaan niet in het huidige schema. De methode vangt fouten op
+// en geeft een leeg resultaat terug zodat het dashboard niet crasht.
 
 import db           from './database.js';
 import registry     from './capabilityRegistry.js';
 import settings     from './system/services/settingsService.js';
 import alertService from './system/services/alertService.js';
 
-// Built-in strategies — all live in core/strategies/
-import smartEcoStrategy       from './strategies/SmartEcoStrategy.js';
-import selfSufficientStrategy from './strategies/SelfSufficientStrategy.js';
-import peakShavingStrategy    from './strategies/PeakShavingStrategy.js';
-import manualStrategy         from './strategies/ManualStrategy.js';
-
-// ─── Strategy Registry ─────────────────────────────────────────────────────
-// All known strategies. The UI lists these; only available ones are selectable.
+import smartEcoStrategy    from './strategies/SmartEcoStrategy.js';
+import pureSolarStrategy   from './strategies/PureSolarStrategy.js';
+import peakShavingStrategy from './strategies/PeakShavingStrategy.js';
+import manualStrategy      from './strategies/ManualStrategy.js';
 
 const STRATEGIES = {
-  'smart-eco':       smartEcoStrategy,
-  'self-sufficient': selfSufficientStrategy,
-  'peak-shaving':    peakShavingStrategy,
-  'manual':          manualStrategy,
+  'smart-eco':    smartEcoStrategy,
+  'pure-solar':   pureSolarStrategy,
+  'peak-shaving': peakShavingStrategy,
+  'manual':       manualStrategy,
 };
-
-// ─── Strategy Metadata ─────────────────────────────────────────────────────
-// Declarative definition of each strategy — what it needs to run.
-// Used by GET /api/strategies to tell the frontend what's available.
 
 export const STRATEGY_META = {
   'smart-eco': {
@@ -59,12 +35,12 @@ export const STRATEGY_META = {
     requiredCapabilities: ['grid:pricing'],
     optionalCapabilities: ['battery:charge-from-grid', 'battery:discharge-to-grid', 'solar:forecast'],
   },
-  'self-sufficient': {
-    id:                   'self-sufficient',
-    name:                 'Self-Sufficient',
-    description:          'Prioritise solar usage and battery for home loads.',
-    requiredCapabilities: ['solar:read', 'battery:read'],
-    optionalCapabilities: ['battery:charge-from-grid'],
+  'pure-solar': {
+    id:                   'pure-solar',
+    name:                 'Pure Solar',
+    description:          'Maximise solar self-consumption. Advisory load windows + negative-price curtailment.',
+    requiredCapabilities: ['solar:forecast'],
+    optionalCapabilities: ['grid:pricing', 'solar:curtail', 'devices:switch'],
   },
   'peak-shaving': {
     id:                   'peak-shaving',
@@ -82,19 +58,15 @@ export const STRATEGY_META = {
   },
 };
 
-// ─── Manager ───────────────────────────────────────────────────────────────
-
 class StrategyManager {
   constructor() {
-    this._timer            = null;   // evaluation interval
-    this._dayPlanTimer     = null;   // one-shot timeout to align to next hour
-    this._dayPlanInterval  = null;   // hourly interval after first alignment
-    this._running          = false;
-    this._lastDecision     = null;
-    // Solar curtailment state machine
-    // States: 'NORMAL' | 'PENDING' | 'CURTAILED'
-    this._curtailState     = 'NORMAL';
-    this._curtailPendingSince = null; // Date when PENDING started
+    this._timer               = null;
+    this._dayPlanTimer        = null;
+    this._dayPlanInterval     = null;
+    this._running             = false;
+    this._lastDecision        = null;
+    this._curtailState        = 'NORMAL';
+    this._curtailPendingSince = null;
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -106,20 +78,12 @@ class StrategyManager {
     const intervalSec = await settings.get('strategy', 'evaluation_interval') ?? 300;
     console.log(`   • StrategyManager Starting — evaluating every ${intervalSec}s`);
 
-    // ── Curtailment watchdog ────────────────────────────────────────────────
-    // If the server was previously shut down while solar was curtailed,
-    // restore export to 100% immediately before doing anything else.
     await this._curtailmentWatchdog();
-
-    // Evaluate immediately on startup, then on interval
     await this._evaluate();
     this._timer = setInterval(() => this._evaluate(), intervalSec * 1000);
     if (this._timer.unref) this._timer.unref();
 
-    // ── Hourly day plan regeneration ────────────────────────────────────────
-    // Align the first fire to the top of the next hour, then run every 60 min.
-    // Example: start at 14:47 → first fire at 15:00, then 16:00, 17:00 …
-    const now            = new Date();
+    const now             = new Date();
     const msUntilNextHour =
       (60 - now.getMinutes()) * 60 * 1000
       - now.getSeconds() * 1000
@@ -129,12 +93,7 @@ class StrategyManager {
 
     this._dayPlanTimer = setTimeout(async () => {
       await this.regenerateDayPlan();
-
-      // Switch to a fixed hourly interval after the first aligned fire
-      this._dayPlanInterval = setInterval(
-        () => this.regenerateDayPlan(),
-        60 * 60 * 1000
-      );
+      this._dayPlanInterval = setInterval(() => this.regenerateDayPlan(), 60 * 60 * 1000);
       if (this._dayPlanInterval.unref) this._dayPlanInterval.unref();
     }, msUntilNextHour);
 
@@ -142,64 +101,40 @@ class StrategyManager {
   }
 
   stop() {
-    if (this._timer) {
-      clearInterval(this._timer);
-      this._timer = null;
-    }
-    if (this._dayPlanTimer) {
-      clearTimeout(this._dayPlanTimer);
-      this._dayPlanTimer = null;
-    }
-    if (this._dayPlanInterval) {
-      clearInterval(this._dayPlanInterval);
-      this._dayPlanInterval = null;
-    }
+    if (this._timer)         { clearInterval(this._timer);         this._timer         = null; }
+    if (this._dayPlanTimer)  { clearTimeout(this._dayPlanTimer);   this._dayPlanTimer  = null; }
+    if (this._dayPlanInterval){ clearInterval(this._dayPlanInterval); this._dayPlanInterval = null; }
     this._running = false;
     console.log('   • StrategyManager Stopped');
   }
 
-  // ── Public API (used by routes) ───────────────────────────────────────────
+  // ── Public API ────────────────────────────────────────────────────────────
 
-  /**
-   * Returns all strategy metadata enriched with availability + active flag.
-   */
   async listStrategies() {
     const activeId = await this._getActiveId();
-
     return Object.values(STRATEGY_META).map(meta => ({
       ...meta,
-      active:    meta.id === activeId,
-      available: this._isAvailable(meta),
-      // Which optional capabilities are actually present
+      active:         meta.id === activeId,
+      available:      this._isAvailable(meta),
       activeOptional: meta.optionalCapabilities.filter(c => registry.has(c)),
     }));
   }
 
-  /**
-   * Switch the active strategy. Triggers immediate re-evaluation + day plan regen.
-   */
   async setActiveStrategy(strategyId, changedBy = 'user') {
-    if (!STRATEGY_META[strategyId]) {
-      throw new Error(`Unknown strategy: '${strategyId}'`);
-    }
-    if (!this._isAvailable(STRATEGY_META[strategyId])) {
+    if (!STRATEGY_META[strategyId]) throw new Error(`Unknown strategy: '${strategyId}'`);
+    if (!this._isAvailable(STRATEGY_META[strategyId]))
       throw new Error(`Strategy '${strategyId}' is not available — required capabilities missing`);
-    }
 
-    await settings.set('strategy', 'active_strategy', strategyId, changedBy, 'Strategy changed by user');
+    await settings.upsert('strategy', 'active_strategy', strategyId, {
+      changedBy, reason: 'Strategy changed by user', valueType: 'string',
+    });
 
     console.log(`   • StrategyManager Active strategy → '${strategyId}'`);
-
-    // Re-evaluate immediately with new strategy + regenerate day plan
     await this._evaluate();
     await this.regenerateDayPlan();
-
     return this.getActiveStrategyState();
   }
 
-  /**
-   * Returns the active strategy, its latest decision, and today's day plan.
-   */
   async getActiveStrategyState() {
     const activeId = await this._getActiveId();
     const meta     = STRATEGY_META[activeId];
@@ -217,14 +152,8 @@ class StrategyManager {
     };
   }
 
-  /**
-   * Today's day plan from DB. Returns empty plan if not yet generated.
-   */
   async getDayPlan() {
     const activeId = await this._getActiveId();
-
-    // Return the most recently generated plan for this strategy.
-    // Rolling window — not bound to a single calendar date.
     const [rows] = await db.pool.query(
       `SELECT plan, generated_at, window_start, window_hours
          FROM strategy_day_plan
@@ -236,17 +165,20 @@ class StrategyManager {
 
     if (!rows.length) return { plan: [], windowStart: null, windowHours: 24 };
 
+    // SQLite geeft JSON-kolommen terug als ruwe string — mysql2 parseerde dit automatisch.
+    // JSON.parse is idempotent: als het al een object is (toekomstige wijziging) blijft het werken.
+    const parsedPlan = typeof rows[0].plan === 'string'
+      ? JSON.parse(rows[0].plan)
+      : (rows[0].plan ?? []);
+
     return {
-      plan:        rows[0].plan,          // MySQL JSON — already parsed by driver
+      plan:        parsedPlan,
       windowStart: rows[0].window_start,
       windowHours: rows[0].window_hours ?? 24,
       generatedAt: rows[0].generated_at,
     };
   }
 
-  /**
-   * Recent strategy decisions for the History log view.
-   */
   async getRecentDecisions(limit = 48) {
     const [rows] = await db.pool.query(
       `SELECT evaluated_at, strategy_id, action, reason, executed, context, result
@@ -255,27 +187,27 @@ class StrategyManager {
         LIMIT ?`,
       [limit]
     );
-    return rows;
+    // SQLite geeft JSON-kolommen terug als string — parseer naar object
+    return rows.map(row => ({
+      ...row,
+      context: row.context && typeof row.context === 'string' ? JSON.parse(row.context) : row.context,
+      result:  row.result  && typeof row.result  === 'string' ? JSON.parse(row.result)  : row.result,
+    }));
   }
 
-  /**
-   * Regenerate the full 24h rolling day plan for the active strategy.
-   *
-   * Called:
-   *   - Once at server startup (from server.js after start())
-   *   - Hourly on the hour (internal _dayPlanTimer / _dayPlanInterval)
-   *   - Immediately on strategy change (setActiveStrategy)
-   *
-   * The plan is always built from the current SoC, live prices, and solar
-   * forecast — so each regeneration reflects actual system state, not stale
-   * midnight assumptions.
-   *
-   * Guard: if price data is unavailable and an existing plan is in the DB,
-   * the existing plan is preserved to avoid replacing good data with a
-   * degraded price-less plan.
-   */
+  // ── Day plan regeneration ─────────────────────────────────────────────────
+  //
+  // Wijzigingen:
+  //   NOW()                              →  datetime('now')
+  //   ON DUPLICATE KEY UPDATE = VALUES() →  ON CONFLICT(plan_date, strategy_id)
+  //                                         DO UPDATE SET = excluded.
+
   async regenerateDayPlan() {
-    const planDate = new Date().toISOString().slice(0, 10);
+    const _now    = new Date();
+    const planDate = `${_now.getFullYear()}-` +
+      `${String(_now.getMonth() + 1).padStart(2, '0')}-` +
+      `${String(_now.getDate()).padStart(2, '0')}`;
+
     const activeId = await this._getActiveId();
     const strategy = STRATEGIES[activeId];
 
@@ -286,7 +218,6 @@ class StrategyManager {
 
     const context = await this._buildContext();
 
-    // Guard: preserve existing plan if price data is missing
     if (!context.prices?.length) {
       const [existing] = await db.pool.query(
         'SELECT id FROM strategy_day_plan WHERE plan_date = ? AND strategy_id = ? LIMIT 1',
@@ -298,34 +229,31 @@ class StrategyManager {
       }
     }
 
-    const config      = await this._getConfig(activeId);
-    const plan        = await strategy.generateFullDayPlan(context, config);
-    const windowStart = context.windowStart ?? new Date().toISOString();
-    const windowHours = context.windowHours ?? 24;
-
-    // MySQL DATETIME requires 'YYYY-MM-DD HH:MM:SS' — strip T and Z from ISO
+    const config        = await this._getConfig(activeId);
+    const plan          = await strategy.generateFullDayPlan(context, config);
+    const windowStart   = context.windowStart ?? new Date().toISOString();
+    const windowHours   = context.windowHours ?? 24;
     const windowStartSQL = windowStart.slice(0, 19).replace('T', ' ');
 
     await db.pool.query(
       `INSERT INTO strategy_day_plan
          (plan_date, strategy_id, plan, window_start, window_hours, generated_at)
-       VALUES (?, ?, ?, ?, ?, NOW())
-       ON DUPLICATE KEY UPDATE
-         plan         = VALUES(plan),
-         window_start = VALUES(window_start),
-         window_hours = VALUES(window_hours),
-         generated_at = NOW()`,
+       VALUES (?, ?, ?, ?, ?, datetime('now'))
+       ON CONFLICT(plan_date, strategy_id) DO UPDATE SET
+         plan         = excluded.plan,
+         window_start = excluded.window_start,
+         window_hours = excluded.window_hours,
+         generated_at = excluded.generated_at`,
       [planDate, activeId, JSON.stringify(plan), windowStartSQL, windowHours]
     );
 
     console.log(
       `   • StrategyManager Day plan regenerated: ${plan.length} slots, ` +
-      `${windowHours}h window from ${windowStart.slice(0, 16)} ` +
-      `(SoC: ${context.soc ?? '?'}%)`
+      `${windowHours}h window (SoC: ${context.soc ?? '?'}%)`
     );
   }
 
-  // ── Core Evaluation ───────────────────────────────────────────────────────
+  // ── Core evaluation ───────────────────────────────────────────────────────
 
   async _evaluate() {
     try {
@@ -338,13 +266,29 @@ class StrategyManager {
         return;
       }
 
-      const context  = await this._buildContext();
-      const config   = await this._getConfig(activeId);
+      const context = await this._buildContext();
+      const config  = await this._getConfig(activeId);
+
+      // SoC drift guard
+      const dayPlan = await this.getDayPlan();
+      if (dayPlan.plan?.length > 0 && context.soc !== null) {
+        const nowHour = new Date().getHours();
+        const nowMin  = new Date().getMinutes();
+        const currentSlot = dayPlan.plan.find(
+          s => s.hour === nowHour && Math.abs(s.minute - nowMin) < 15
+        );
+        if (currentSlot) {
+          const drift = Math.abs(currentSlot.projectedSoc - context.soc);
+          if (drift > 5) {
+            console.warn(`   • StrategyManager SoC Drift: Plan expects ${currentSlot.projectedSoc}%, Reality is ${context.soc}%. Regenerating...`);
+            await this.regenerateDayPlan();
+            return this._evaluate();
+          }
+        }
+      }
+
       const decision = await strategy.decide(context, config);
 
-      // Guard: if the decision is IDLE purely because required data is unavailable
-      // (battery:read, grid:pricing not ready), preserve the previous decision and
-      // do not overwrite the DB — stale data is better than a misleading IDLE.
       const isDataUnavailable =
         decision.action === 'IDLE' && decision.reason?.includes('not ready');
 
@@ -355,27 +299,21 @@ class StrategyManager {
 
       this._lastDecision = { ...decision, evaluatedAt: new Date().toISOString() };
 
-      // Persist decision
       const [ins] = await db.pool.query(
-        `INSERT INTO strategy_decisions
-           (strategy_id, action, reason, executed, context)
+        `INSERT INTO strategy_decisions (strategy_id, action, reason, executed, context)
          VALUES (?, ?, ?, 0, ?)`,
         [activeId, decision.action, decision.reason, JSON.stringify(context)]
       );
       const decisionId = ins.insertId;
 
-      // Write alert if strategy flagged one
       if (decision.alertRequired && decision.alert) {
         await this._writeAlert(activeId, decision.alert);
       }
 
-      // Evaluate solar curtailment state machine (independent of battery dispatch)
-      if (activeId === 'smart-eco') {
-        const config = await this._getConfig(activeId);
+      if (activeId === 'smart-eco' || activeId === 'pure-solar') {
         await this._evaluateCurtailment(context, config);
       }
 
-      // Execute if actionable and auto_execute is on
       if (autoExecute && decision.action !== 'IDLE') {
         await this._execute(decision, decisionId);
       }
@@ -393,7 +331,7 @@ class StrategyManager {
     };
 
     const capType = capabilityMap[decision.action];
-    if (!capType) return; // Unknown action — nothing to execute
+    if (!capType) return;
 
     const handler = registry.get(capType);
     if (!handler) {
@@ -424,53 +362,145 @@ class StrategyManager {
     }
   }
 
-  // ── Solar Curtailment State Machine ──────────────────────────────────────
+  // ── Effectiveness & Metrics ───────────────────────────────────────────────
   //
-  // States:
-  //   NORMAL    → condition not met, solar running at 100%
-  //   PENDING   → condition met, alert written, 15-min countdown to auto-act
-  //   CURTAILED → solar export set to 0%, waiting for condition to clear
+  // Wijzigingen:
+  //   DATE_SUB(NOW(), INTERVAL ? DAY)    →  datetime('now', '-' || ? || ' days')
+  //   DATE_SUB(CURDATE(), INTERVAL ? DAY)→  date('now', '-' || ? || ' days')
   //
-  // Transitions:
-  //   NORMAL    → PENDING   : soc ≥ actionTrigger AND price ≤ threshold AND solar producing
-  //   PENDING   → CURTAILED : 15 min elapsed without dismissal AND condition still holds
-  //   PENDING   → NORMAL    : condition clears before 15 min
-  //   CURTAILED → NORMAL    : price recovers OR soc drops below (actionTrigger - 10)
+  // Opmerking: history_daily bestaat niet in het huidige schema.
+  // solar_forecast_accuracy gebruikt forecast_date/accuracy_pct die niet
+  // overeenkomen met de huidige view-kolommen (date/accuracy_percentage).
+  // De methode vangt fouten op en geeft een leeg resultaat terug.
 
-  /**
-   * Startup watchdog. If server restarted while curtailed, restore solar immediately.
-   */
+  async getEffectiveness(strategyId, windowDays = 7) {
+    try {
+      const activeId = strategyId || await this._getActiveId();
+
+      const [scoredRows] = await db.pool.query(
+        `SELECT action, executed, result, context, evaluated_at
+           FROM strategy_decisions
+          WHERE strategy_id = ?
+            AND evaluated_at >= datetime('now', '-' || ? || ' days')
+            AND action != 'IDLE'
+          ORDER BY evaluated_at DESC`,
+        [activeId, windowDays]
+      );
+
+      let correctCount = 0;
+      const decisionLog = scoredRows.map(row => {
+        const score = this._getScoreForDecision(row);
+        if (score.correct) correctCount++;
+        return {
+          evaluatedAt: row.evaluated_at,
+          action:      row.action,
+          executed:    row.executed,
+          score:       score.label,
+          correct:     score.correct,
+          reason:      score.reason,
+        };
+      });
+
+      const decisionAccuracyPct = scoredRows.length > 0
+        ? Math.round((correctCount / scoredRows.length) * 100)
+        : 100;
+
+      // solar_forecast_accuracy view — kolom accuracy_percentage ipv accuracy_pct
+      let avgForecastAccuracy = null;
+      try {
+        const [forecastRows] = await db.pool.query(
+          `SELECT date, actual_kwh, expected_kwh, accuracy_percentage
+             FROM solar_forecast_accuracy
+            WHERE date >= date('now', '-' || ? || ' days')
+            ORDER BY date DESC`,
+          [windowDays]
+        );
+        avgForecastAccuracy = forecastRows.length > 0
+          ? Math.round(forecastRows.reduce((sum, r) => sum + (r.accuracy_percentage ?? 0), 0) / forecastRows.length)
+          : null;
+      } catch { /* view niet beschikbaar — geen probleem */ }
+
+      // history_daily bestaat nog niet — geeft lege waarden terug
+      return {
+        strategyId: activeId,
+        windowDays,
+        grid: {
+          totalImportKwh:  0,
+          gridImportDelta: 0,
+        },
+        battery: {
+          avgDailyCycles:    0,
+          totalChargeKwh:    0,
+          totalDischargeKwh: 0,
+        },
+        forecast: {
+          avgAccuracyPct: avgForecastAccuracy,
+          trend:          [],
+        },
+        decisions: {
+          accuracyPct: decisionAccuracyPct,
+          total:       scoredRows.length,
+          correct:     correctCount,
+          log:         decisionLog.slice(0, 30),
+        },
+      };
+    } catch (e) {
+      console.error('   • StrategyManager Effectiveness calculation error:', e.message);
+      throw e;
+    }
+  }
+
+  _getScoreForDecision(row) {
+    const context = row.context;
+    const action  = row.action;
+
+    if (!row.executed) return { correct: false, label: 'Failed', reason: 'Action execution failed' };
+
+    if (action === 'CHARGE_FROM_GRID') {
+      if (context.currentPrice < 5)  return { correct: true,  label: 'Optimal',    reason: 'Charged during very low prices' };
+      if (context.currentPrice < 15) return { correct: true,  label: 'Good',       reason: 'Charged during below-average prices' };
+      return                                { correct: false, label: 'Sub-optimal', reason: 'Charged during high prices' };
+    }
+
+    if (action === 'DISCHARGE_TO_GRID') {
+      if (context.currentPrice > 30) return { correct: true,  label: 'Optimal',    reason: 'Discharged during peak price' };
+      if (context.currentPrice > 20) return { correct: true,  label: 'Good',       reason: 'Discharged during above-average price' };
+      return                                { correct: false, label: 'Sub-optimal', reason: 'Discharged during low prices' };
+    }
+
+    return { correct: true, label: 'Neutral', reason: 'Action performed as requested' };
+  }
+
+  // ── Solar Curtailment ─────────────────────────────────────────────────────
+
   async _curtailmentWatchdog() {
     try {
       const savedState = await settings.get('strategy', 'curtailment_state');
       if (savedState === 'CURTAILED') {
         console.warn('   • StrategyManager Watchdog: server restarted while solar was curtailed — restoring to 100%');
         await this._curtailSolar(false);
-        await settings.set('strategy', 'curtailment_state', 'NORMAL', 'system', 'Watchdog restore on startup');
+        await settings.upsert('strategy', 'curtailment_state', 'NORMAL', {
+          changedBy: 'system', reason: 'Watchdog restore on startup', valueType: 'string',
+        });
       }
-      this._curtailState = 'NORMAL';
+      this._curtailState        = 'NORMAL';
       this._curtailPendingSince = null;
     } catch (e) {
       console.error('   • StrategyManager Curtailment watchdog error:', e.message);
     }
   }
 
-  /**
-   * Persist curtailment state to DB so it survives restarts.
-   */
   async _saveCurtailState(state) {
     this._curtailState = state;
     try {
-      await settings.set('strategy', 'curtailment_state', state, 'system', 'Solar curtailment state');
+      await settings.upsert('strategy', 'curtailment_state', state, {
+        changedBy: 'system', reason: 'Solar curtailment state', valueType: 'string',
+      });
     } catch (e) {
       console.error('   • StrategyManager Could not persist curtailment state:', e.message);
     }
   }
 
-  /**
-   * Call solar:curtail capability.
-   * enabled=true → restore 100%, enabled=false → set 0% (stop export).
-   */
   async _curtailSolar(curtail) {
     const handler = registry.get('solar:curtail');
     if (!handler) {
@@ -487,48 +517,32 @@ class StrategyManager {
     }
   }
 
-  /**
-   * Evaluate curtailment state machine on each strategy evaluation cycle.
-   * Called only when smart-eco is the active strategy.
-   */
   async _evaluateCurtailment(context, config) {
     try {
       const {
-        negativePriceThreshold     = 0,
+        negativePriceThreshold      = 0,
         curtailmentActionSocTrigger = 95,
-        curtailmentLookaheadHours  = 2,
       } = config;
 
-      const PENDING_MINUTES = 15;
-      const RESTORE_SOC_MARGIN = 10; // restore if SoC drops this many % below trigger
+      const PENDING_MINUTES    = 15;
+      const RESTORE_SOC_MARGIN = 10;
 
       const soc        = context.soc ?? 0;
       const price      = context.currentPrice ?? 999;
       const solarPower = context.solarPowerW ?? 0;
 
-      // Condition: SoC high + price negative/zero + solar currently producing
-      const conditionMet =
-        soc >= curtailmentActionSocTrigger &&
-        price <= negativePriceThreshold    &&
-        solarPower > 50;
-
-      // Restore condition: either trigger clears
-      const shouldRestore =
-        price > negativePriceThreshold ||
-        soc < curtailmentActionSocTrigger - RESTORE_SOC_MARGIN;
-
-      // ── State transitions ─────────────────────────────────────────────────
+      const conditionMet  = soc >= curtailmentActionSocTrigger && price <= negativePriceThreshold && solarPower > 50;
+      const shouldRestore = price > negativePriceThreshold || soc < curtailmentActionSocTrigger - RESTORE_SOC_MARGIN;
 
       if (this._curtailState === 'NORMAL') {
         if (conditionMet) {
-          // Write pending alert — user has 15 min to dismiss
           await alertService.write('strategy', 'smart-eco', {
             type:       'solar_curtailment_pending',
             severity:   'warning',
             message:    `Battery at ${soc.toFixed(0)}% and prices negative (${price.toFixed(1)}ct). Solar export will be stopped in ${PENDING_MINUTES} minutes unless dismissed.`,
             suggestion: `Dismiss this alert to keep solar running. If not dismissed, Wolffie will set the SolarEdge export limit to 0% automatically.`,
             action:     'SOLAR_CURTAIL_PENDING',
-          }, 20); // 20-min dedup so it doesn't spam on every cycle
+          }, 20);
 
           this._curtailPendingSince = Date.now();
           await this._saveCurtailState('PENDING');
@@ -537,26 +551,20 @@ class StrategyManager {
 
       } else if (this._curtailState === 'PENDING') {
         if (shouldRestore) {
-          // Condition cleared before 15 min — cancel
           this._curtailPendingSince = null;
           await this._saveCurtailState('NORMAL');
           console.log('   • StrategyManager Curtailment PENDING cancelled — condition cleared');
 
         } else if (conditionMet) {
-          // Check if the pending alert was dismissed (user opted out)
-          const pendingAlerts = await alertService.getActive(0); // system user = 0
+          const pendingAlerts  = await alertService.getActive(0);
           const alertDismissed = !pendingAlerts.some(a => a.type === 'solar_curtailment_pending');
-
-          const elapsedMin = (Date.now() - (this._curtailPendingSince ?? Date.now())) / 60000;
+          const elapsedMin     = (Date.now() - (this._curtailPendingSince ?? Date.now())) / 60000;
 
           if (alertDismissed) {
-            // User dismissed — cancel auto-act, reset to NORMAL
             this._curtailPendingSince = null;
             await this._saveCurtailState('NORMAL');
             console.log('   • StrategyManager Curtailment PENDING — user dismissed, cancelling');
-
           } else if (elapsedMin >= PENDING_MINUTES) {
-            // 15 min elapsed, condition still holds, alert not dismissed → curtail
             const ok = await this._curtailSolar(true);
             if (ok) {
               await alertService.write('strategy', 'smart-eco', {
@@ -576,13 +584,12 @@ class StrategyManager {
 
       } else if (this._curtailState === 'CURTAILED') {
         if (shouldRestore) {
-          // Condition cleared — restore solar
           await this._curtailSolar(false);
           await alertService.resolveByTypePrefix('strategy', 'solar_curtailed');
           await alertService.resolveByTypePrefix('strategy', 'solar_curtailment_pending');
           this._curtailPendingSince = null;
           await this._saveCurtailState('NORMAL');
-          console.log(`   • StrategyManager Curtailment RESTORED — condition cleared (price=${price.toFixed(1)}ct, SoC=${soc.toFixed(0)}%)`);
+          console.log(`   • StrategyManager Curtailment RESTORED (price=${price.toFixed(1)}ct, SoC=${soc.toFixed(0)}%)`);
         } else {
           console.log(`   • StrategyManager Solar remains curtailed (SoC=${soc.toFixed(0)}%, price=${price.toFixed(1)}ct)`);
         }
@@ -594,138 +601,90 @@ class StrategyManager {
   }
 
   // ── Alert Management ──────────────────────────────────────────────────────
-  // All alert writes and reads are now delegated to alertService (app_alerts).
-  // strategy_alerts is no longer written to — existing rows are preserved.
 
-  /**
-   * Write a strategy alert via the generic alertService.
-   * Deduplicates by type within 1 hour.
-   */
-  async _writeAlert(strategyId, alert) {
-    await alertService.write('strategy', strategyId, alert, 60);
-  }
-
-  /**
-   * Return unresolved alerts not dismissed by userId, filtered to strategy source.
-   * Used by GET /api/strategies/alerts.
-   */
-  async getActiveAlerts(userId) {
-    const all = await alertService.getActive(userId);
-    return all.filter(a => a.source === 'strategy');
-  }
-
-  /**
-   * Globally resolve an alert (admin action).
-   */
-  async resolveAlert(alertId) {
-    await alertService.resolve(alertId);
-  }
-
-  /**
-   * Per-user dismiss — alert persists for other users.
-   */
-  async dismissAlert(alertId, userId) {
-    await alertService.dismiss(alertId, userId);
-  }
+  async _writeAlert(strategyId, alert)    { await alertService.write('strategy', strategyId, alert, 60); }
+  async getActiveAlerts(userId)           { return (await alertService.getActive(userId)).filter(a => a.source === 'strategy'); }
+  async resolveAlert(alertId)             { await alertService.resolve(alertId); }
+  async dismissAlert(alertId, userId)     { await alertService.dismiss(alertId, userId); }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
-  async _getActiveId() {
-    return await settings.get('strategy', 'active_strategy') ?? 'manual';
+  async _getActiveId()          { return await settings.get('strategy', 'active_strategy') ?? 'manual'; }
+  async _getConfig(strategyId)  {
+    const [rows] = await db.pool.query('SELECT config FROM strategy_config WHERE strategy_id = ?', [strategyId]);
+    const raw = rows[0]?.config;
+    if (!raw) return {};
+    return typeof raw === 'string' ? JSON.parse(raw) : raw;
   }
+  _isAvailable(meta) { return meta.requiredCapabilities.every(c => registry.has(c)); }
 
-  async _getConfig(strategyId) {
-    const [rows] = await db.pool.query(
-      'SELECT config FROM strategy_config WHERE strategy_id = ?',
-      [strategyId]
-    );
-    return rows[0]?.config ?? {};
-  }
-
-  _isAvailable(meta) {
-    return meta.requiredCapabilities.every(c => registry.has(c));
-  }
-
-  /**
-   * Builds the evaluation context from all available capability data.
-   * Each read is attempted independently — missing capabilities return null
-   * without breaking the whole context build.
-   */
   async _buildContext() {
-    // Read planning horizon from settings (default 24h)
     const planningHours = parseInt(await settings.get('strategy', 'planning_hours') ?? 24);
     const windowStart   = new Date();
-    // Round down to current 15-min slot
     windowStart.setMinutes(Math.floor(windowStart.getMinutes() / 15) * 15, 0, 0);
 
+    const contractType = await settings.get('energy', 'contract_type')      ?? 'dynamic';
+    const fixedPriceCt = await settings.get('energy', 'fixed_price_ct_kwh') ?? 22;
+
     const context = {
-      timestamp:     new Date().toISOString(),
-      windowStart:   windowStart.toISOString(),
-      windowHours:   planningHours,
-      soc:           null,
-      batteryPowerW: null,
-      solarPowerW:   null,
-      gridPowerW:    null,
-      currentPrice:  null,   // ct/kWh
-      prices:        [],     // rolling window price array
-      solarForecast: [],     // rolling window solar forecast
+      timestamp:       new Date().toISOString(),
+      windowStart: (() => {
+        const p = n => String(n).padStart(2, '0');
+        return `${windowStart.getFullYear()}-${p(windowStart.getMonth()+1)}-${p(windowStart.getDate())}` +
+               `T${p(windowStart.getHours())}:${p(windowStart.getMinutes())}:00`;
+      })(),
+      windowHours:     planningHours,
+      soc:             null,
+      batteryPowerW:   null,
+      solarPowerW:     null,
+      gridPowerW:      null,
+      currentPrice:    null,
+      prices:          [],
+      solarForecast:   [],
+      contractType,
+      fixedPriceCtKwh: Number(fixedPriceCt),
     };
 
-    // Battery state
     const batteryHandler = registry.get('battery:read');
     if (batteryHandler) {
       try {
         const b = await batteryHandler({});
         context.soc           = b.soc;
         context.batteryPowerW = b.power;
-      } catch (e) {
-        console.warn('   • StrategyManager battery:read failed:', e.message);
-      }
+      } catch (e) { console.warn('   • StrategyManager battery:read failed:', e.message); }
     }
 
-    // Solar
     const solarHandler = registry.get('solar:read');
     if (solarHandler) {
       try {
         const s = await solarHandler({});
         context.solarPowerW = s.total_power ?? s.power;
-      } catch (e) {
-        console.warn('   • StrategyManager solar:read failed:', e.message);
-      }
+      } catch (e) { console.warn('   • StrategyManager solar:read failed:', e.message); }
     }
 
-    // Grid
     const gridHandler = registry.get('grid:read');
     if (gridHandler) {
       try {
         const g = await gridHandler({});
         context.gridPowerW = g.total_active_power ?? g.power;
-      } catch (e) {
-        console.warn('   • StrategyManager grid:read failed:', e.message);
-      }
+      } catch (e) { console.warn('   • StrategyManager grid:read failed:', e.message); }
     }
 
-    // Day-ahead prices — rolling window with 15-min resolution
     const pricingHandler = registry.get('grid:pricing');
     if (pricingHandler) {
       try {
         const p = await pricingHandler({ windowStart, windowHours: planningHours });
         context.prices       = p.prices       ?? [];
         context.currentPrice = p.currentPrice ?? null;
-      } catch (e) {
-        console.warn('   • StrategyManager grid:pricing failed:', e.message);
-      }
+      } catch (e) { console.warn('   • StrategyManager grid:pricing failed:', e.message); }
     }
 
-    // Solar forecast — rolling window across today + tomorrow
     const forecastHandler = registry.get('solar:forecast');
     if (forecastHandler) {
       try {
         const f = await forecastHandler({ windowStart, windowHours: planningHours });
         context.solarForecast = f.hourly ?? [];
-      } catch (e) {
-        console.warn('   • StrategyManager solar:forecast failed:', e.message);
-      }
+      } catch (e) { console.warn('   • StrategyManager solar:forecast failed:', e.message); }
     }
 
     return context;

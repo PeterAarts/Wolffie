@@ -65,12 +65,22 @@ class SystemConfigService {
    */
   async set(key, value) {
     try {
-      // Convert value to string for storage
+      // Derive value_type from the JS type so get() can convert back correctly
+      let valueType = 'string';
+      if (typeof value === 'boolean') valueType = 'boolean';
+      else if (typeof value === 'number') valueType = 'number';
+      else if (typeof value === 'object' && value !== null) valueType = 'json';
+
       const stringValue = value !== null ? String(value) : null;
 
       await db.pool.query(
-        'UPDATE system_configuration SET config_value = ?, updated_at = NOW() WHERE config_key = ?',
-        [stringValue, key]
+        `INSERT INTO system_configuration (config_key, config_value, value_type, updated_at)
+         VALUES (?, ?, ?, datetime('now'))
+         ON CONFLICT(config_key) DO UPDATE SET
+           config_value = excluded.config_value,
+           value_type   = excluded.value_type,
+           updated_at   = excluded.updated_at`,
+        [key, stringValue, valueType]
       );
 
       // Update cache

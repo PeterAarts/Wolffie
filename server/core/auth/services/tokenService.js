@@ -1,80 +1,71 @@
-import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
-import db from '../../database.js';
+// core/auth/services/tokenService.js
+//
+// Wijzigingen t.o.v. MySQL-versie:
+//   NOW()  →  datetime('now')  (twee plaatsen: cleanupExpiredTokens, getUserTokens)
+//
+// Alle andere SQL en de result.affectedRows toegang werken correct
+// met de better-sqlite3 shim in database.js.
 
-// JWT secrets from environment or generate random ones
-const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET || crypto.randomBytes(32).toString('hex');
+import jwt    from 'jsonwebtoken';
+import crypto from 'crypto';
+import db     from '../../database.js';
+
+const JWT_ACCESS_SECRET  = process.env.JWT_ACCESS_SECRET  || crypto.randomBytes(32).toString('hex');
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || crypto.randomBytes(32).toString('hex');
 
-// Token expiry times
-const ACCESS_TOKEN_EXPIRY = '15m';      // 15 minutes
-const REFRESH_TOKEN_EXPIRY = '7d';      // 7 days
+const ACCESS_TOKEN_EXPIRY  = '15m';
+const REFRESH_TOKEN_EXPIRY = '7d';
 
 class TokenService {
-  /**
-   * Generate access token (JWT)
-   */
+
+  // ── Genereren ─────────────────────────────────────────────────────────────
+
   generateAccessToken(user) {
     const payload = {
-      userId: user.id,
+      userId:   user.id,
       username: user.username,
-      email: user.email,
-      role: user.role
+      email:    user.email,
+      role:     user.role,
     };
 
     return jwt.sign(payload, JWT_ACCESS_SECRET, {
       expiresIn: ACCESS_TOKEN_EXPIRY,
-      issuer: 'wattson',
-      audience: 'wattson-client'
+      issuer:    'wattson',
+      audience:  'wattson-client',
     });
   }
 
-  /**
-   * Generate refresh token (stored in database)
-   */
   async generateRefreshToken(user, ipAddress = null, userAgent = null) {
-    // Generate random token
     const token = crypto.randomBytes(40).toString('hex');
 
-    // Calculate expiry date
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+    expiresAt.setDate(expiresAt.getDate() + 7);
 
-    // Store in database
     await db.pool.query(
-      `INSERT INTO refresh_tokens 
-       (user_id, token, expires_at, ip_address, user_agent)
+      `INSERT INTO refresh_tokens
+         (user_id, token, expires_at, ip_address, user_agent)
        VALUES (?, ?, ?, ?, ?)`,
-      [user.id, token, expiresAt, ipAddress, userAgent]
+      [user.id, token, expiresAt.toISOString().replace('T', ' ').slice(0, 19), ipAddress, userAgent]
     );
 
     return token;
   }
 
-  /**
-   * Verify access token
-   */
+  // ── Verifiëren ────────────────────────────────────────────────────────────
+
   verifyAccessToken(token) {
     try {
-      const decoded = jwt.verify(token, JWT_ACCESS_SECRET, {
-        issuer: 'wattson',
-        audience: 'wattson-client'
+      return jwt.verify(token, JWT_ACCESS_SECRET, {
+        issuer:   'wattson',
+        audience: 'wattson-client',
       });
-      return decoded;
     } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        throw new Error('TokenExpired');
-      }
-      if (error.name === 'JsonWebTokenError') {
-        throw new Error('InvalidToken');
-      }
+      if (error.name === 'TokenExpiredError')  throw new Error('TokenExpired');
+      if (error.name === 'JsonWebTokenError')  throw new Error('InvalidToken');
       throw error;
     }
   }
 
-  /**
-   * Verify refresh token
-   */
   async verifyRefreshToken(token) {
     const [rows] = await db.pool.query(
       `SELECT rt.*, u.id, u.username, u.email, u.role, u.is_active
@@ -84,70 +75,62 @@ class TokenService {
       [token]
     );
 
-    if (rows.length === 0) {
-      throw new Error('Invalid refresh token');
-    }
+    if (rows.length === 0) throw new Error('Invalid refresh token');
 
     const tokenData = rows[0];
 
-    // Check if token is expired
-    if (new Date(tokenData.expires_at) < new Date()) {
-      throw new Error('Refresh token expired');
-    }
-
-    // Check if user is active
-    if (!tokenData.is_active) {
-      throw new Error('User account is disabled');
-    }
+    if (new Date(tokenData.expires_at) < new Date()) throw new Error('Refresh token expired');
+    if (!tokenData.is_active)                        throw new Error('User account is disabled');
 
     return {
-      id: tokenData.id,
+      id:       tokenData.id,
       username: tokenData.username,
-      email: tokenData.email,
-      role: tokenData.role
+      email:    tokenData.email,
+      role:     tokenData.role,
     };
   }
 
-  /**
-   * Revoke refresh token
-   */
+  // ── Intrekken ─────────────────────────────────────────────────────────────
+
   async revokeRefreshToken(token) {
     await db.pool.query(
-      `UPDATE refresh_tokens SET revoked = true WHERE token = ?`,
+      'UPDATE refresh_tokens SET revoked = true WHERE token = ?',
       [token]
     );
   }
 
-  /**
-   * Revoke all refresh tokens for a user
-   */
   async revokeAllUserTokens(userId) {
     await db.pool.query(
-      `UPDATE refresh_tokens SET revoked = true WHERE user_id = ?`,
+      'UPDATE refresh_tokens SET revoked = true WHERE user_id = ?',
       [userId]
     );
   }
 
-  /**
-   * Clean up expired tokens
-   */
+  // ── Opruimen ──────────────────────────────────────────────────────────────
+  //
+  // MySQL gebruikte NOW() — vervangen door datetime('now').
+  // result.affectedRows werkt correct met de shim (Pattern A: const [result] = ...).
+
   async cleanupExpiredTokens() {
     const [result] = await db.pool.query(
-      `DELETE FROM refresh_tokens 
-       WHERE expires_at < NOW() OR revoked = true`
+      `DELETE FROM refresh_tokens
+       WHERE expires_at < datetime('now') OR revoked = true`
     );
 
     return result.affectedRows;
   }
 
-  /**
-   * Get all active tokens for a user
-   */
+  // ── Ophalen ───────────────────────────────────────────────────────────────
+  //
+  // MySQL gebruikte NOW() — vervangen door datetime('now').
+
   async getUserTokens(userId) {
     const [rows] = await db.pool.query(
       `SELECT id, token, expires_at, ip_address, user_agent, created_at
        FROM refresh_tokens
-       WHERE user_id = ? AND revoked = false AND expires_at > NOW()
+       WHERE user_id = ?
+         AND revoked   = false
+         AND expires_at > datetime('now')
        ORDER BY created_at DESC`,
       [userId]
     );
@@ -155,46 +138,34 @@ class TokenService {
     return rows;
   }
 
-  /**
-   * Decode token without verification (for debugging)
-   */
+  // ── Hulpfuncties ──────────────────────────────────────────────────────────
+
   decodeToken(token) {
     return jwt.decode(token);
   }
 
-  /**
-   * Get token info
-   */
   getTokenInfo(token) {
     const decoded = this.decodeToken(token);
-    if (!decoded) {
-      return null;
-    }
+    if (!decoded) return null;
 
     return {
-      userId: decoded.userId,
-      username: decoded.username,
-      email: decoded.email,
-      role: decoded.role,
-      issuedAt: new Date(decoded.iat * 1000),
+      userId:    decoded.userId,
+      username:  decoded.username,
+      email:     decoded.email,
+      role:      decoded.role,
+      issuedAt:  new Date(decoded.iat * 1000),
       expiresAt: new Date(decoded.exp * 1000),
-      issuer: decoded.iss,
-      audience: decoded.aud
+      issuer:    decoded.iss,
+      audience:  decoded.aud,
     };
   }
 
-  /**
-   * Check if access token is expired
-   */
   isTokenExpired(token) {
     try {
       this.verifyAccessToken(token);
       return false;
     } catch (error) {
-      if (error.message === 'TokenExpired') {
-        return true;
-      }
-      return false;
+      return error.message === 'TokenExpired';
     }
   }
 }

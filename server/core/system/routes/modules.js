@@ -1,4 +1,9 @@
 // core/system/routes/modules.js
+/* 
+ version 1.0.0  - 2024-06-01
+ version 1.0.12 - 2026-04-10 - Added GET /api/modules/:id/verify endpoint to check if module was installed via upload (presence of manifest.lock.json)
+*/
+
 import express from 'express';
 import multer from 'multer';
 import unzipper from 'unzipper';
@@ -7,6 +12,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import db from '../../database.js';
+
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MODULES_DIR = path.resolve(__dirname, '../../../modules');
@@ -23,6 +29,12 @@ const upload = multer({
 });
 
 const router = express.Router();
+/* to check if router is working at all — remove in production
+router.use((req, res, next) => {
+  console.log(' - modules router hit:', req.method, req.path);
+  next();
+});
+*/
 
 function sha256(buffer) {
   return crypto.createHash('sha256').update(buffer).digest('hex');
@@ -210,6 +222,26 @@ router.post('/upload', upload.fields([
   } catch (err) {
     await fs.rm(tempDir, { recursive: true }).catch(() => {});
     res.status(500).json({ error: err.message });
+  }
+});
+
+// ── GET /api/modules/:id/manifest ────────────────────────────────────────
+router.get('/:id/manifest', async (req, res) => {
+  try {
+    const manifestPath = path.join(MODULES_DIR, req.params.id, 'manifest.json');
+    const raw = JSON.parse(await fs.readFile(manifestPath, 'utf-8'));
+
+    res.json({
+      success:      true,
+      capabilities: raw.capabilities  || null,
+      collector:    raw.collector     || null,
+      services:     raw.services      || null,
+      routes:       raw.routes        || null,
+      dependencies: raw.dependencies  || null,
+      changelog:    raw.changelog     || null,
+    });
+  } catch {
+    res.status(404).json({ success: false, error: 'manifest.json not found for this module' });
   }
 });
 

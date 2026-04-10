@@ -1,32 +1,36 @@
-// user crud services
+// core/auth/services/userService.js
+//
+// Wijzigingen t.o.v. MySQL-versie:
+//   NOW()  →  datetime('now')  (zes plaatsen)
+//
+// result.insertId werkt correct met de better-sqlite3 shim (Pattern A).
+// Boolean literals (is_active = true) werken in SQLite 3.23+ ongewijzigd.
+
 import bcrypt from 'bcrypt';
-import db from '../../database.js';
+import db     from '../../database.js';
 
 const SALT_ROUNDS = 10;
 
 class UserService {
-  /**
-   * Get all users
-   */
+
+  // ── Opzoeken ──────────────────────────────────────────────────────────────
+
   async getAllUsers() {
     const [rows] = await db.pool.query(
-      `SELECT 
-        id, username, email, full_name, role, 
-        is_active, created_at, updated_at, last_password_update, last_login_at
+      `SELECT
+         id, username, email, full_name, role,
+         is_active, created_at, updated_at, last_password_update, last_login_at
        FROM users
        ORDER BY created_at DESC`
     );
     return rows;
   }
 
-  /**
-   * Get user by ID
-   */
   async getUserById(id) {
     const [rows] = await db.pool.query(
-      `SELECT 
-        id, username, email, full_name, role, 
-        is_active, created_at, updated_at, last_password_update,last_login_at
+      `SELECT
+         id, username, email, full_name, role,
+         is_active, created_at, updated_at, last_password_update, last_login_at
        FROM users
        WHERE id = ?`,
       [id]
@@ -34,87 +38,68 @@ class UserService {
     return rows[0] || null;
   }
 
-  /**
-   * Get user by username
-   */
   async getUserByUsername(username) {
     const [rows] = await db.pool.query(
-      `SELECT * FROM users WHERE username = ?`,
+      'SELECT * FROM users WHERE username = ?',
       [username]
     );
     return rows[0] || null;
   }
 
-  /**
-   * Get user by email
-   */
   async getUserByEmail(email) {
     const [rows] = await db.pool.query(
-      `SELECT * FROM users WHERE email = ?`,
+      'SELECT * FROM users WHERE email = ?',
       [email]
     );
     return rows[0] || null;
   }
 
-  /**
-   * Create a new user
-   */
+  // ── Aanmaken ──────────────────────────────────────────────────────────────
+  //
+  // MySQL gebruikte NOW() voor last_password_update — vervangen door datetime('now').
+  // result.insertId werkt correct met de shim (Pattern A: const [result] = ...).
+
   async createUser({ username, email, password, full_name, role = 'user' }) {
-    // Validate input
     if (!username || !email || !password) {
       throw new Error('Username, email, and password are required');
     }
 
-    // Check if username already exists
-    const existingUsername = await this.getUserByUsername(username);
-    if (existingUsername) {
-      throw new Error('Username already exists');
-    }
+    if (await this.getUserByUsername(username)) throw new Error('Username already exists');
+    if (await this.getUserByEmail(email))       throw new Error('Email already exists');
 
-    // Check if email already exists
-    const existingEmail = await this.getUserByEmail(email);
-    if (existingEmail) {
-      throw new Error('Email already exists');
-    }
-
-    // Validate role
     const validRoles = ['admin', 'user', 'viewer'];
-    if (!validRoles.includes(role)) {
-      throw new Error('Invalid role');
-    }
+    if (!validRoles.includes(role)) throw new Error('Invalid role');
 
-    // Hash password
     const password_hash = await bcrypt.hash(password, SALT_ROUNDS);
 
-    // Insert user
     const [result] = await db.pool.query(
-      `INSERT INTO users (username, email, password_hash, full_name, role, is_active,last_password_update)
-       VALUES (?, ?, ?, ?, ?, true,NOW())`,
+      `INSERT INTO users
+         (username, email, password_hash, full_name, role, is_active, last_password_update)
+       VALUES (?, ?, ?, ?, ?, 1, datetime('now'))`,
       [username, email, password_hash, full_name, role]
     );
 
     return {
-      id: result.insertId,
+      id:        result.insertId,
       username,
       email,
       full_name,
       role,
-      is_active: true
+      is_active: true,
     };
   }
 
-  /**
-   * Update user
-   */
+  // ── Bijwerken ─────────────────────────────────────────────────────────────
+  //
+  // MySQL gebruikte NOW() voor updated_at — vervangen door datetime('now').
+
   async updateUser(id, updates) {
     const user = await this.getUserById(id);
-    if (!user) {
-      throw new Error('User not found');
-    }
+    if (!user) throw new Error('User not found');
 
     const allowedFields = ['email', 'full_name', 'role', 'is_active'];
-    const updateFields = [];
-    const values = [];
+    const updateFields  = [];
+    const values        = [];
 
     for (const [key, value] of Object.entries(updates)) {
       if (allowedFields.includes(key)) {
@@ -123,116 +108,90 @@ class UserService {
       }
     }
 
-    if (updateFields.length === 0) {
-      throw new Error('No valid fields to update');
-    }
+    if (updateFields.length === 0) throw new Error('No valid fields to update');
 
-    // Check if email is being changed and is unique
     if (updates.email && updates.email !== user.email) {
-      const existingEmail = await this.getUserByEmail(updates.email);
-      if (existingEmail && existingEmail.id !== id) {
-        throw new Error('Email already exists');
-      }
+      const existing = await this.getUserByEmail(updates.email);
+      if (existing && existing.id !== id) throw new Error('Email already exists');
     }
 
-    // Validate role if being updated
     if (updates.role) {
       const validRoles = ['admin', 'user', 'viewer'];
-      if (!validRoles.includes(updates.role)) {
-        throw new Error('Invalid role');
-      }
+      if (!validRoles.includes(updates.role)) throw new Error('Invalid role');
     }
 
     values.push(id);
 
     await db.pool.query(
-      `UPDATE users SET ${updateFields.join(', ')}, updated_at = NOW()
-       WHERE id = ?`,
+      `UPDATE users SET ${updateFields.join(', ')}, updated_at = datetime('now') WHERE id = ?`,
       values
     );
 
     return this.getUserById(id);
   }
 
-  /**
-   * Change user password
-   */
+  // ── Wachtwoord ────────────────────────────────────────────────────────────
+  //
+  // MySQL gebruikte NOW() voor updated_at en last_password_update — vervangen.
+
   async changePassword(id, oldPassword, newPassword) {
     const [rows] = await db.pool.query(
       'SELECT password_hash FROM users WHERE id = ?',
       [id]
     );
 
-    if (rows.length === 0) {
-      throw new Error('User not found');
-    }
+    if (rows.length === 0) throw new Error('User not found');
 
-    // Verify old password
     const isValid = await bcrypt.compare(oldPassword, rows[0].password_hash);
-    if (!isValid) {
-      throw new Error('Current password is incorrect');
-    }
+    if (!isValid) throw new Error('Current password is incorrect');
 
-    // Validate new password
-    if (newPassword.length < 8) {
-      throw new Error('Password must be at least 8 characters');
-    }
+    if (newPassword.length < 8) throw new Error('Password must be at least 8 characters');
 
-    // Hash new password
     const password_hash = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
     await db.pool.query(
-      `UPDATE users SET password_hash = ?, updated_at = NOW(), last_password_update = NOW()
-       WHERE id = ?`,
+      `UPDATE users
+          SET password_hash        = ?,
+              updated_at           = datetime('now'),
+              last_password_update = datetime('now')
+        WHERE id = ?`,
       [password_hash, id]
     );
 
     return true;
   }
 
-  /**
-   * Reset user password (admin function)
-   */
   async resetPassword(id, newPassword) {
     const user = await this.getUserById(id);
-    if (!user) {
-      throw new Error('User not found');
-    }
+    if (!user) throw new Error('User not found');
 
-    // Validate new password
-    if (newPassword.length < 8) {
-      throw new Error('Password must be at least 8 characters');
-    }
+    if (newPassword.length < 8) throw new Error('Password must be at least 8 characters');
 
-    // Hash new password
     const password_hash = await bcrypt.hash(newPassword, SALT_ROUNDS);
 
     await db.pool.query(
-      `UPDATE users SET password_hash = ?, updated_at = NOW(), last_password_update = NOW()
-       WHERE id = ?`,
+      `UPDATE users
+          SET password_hash        = ?,
+              updated_at           = datetime('now'),
+              last_password_update = datetime('now')
+        WHERE id = ?`,
       [password_hash, id]
     );
 
     return true;
   }
 
-  /**
-   * Delete user
-   */
+  // ── Verwijderen ───────────────────────────────────────────────────────────
+
   async deleteUser(id) {
     const user = await this.getUserById(id);
-    if (!user) {
-      throw new Error('User not found');
-    }
+    if (!user) throw new Error('User not found');
 
-    // Don't allow deleting the last admin
     if (user.role === 'admin') {
       const [admins] = await db.pool.query(
-        `SELECT COUNT(*) as count FROM users WHERE role = 'admin' AND is_active = true`
+        `SELECT COUNT(*) as count FROM users WHERE role = 'admin' AND is_active = 1`
       );
-      if (admins[0].count <= 1) {
-        throw new Error('Cannot delete the last admin user');
-      }
+      if (admins[0].count <= 1) throw new Error('Cannot delete the last admin user');
     }
 
     await db.pool.query('DELETE FROM users WHERE id = ?', [id]);
@@ -240,80 +199,70 @@ class UserService {
     return true;
   }
 
-  /**
-   * Verify user credentials
-   */
+  // ── Authenticatie ─────────────────────────────────────────────────────────
+
   async verifyCredentials(identifier, password) {
-// Zoek de gebruiker op basis van gebruikersnaam OF email
-  const [rows] = await db.pool.query(
-    `SELECT * FROM users WHERE (username = ? OR email = ?) AND is_active = true`,
-    [identifier, identifier]
-  );
+    const [rows] = await db.pool.query(
+      `SELECT * FROM users WHERE (username = ? OR email = ?) AND is_active = 1`,
+      [identifier, identifier]
+    );
 
-  const user = rows[0];
+    const user = rows[0];
+    if (!user) return null;
 
-  if (!user) {
-    return null; // Gebruiker niet gevonden of niet actief
+    const isValid = await bcrypt.compare(password, user.password_hash);
+    return isValid ? user : null;
   }
 
-  // Verifieer het wachtwoord
-  const isValid = await bcrypt.compare(password, user.password_hash);
-  if (!isValid) {
-    return null;
-  }
+  // ── Last login ────────────────────────────────────────────────────────────
+  //
+  // MySQL gebruikte NOW() — vervangen door datetime('now').
 
-  return user;
-}
-  /**
-   * Update last login time
-   */
   async updateLastLogin(userId) {
     await db.pool.query(
-      `UPDATE users SET last_login_at = NOW() WHERE id = ?`,
+      `UPDATE users SET last_login_at = datetime('now') WHERE id = ?`,
       [userId]
     );
   }
 
-  /**
-   * Get user statistics
-   */
+  // ── Statistieken ──────────────────────────────────────────────────────────
+
   async getUserStats() {
     const [stats] = await db.pool.query(`
-      SELECT 
-        COUNT(*) as total_users,
-        SUM(CASE WHEN is_active = true THEN 1 ELSE 0 END) as active_users,
-        SUM(CASE WHEN role = 'admin' THEN 1 ELSE 0 END) as admin_users,
-        SUM(CASE WHEN role = 'user' THEN 1 ELSE 0 END) as regular_users,
-        SUM(CASE WHEN role = 'viewer' THEN 1 ELSE 0 END) as viewer_users
+      SELECT
+        COUNT(*)                                          AS total_users,
+        SUM(CASE WHEN is_active = 1    THEN 1 ELSE 0 END) AS active_users,
+        SUM(CASE WHEN role = 'admin'   THEN 1 ELSE 0 END) AS admin_users,
+        SUM(CASE WHEN role = 'user'    THEN 1 ELSE 0 END) AS regular_users,
+        SUM(CASE WHEN role = 'viewer'  THEN 1 ELSE 0 END) AS viewer_users
       FROM users
     `);
 
     return stats[0];
   }
 
-  /**
-   * Create default admin user if no users exist
-   */
+  // ── Default admin ─────────────────────────────────────────────────────────
+
   async createDefaultAdminIfNeeded() {
     const [users] = await db.pool.query('SELECT COUNT(*) as count FROM users');
-    
+
     if (users[0].count === 0) {
-      console.log('No users found. Creating default admin user...');
-      
-      const defaultAdmin = await this.createUser({
-        username: 'admin',
-        email: 'admin@localhost',
-        password: 'admin123',
+      console.log('   - No users found, creating default admin...');
+
+      const admin = await this.createUser({
+        username:  'admin',
+        email:     'admin@localhost',
+        password:  'admin123',
         full_name: 'System Administrator',
-        role: 'admin'
+        role:      'admin',
       });
 
-      console.log('✓ Default admin user created');
-      console.log('  Username: admin');
-      console.log('  Password: admin123');
-      console.log('  ⚠️  PLEASE CHANGE THE PASSWORD IMMEDIATELY!');
+      console.log('   \x1b[32m✓\x1b[0m Default admin created');
+      console.log('     Username: admin');
+      console.log('     Password: admin123');
+      console.log('     \x1b[33m⚠ Wijzig dit wachtwoord direct na de eerste login!\x1b[0m');
 
-      return defaultAdmin;
+      return admin;
     }
 
     return null;

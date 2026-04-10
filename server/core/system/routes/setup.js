@@ -1,6 +1,6 @@
 // server/core/system/routes/setup.js
 import express from 'express';
-import systemConfigService from '../services/systemConfigService.js';
+import systemConfigService from '../services/systemconfigservice.js';
 import db from '../../database.js';
 
 const router = express.Router();
