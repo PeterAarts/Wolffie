@@ -41,7 +41,7 @@
         <AlertDrawer />
         <button
           @click="toggleUserMenu"
-          class="user-menu-btn flex items-center bg-white hover:bg-secondary-300 transition-colors"
+          class="user-menu-btn flex items-center bg-white hover:bg-secondary-100 transition-colors"
         >
           <div class="user-avatar flex items-center justify-center text-[10px] font-bold uppercase bg-primary text-white">
             {{ authStore.user?.username?.substring(0,2) || 'me' }}
@@ -147,11 +147,11 @@
 
       <aside
         :class="[
-          'app-sidebar absolute inset-y-0 left-0 z-40 mt-6 transition-transform duration-300 lg:translate-x-0 lg:static lg:block shrink-0 flex flex-col bg-white',
+          'app-sidebar absolute inset-y-0 left-0 z-40 transition-transform duration-300 lg:translate-x-0 lg:static lg:block shrink-0 flex flex-col bg-white',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         ]"
       >
-        <nav class="sidebar-nav flex flex-col overflow-y-auto">
+        <nav class="sidebar-nav mt-6 flex flex-col overflow-y-auto">
           <router-link
             v-for="item in navItems"
             :key="item.id"
@@ -378,4 +378,5 @@ onUnmounted(() => {
 .role-badge--viewer         { background: var(--color-secondary-100); color: var(--color-text-tertiary); }
 .req                        { color: #ef4444; margin-left: 2px; }
 .field-error                { font-size: 0.72rem; color: #ef4444; margin-top: 0.25rem; display: block; }
+
 </style>

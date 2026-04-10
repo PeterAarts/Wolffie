@@ -137,12 +137,8 @@ const slotColumns = computed(() =>
 .app-table__toolbar-right { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
 
 /* ── Search box ───────────────────────────────────────────────────────────── */
-.app-table__search {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-.app-table__search-icon {
+.app-table__search        { position: relative;display: flex;align-items: center;}
+.app-table__search-icon   { 
   position: absolute;
   left: 0.55rem;
   color: #9ca3af;

@@ -51,7 +51,7 @@ const { t, currentLanguage } = useLocale();
 const props = defineProps({
   period: { type: String, default: 'today' },
   date: { type: String, default: () => new Date().toISOString().split('T')[0] },
-  granularity: { type: Number, default: 15 },
+  granularity: { type: Number, default: 5 },
   height: { type: String, default: '200px' },
   showStats: { type: Boolean, default: false }
 });

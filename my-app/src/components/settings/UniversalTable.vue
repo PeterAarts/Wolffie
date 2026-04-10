@@ -58,13 +58,17 @@
             <th
               v-for="col in tableConfig.columns"
               :key="col.field"
-              class="p-4 text-left text-xs font-medium text-secondary-400 uppercase tracking-widest"
+              :class="compact
+                ? 'px-3 py-2 text-left text-[10px] font-medium text-secondary-400'
+                : 'p-4 text-left text-xs font-medium text-secondary-400 uppercase tracking-widest'"
             >
               {{ r(col.header) }}
             </th>
             <th
               v-if="tableConfig.rowActions?.length"
-              class="p-4text-right text-xs font-extrabold text-secondary-400 uppercase tracking-widest"
+              :class="compact
+                ? 'px-3 py-2 text-right text-[10px] font-medium text-secondary-400'
+                : 'p-4 text-right text-xs font-extrabold text-secondary-400 uppercase tracking-widest'"
             >
               {{ t('common.actions') }}
             </th>
@@ -79,7 +83,7 @@
             <td
               v-for="col in tableConfig.columns"
               :key="col.field"
-              class="px-6 py-4 text-sm text-secondary-600 font-medium"
+              :class="compact ? 'px-3 py-2 text-xs text-secondary-600' : 'px-6 py-4 text-sm text-secondary-600 font-medium'"
             >
               <template v-if="col.template?.type === 'boolean'">
                 <i :class="row[col.field] ? 'fa-solid fa-circle-check text-green-500' : 'fa-solid fa-circle-xmark text-secondary-300'"></i>
@@ -100,14 +104,14 @@
               </template>
             </td>
 
-            <td v-if="tableConfig.rowActions?.length" class="px-6 py-4 text-right">
+            <td v-if="tableConfig.rowActions?.length" :class="compact ? 'px-3 py-2 text-right' : 'px-6 py-4 text-right'">
               <div class="flex justify-end gap-2">
                 <button
                   v-for="btn in getVisibleButtons(tableConfig.rowActions, row)"
                   :key="btn.label"
                   @click="executeRowAction(btn, row)"
                   :title="btn.label"
-                  class="p-4 hover:bg-secondary-100 rounded-lg group"
+                  :class="compact ? 'p-1 hover:bg-secondary-100 rounded group' : 'p-4 hover:bg-secondary-100 rounded-lg group'"
                 >
                   <i :class="['fa-light ', mapIcon(btn.icon), 'text-secondary-400 group-hover:text-secondary-900 ']"></i>
                 </button>
@@ -119,12 +123,77 @@
     </div>
 
   </div>
+
+
+  <!-- ── Edit drawer ────────────────────────────────────────────────────── -->
+  <Teleport to="body">
+    <div v-if="editDrawer.visible"
+         class="fixed inset-0 z-[9998] flex justify-end"
+         @click.self="editDrawer.visible = false">
+      <div class="w-full max-w-sm h-full bg-[var(--card-bg-color)] border-l border-[var(--color-border)] flex flex-col shadow-xl">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+          <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">{{ t('common.edit') }}</h3>
+          <button class="icon-btn" @click="editDrawer.visible = false">
+            <i class="fa-light fa-xmark"></i>
+          </button>
+        </div>
+        <!-- Fields -->
+        <div class="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
+          <div v-for="field in editDrawer.fields" :key="field.key">
+            <label class="block text-xs font-medium text-[var(--color-text-secondary)] mb-1">
+              {{ r(field.label) }}
+            </label>
+            <input
+              v-if="field.component === 'text' || field.component === 'number'"
+              :type="field.component === 'number' ? 'number' : 'text'"
+              v-model="editDrawer.data[field.key]"
+              class="input w-full"
+              :placeholder="field.placeholder || ''"
+            />
+            <label v-else-if="field.component === 'switch'" class="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" v-model="editDrawer.data[field.key]" class="hidden" />
+              <div class="toggle" :class="editDrawer.data[field.key] ? 'toggle--on' : ''"></div>
+            </label>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div class="flex gap-3 justify-end px-5 py-4 border-t border-[var(--color-border)]">
+          <button class="btn" @click="editDrawer.visible = false">{{ t('common.cancel') }}</button>
+          <button class="btn btn--primary" :disabled="editDrawer.saving" @click="saveEdit">
+            <i v-if="editDrawer.saving" class="fa-light fa-spinner fa-spin mr-1"></i>
+            {{ t('common.save') }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
+  <!-- ── Confirm modal ──────────────────────────────────────────────────── -->
+  <Teleport to="body">
+    <div v-if="confirmState.visible"
+         class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50"
+         @click.self="resolveConfirm(false)">
+      <div class="w-full max-w-sm p-6 bg-[var(--card-bg-color)] border border-[var(--color-border)] rounded-[var(--radius-xl)]">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fa-light fa-circle-question text-[var(--color-primary)]"></i>
+          <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">{{ confirmState.message }}</h3>
+        </div>
+        <div class="flex gap-3 justify-end">
+          <button class="btn" @click="resolveConfirm(false)">{{ t('common.cancel') }}</button>
+          <button class="btn btn--primary" @click="resolveConfirm(true)">{{ t('common.confirm') }}</button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/services/api';
+import { useToastStore } from '@/stores/toast';
 
 const props = defineProps({
   config:        { type: Object, required: true },
@@ -132,7 +201,8 @@ const props = defineProps({
   i18nKeys:      { type: Boolean, default: false },
   // When the parent uses i18nKeys it merges translations asynchronously.
   // Watch this flag to force header re-render once messages are ready.
-  messagesReady: { type: Boolean, default: true }
+  messagesReady: { type: Boolean, default: true },
+  compact:      { type: Boolean, default: false }
 });
 
 // Incrementing this key forces Vue to re-evaluate r(col.header) calls
@@ -143,6 +213,21 @@ watch(() => props.messagesReady, (ready) => {
 });
 
 const { t } = useI18n();
+const toast = useToastStore();
+
+// ─── Confirm modal ───────────────────────────────────────────────────────────
+const confirmState = ref({ visible: false, message: '' });
+let _confirmResolve = null;
+
+function showConfirm(message) {
+  confirmState.value = { visible: true, message };
+  return new Promise(resolve => { _confirmResolve = resolve; });
+}
+
+function resolveConfirm(result) {
+  confirmState.value.visible = false;
+  if (_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
+}
 
 // Resolve a string as an i18n key when the parent schema uses i18nKeys,
 // otherwise return it as a plain display string.
@@ -163,6 +248,41 @@ const loading       = ref(false);
 const loadError     = ref(null);
 const filterValues  = reactive({});
 const actionLoading = reactive({});
+
+// ─── Edit drawer ──────────────────────────────────────────────────────────────
+const editDrawer = reactive({
+  visible: false,
+  fields:  [],
+  data:    {},
+  endpoint: '',
+  saving:  false,
+});
+
+function resolveEndpoint(template, row) {
+  return template.replace(/\{(\w+)\}/g, (_, key) => row[key] ?? '');
+}
+
+function openEditDrawer(btn, row) {
+  editDrawer.fields   = btn.fields || [];
+  editDrawer.endpoint = resolveEndpoint(btn.endpoint || tableConfig.value.endpoint + '/{id}', row);
+  editDrawer.data     = { ...row };
+  editDrawer.saving   = false;
+  editDrawer.visible  = true;
+}
+
+async function saveEdit() {
+  editDrawer.saving = true;
+  try {
+    await apiClient({ method: 'PUT', url: editDrawer.endpoint, data: editDrawer.data });
+    editDrawer.visible = false;
+    await loadData();
+    toast.add({ severity: 'success', summary: t('common.saved'), detail: t('common.saved') });
+  } catch (err) {
+    toast.add({ severity: 'error', summary: t('common.error'), detail: err.message });
+  } finally {
+    editDrawer.saving = false;
+  }
+}
 
 // ─── Data loading ────────────────────────────────────────────────────────────
 async function loadData() {
@@ -202,29 +322,37 @@ async function loadData() {
 
 // ─── Actions ─────────────────────────────────────────────────────────────────
 async function executeGlobalAction(action) {
-  if (action.confirmMessage && !confirm(r(action.confirmMessage))) return;
+  if (action.confirmMessage && !await showConfirm(r(action.confirmMessage))) return;
   actionLoading[action.id] = true;
   try {
     await apiClient({ method: action.method || 'POST', url: action.endpoint });
     if (action.refreshAfter !== false) await loadData();
   } catch (err) {
-    alert(t('common.actionFailed') + ': ' + err.message);
+    toast.add({ severity: 'error', summary: t('common.error'), detail: err.message });
   } finally {
     actionLoading[action.id] = false;
   }
 }
 
 async function executeRowAction(btn, row) {
-  if (btn.confirmMessage && !confirm(r(btn.confirmMessage))) return;
+  if (btn.confirmMessage && !await showConfirm(r(btn.confirmMessage))) return;
+
+  // Drawer action — open edit form instead of API call
+  if (btn.type === 'drawer') {
+    openEditDrawer(btn, row);
+    return;
+  }
+
+  // API action — resolve {id} placeholders in endpoint
+  const url = btn.endpoint
+    ? resolveEndpoint(btn.endpoint, row)
+    : `${tableConfig.value.endpoint}/${row.id}`;
+
   try {
-    await apiClient({
-      method: btn.method || 'POST',
-      url: btn.endpoint || `${tableConfig.value.endpoint}/${btn.action}`,
-      data: row
-    });
+    await apiClient({ method: btn.method || 'POST', url, data: row });
     await loadData();
   } catch (err) {
-    alert(t('common.actionFailed') + ': ' + err.message);
+    toast.add({ severity: 'error', summary: t('common.error'), detail: err.message });
   }
 }
 

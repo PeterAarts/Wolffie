@@ -356,7 +356,12 @@ function buildSlots(prices, dailyKwh, dateStr, solarSlots = null, solarHours = n
     const bellCurve = (solarSlots || solarHours) ? [] : buildSolarSlots(dailyKwh, dateStr, sorted.length);
 
     return sorted.map((r, i) => {
-      const d    = new Date(r.datetime);
+      // Normalise datetime string to UTC: "2026-03-31 06:00:00" → "2026-03-31T06:00:00Z"
+      // Without this, browsers parse space-separated datetimes as local time, shifting
+      // d.getHours() by the UTC offset and breaking the solarSlots key lookup.
+      const rawDt = String(r.datetime).replace(' ', 'T');
+      const utcDt = /[Zz]$|[+-]\d{2}:\d{2}$/.test(rawDt) ? rawDt : rawDt + 'Z';
+      const d    = new Date(utcDt);
       const hour = d.getHours();
       let price  = parseFloat(r.price_eur_per_kwh ?? r.price ?? r.price_eur_kwh ?? r.value);
       if (!isFinite(price)) price = null;

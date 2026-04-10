@@ -196,6 +196,9 @@
         },
         "retention": {
           "title": "Data Retention (Days)"
+        },
+        "energy": {
+          "title": "Energy Contract"
         }
       },
       "fields": {
@@ -211,7 +214,11 @@
         "email_address_placeholder": "example@domain.com",
         "snapshots_days": "Snapshots",
         "minutes_days": "Minute Data",
-        "hours_days": "Hour Data"
+        "hours_days": "Hour Data",
+        "contract_type": "Contract type",
+        "contract_type_dynamic": "Dynamic (day-ahead)",
+        "contract_type_fixed": "Fixed price",
+        "fixed_price_ct_kwh": "Fixed price"
       }
     },
     "savedDetail": "Settings updated"
@@ -367,6 +374,7 @@
     "requires":             "Requires",
     "todaysPlan":           "Today's plan",
     "validateStrategy":     "Validate with Energy Outlook",
+    "totalSolarForecast":   "Daily total solar forecast",
     "strategy": {
       "smartEco": {
         "name": "Smart Eco",

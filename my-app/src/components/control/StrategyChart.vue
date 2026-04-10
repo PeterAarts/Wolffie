@@ -98,22 +98,10 @@ const currentSlotIndex = computed(() => {
 
 // ── Dataset computeds ──────────────────────────────────────────────────────
 
-const labels = computed(() =>
-  slots.value.map(s => `${String(s.hour).padStart(2,'0')}:${String(s.minute).padStart(2,'0')}`)
-);
-
-const priceData = computed(() =>
-  slots.value.map(s => s.priceCtKwh ?? null)
-);
-
-const solarData = computed(() =>
-  slots.value.map(s => (s.solarForecastW ?? 0) / 1000)  // W → kW
-);
-
-const socData = computed(() =>
-  slots.value.map(s => s.simSocPct ?? null)
-);
-
+const labels = computed(()    => slots.value.map(s => `${String(s.hour).padStart(2,'0')}:${String(s.minute).padStart(2,'0')}`) );
+const priceData = computed(() => slots.value.map(s => s.priceCtKwh ?? null));
+const solarData = computed(() => slots.value.map(s => (s.solarForecastW ?? 0) / 1000)  ); // W → kW
+const socData = computed(()   => slots.value.map(s => s.simSocPct ?? null) );
 const priceColors = computed(() => {
   const valid = priceData.value.filter(p => p !== null);
   if (!valid.length) return slots.value.map(() => '#e5e7eb');
@@ -121,16 +109,16 @@ const priceColors = computed(() => {
   const minP  = Math.min(...valid);
   const maxP  = Math.max(...valid);
   const range = maxP - minP || 1;
-  const green = minP + range * 0.30;
-  const red   = minP + range * 0.70;
+  const green = minP + range * 0.10;
+  const red   = minP + range * 0.90;
   const nowIdx = currentSlotIndex.value;
 
   return priceData.value.map((p, i) => {
-    if (i === nowIdx)  return 'var(--color-secondary-400)';
-    if (p === null)    return '#e5e7eb';
-    if (p <= 0)        return 'rgba(34,197,94,0.25)';
-    if (p <= green)    return 'rgba(34,197,94,0.25)';
-    if (p >= red)      return 'rgba(239,68,68,0.20)';
+    if (i === nowIdx)  return '#222';
+    if (p === null)    return '#f8f8f8';
+    if (p <= 0)        return 'rgba(134,197,94,0.15)';
+    if (p <= green)    return 'rgba(34,197,94,1.0)';
+    if (p >= red)      return 'rgba(239,68,68,0.80)';
     return '#d1d5db';
   });
 });
@@ -212,6 +200,18 @@ function buildConfig() {
 
   const maxSolar = Math.max(...solarData.value, 0.1);
 
+  // Aligned-zero: compute yPrice range, then derive negative floors for ySoc
+  // and ySolar so that 0ct / 0% / 0 kW all land on the same pixel row.
+  const prices    = priceData.value.filter(p => p !== null);
+  const priceMin  = prices.length ? Math.min(0, ...prices) : 0;
+  const priceMax  = prices.length ? Math.max(0, ...prices) : 15;
+  const zeroFrac  = (priceMax - priceMin) > 0 ? -priceMin / (priceMax - priceMin) : 0;
+  // Solve for each axis: (0 − axisMin) / (axisMax − axisMin) = zeroFrac
+  //   → axisMin = zeroFrac * axisMax / (zeroFrac − 1)
+  const ySocMin   = zeroFrac > 0 ? (100 * zeroFrac) / (zeroFrac - 1) : 0;
+  const ySolarMax = maxSolar * 1.25;
+  const ySolarMin = zeroFrac > 0 ? (ySolarMax * zeroFrac) / (zeroFrac - 1) : 0;
+
   return {
     type: 'bar',
     data: {
@@ -227,7 +227,7 @@ function buildConfig() {
           borderRadius      : 2,
           yAxisID           : 'yPrice',
           order             : 3,
-          barPercentage     : 1.0,
+          barPercentage     : 0.5,
           categoryPercentage: 0.65,
         },
         // 1 — Solar area
@@ -312,14 +312,16 @@ function buildConfig() {
             title: items => {
               const s = sl[items[0]?.dataIndex];
               if (!s) return '';
-              const hh = String(s.hour).padStart(2, '0');
-              const mm = String(s.minute).padStart(2, '0');
               if (windowStart.value) {
                 const dt      = new Date(windowStart.value.getTime() + s.slot * 15 * 60 * 1000);
+                const hh      = String(dt.getHours()).padStart(2, '0');
+                const mm      = String(dt.getMinutes()).padStart(2, '0');
                 const nextDay = dt.getDate() !== windowStart.value.getDate();
                 return nextDay ? `${hh}:${mm} (tomorrow)` : `${hh}:${mm}`;
               }
-              return `${hh}:${mm}`;
+              // Fallback: no windowStart — parse datetime string as local time
+              const dt = new Date(s.datetime);
+              return `${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`;
             },
             label: ctx => {
               switch (ctx.dataset.yAxisID) {
@@ -369,6 +371,8 @@ function buildConfig() {
         yPrice: {
           type    : 'linear',
           position: 'left',
+          min     : priceMin,
+          max     : priceMax,
           grid    : { color: gridColor },
           ticks   : {
             color   : tickColor,
@@ -385,14 +389,13 @@ function buildConfig() {
         ySoc: {
           type    : 'linear',
           position: 'right',
-          min     : 0,
+          min     : ySocMin,
           max     : 100,
           grid    : { drawOnChartArea: false },
           ticks   : {
             color    : tickColor,
             font     : { size: 10 },
-            stepSize : 20,
-            callback : v => `${v}%`,
+            callback : v => v < 0 ? '' : `${v}%`,
           },
           title: {
             display: true,
@@ -405,15 +408,27 @@ function buildConfig() {
         ySolar: {
           type    : 'linear',
           position: 'right',
-          min     : 0,
-          max     : maxSolar * 1.25,
+          min     : ySolarMin,
+          max     : ySolarMax,
           display : false,
           grid    : { drawOnChartArea: false },
         },
       },
       animation: { duration: 250 },
     },
-    plugins: [floorLinePlugin, nowLinePlugin],
+    plugins: [floorLinePlugin, nowLinePlugin, {
+      id: 'scAlignZero',
+      // Chart.js 4 signature: first arg is Chart instance, second is { scale }
+      afterDataLimits(_, { scale }) {
+        if (scale.id === 'ySoc') {
+          scale.min = ySocMin;
+          scale.max = 100;
+        } else if (scale.id === 'ySolar') {
+          scale.min = ySolarMin;
+          scale.max = ySolarMax;
+        }
+      },
+    }],
   };
 }
 

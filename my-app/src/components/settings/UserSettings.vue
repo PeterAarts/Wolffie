@@ -36,7 +36,7 @@
 
       <!-- Email -->
       <template #email="{ value }">
-        <div class="text-xs text-secondary-400">{{ value.email }}</div>
+        <div class="text-sm text-secondary-400">{{ value.email }}</div>
       </template>
 
       <!-- Role badge -->
@@ -48,7 +48,7 @@
 
       <!-- Last password update -->
       <template #_lastpw="{ value }">
-        <div class="text-xs text-secondary-400">{{ formatDate(value.last_password_update) }}</div>
+        <div class="text-sm text-secondary-400">{{ formatDate(value.last_password_update) }}</div>
       </template>
 
       <!-- Actions -->
@@ -321,10 +321,10 @@ onUnmounted(() => {
 <style scoped>
 .users-panel            { display: flex; flex-direction: column; gap: 0.875rem; }
 /* ── Role badges ─────────────────────────────────────────────────────────── */
-.role-badge             { display: inline-block;padding: 0.125rem 0.5rem;font-size: 0.65rem;font-weight: 400;letter-spacing: 0.05em;border-radius: 2px;background: var(--color-secondary-100);color: var(--color-text-secondary);}
+.role-badge             { display: inline-block;padding: 0.125rem 0.5rem;font-size: 14px;font-weight: 400;letter-spacing: 0.05em;border-radius:var(--radius-sm);background: var(--color-secondary-100);color: var(--color-text-secondary);}
 .role-badge--admin      { background: var(--color-primary); color: #fff; }
-.role-badge--user       { background: var(--color-secondary-100); color: var(--color-text-secondary); }
-.role-badge--viewer     { background: var(--color-secondary-100); color: var(--color-text-tertiary); }
+.role-badge--user       { background: var(--color-secondary-100); color: var(--color-secondary-700); }
+.role-badge--viewer     { background: var(--color-secondary-100); color: var(--color-secondary-500); }
 
 /* ── Meta cards (edit-mode summary row) ──────────────────────────────────── */
 .meta-section           { padding-bottom: 1.25rem; }

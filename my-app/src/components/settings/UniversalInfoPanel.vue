@@ -4,8 +4,7 @@
     <div 
       v-for="item in displayItems" 
       :key="item.label"
-      :class="['info-item', getColClass(item)]"
-    >
+      :class="['info-item', getColClass(item)]"     >
       <div class="info-icon" v-if="item.icon">
         <i :class="`fa-light ${item.icon}`" :style="{ color: item.iconColor }"></i>
       </div>
@@ -82,6 +81,7 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import apiClient from '@/services/api';
+import '@/assets/styles/control.css';
 
 
 const props = defineProps({
@@ -311,9 +311,10 @@ defineExpose({
 }
 
 .info-value {
-  font-size: 1rem;
-  color: #111827;
-  font-weight: 600;
+    font-size: 0.875rem;
+    background-color: var(--color-secondary-50);
+    padding: 0.4375rem 0.75rem;
+
 }
 
 .info-value-full {
