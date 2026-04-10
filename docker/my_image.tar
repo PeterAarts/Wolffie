@@ -1,0 +1,5 @@
+1 - ensure Docker desktop is installed locally on your workstation/laptop
+2 - open PowerShell and execute the following commands :
+    - docker build --build-arg NPM_FONTAWESOME_TOKEN=--your_npm_token -t wolffie:latest .
+    - docker save wolffie:latest -o C:\website\myAlphaESS\wolffie-latest.tar
+3 - copy your locally saved docker image to your docker container (NAS)
