@@ -1,0 +1,70 @@
+# ============================================================================
+# Wolffie — docker-compose.yml
+# ============================================================================
+#
+# Synology Container Manager: maak een nieuw project aan en plak deze inhoud.
+#
+# Mappenstructuur op de NAS (aanpassen naar jouw volume):
+#   /volume1/docker/wolffie/
+#     data/          ← SQLite database (persistent)
+#     modules/       ← modules map (persistent, voor module-uploads)
+#     logs/          ← server logs (persistent)
+#     .env           ← omgevingsvariabelen (aanpassen voor productie)
+#
+# Eerste keer opstarten:
+#   1. Maak de mappen aan op de NAS
+#   2. Kopieer je bestaande wolffie.db naar /volume1/docker/wolffie/data/
+#   3. Kopieer de modules/ map naar /volume1/docker/wolffie/modules/
+#   4. Vul .env in (zie .env.example)
+#   5. docker-compose up -d
+
+services:
+  wolffie:
+    image: wolffie:latest
+    container_name: wolffie
+    restart: unless-stopped
+
+    ports:
+      # Poort 3009 extern → 3009 intern (pas aan als poort bezet is)
+      - "8443:3009"
+
+    volumes:
+      # SQLite database — overleeft container updates
+      - ./data:/app/data
+      # Modules — zodat je modules kunt uploaden/updaten zonder rebuild
+      - ./modules:/app/server/modules
+      # Logs
+      - ./logs:/app/logs
+
+    environment:
+      - NODE_ENV=production
+      - PORT=3009
+      - DB_PATH=/app/data/wolffie.db
+      - SESSION_SECRET=${SESSION_SECRET}
+      - SETTINGS_ENCRYPTION_KEY=${SETTINGS_ENCRYPTION_KEY}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:8443}
+
+    # ── Netwerk voor Modbus TCP ──────────────────────────────────────────────
+    #
+    # Kies één van de twee opties:
+    #
+    # OPTIE A (aanbevolen): bridge netwerk
+    #   De container bereikt de Modbus-apparaten via hun IP-adres.
+    #   Werkt als de inverters bereikbaar zijn via het LAN.
+    #   → Gebruik de IP-adressen van AlphaESS en SolarEdge in de module-instellingen.
+    #
+    # OPTIE B: host netwerk
+    #   Container deelt het netwerk van de NAS — zelfde IP, alle poorten open.
+    #   Gebruik dit alleen als bridge niet werkt (bijv. multicast-problemen).
+    #   → Verwijder de 'ports' sectie hierboven, want host mode negeert port mapping.
+    #
+    # Standaard: bridge (uitgecommentarieerd = bridge actief)
+    # network_mode: host   # ← uncomment voor optie B
+
+    # Gezondheidscheck meenemen uit Dockerfile
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3009/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
