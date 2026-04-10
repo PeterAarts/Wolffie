@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="p-6 float-canvas">
     <div class="flex flex-col md:flex-row  text-secondary-500 bg-secondary-100 hero-card shadow-xl">
       <aside class="w-full flex-shrink-0 flex flex-col md:w-64  ">
 
@@ -65,7 +65,7 @@
 import { ref, computed, onMounted } from 'vue';
 import apiClient from '@/services/api';
 import { useI18n } from 'vue-i18n';
-import UniversalSettingsPanel from '@/components/settings/universalSettingsPanel.vue';
+import UniversalSettingsPanel from '@/components/settings/UniversalSettingsPanel.vue';
 import CoreSettings from '@/components/settings/CoreSettings.vue';
 import UserSettings from '@/components/settings/UserSettings.vue';
 import ModulesTab from '@/components/settings/ModulesTab.vue';

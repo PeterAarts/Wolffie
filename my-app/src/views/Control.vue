@@ -1,5 +1,5 @@
 <template>
-  <div class="p-6">
+  <div class="p-6 float-canvas">
     <div class="flex flex-col md:flex-row  w-full overflow-hidden text-secondary-900 bg-secondary-100 p-6 rounded-lg shadow-xl inner-canvas">
       
       <aside class="w-full  bg-secondary-100 flex-shrink-0 p-4 ps-0 flex flex-col">
@@ -21,14 +21,14 @@
 
       <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-white rounded-lg inner-canvas-2">
         
-        <header class="flex-shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-6">
+        <header class="flex-shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4 mt-6 px-6">
           <div>
             <h2 class="text-xl font-bold text-secondary-900">{{ activeLabel }}</h2>
             <p class="text-sm text-secondary-500 mt-1">{{ activeDescription }}</p>
           </div>
         </header>
 
-        <div class="flex-1 overflow-y-auto p-6 lg:p-8 mr-1">
+        <div class="flex-1 overflow-y-auto p-6 mr-1">
           <div class="mx-auto">
             <transition name="fade" mode="out-in">
               <component :is="activeComponent" />

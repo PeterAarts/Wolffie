@@ -54,7 +54,7 @@ import { useLocale } from '@/composables/useLocale';
 const { t } = useLocale();
 
 const periods = [
-  { value: 'day',           label: t('time.today'),    granularity: 15   },
+  { value: 'day',           label: t('time.today'),    granularity: 5 },
   { value: 'last-7-days',   label: t('time.last7d'),   granularity: 60   },
   { value: 'last-30-days',  label: t('time.last30d'),  granularity: 360  },
   { value: 'last-365-days', label: t('time.thisYear'), granularity: 1440 },
@@ -144,7 +144,7 @@ function selectPeriod(period) {
 .date-btn:hover         { background: var(--color-secondary-subtle); }
 .date-btn.disabled      { opacity: .3; cursor: default; pointer-events: none; }
 .date-label             { display: flex; align-items: center; gap: 6px;padding: 0 14px; height: 32px;font-size: 13px; font-weight: 500;color: var(--color-text-primary);white-space: nowrap;border-left: 1px solid var(--color-border);border-right: 1px solid var(--color-border);}
-.today-badge            { font-size: 11px; font-weight: 700;text-transform: uppercase; letter-spacing: 0.05em;background: var(--color-text-primary);color: var(--color-bg-primary);padding: 1px 6px;border-radius: var(--radius-sm);}
+.today-badge            { font-size: 11px; font-weight: 700;text-transform: uppercase; letter-spacing: 0.05em;background: var(--color-secondary-200);color: var(--color-bg-primary);padding: 1px 6px;border-radius: var(--radius-sm);}
 /* ── Chart wrapper ────────────────────────────────────────────────── */
 .chart-wrapper          { background: transparent; padding: 0; }
 

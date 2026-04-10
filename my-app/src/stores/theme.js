@@ -31,7 +31,7 @@ export const THEME_PRESETS = {
   carbon: {
     label:           'Carbon Forest',
     primaryColor:    '#3c5242', // Deep near-black for text/headers
-    secondaryColor:  '#8baf95', // High-energy "glowing" mint for power lines/charts
+    secondaryColor:  '#7a9782', // High-energy "glowing" mint for power lines/charts
     backgroundColor: '#1e1e1e', // Dark charcoal background
     borderRadius:    '.5rem',     // Sharp, technical edge
   },
