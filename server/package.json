@@ -1,24 +1,22 @@
 {
-  "name": "alpha-ess-backend",
+  "name": "wolffie-server",
   "version": "1.0.0",
   "type": "module",
-  "description": "Alpha ESS Local Monitoring Backend",
+  "description": "Wolffie Home Energy Management Server",
   "main": "server.js",
-  "directories": {
-    "test": "tests"
-  },
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
     "init-db": "node scripts/init-database.js"
   },
   "keywords": [
-    "alpha-ess",
+    "wolffie",
     "solar",
     "battery",
-    "modbus"
+    "modbus",
+    "energy"
   ],
-  "author": "Your Name",
+  "author": "Wolffie",
   "license": "MIT",
   "dependencies": {
     "@matter/main": "^0.16.10",
@@ -27,21 +25,19 @@
     "@serialport/parser-readline": "^13.0.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
+    "better-sqlite3": "^9.4.3",
     "chalk": "^5.6.2",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
-    "express-mysql-session": "^3.0.3",
     "express-rate-limit": "^8.2.1",
     "express-session": "^1.19.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "modbus-serial": "^8.0.23",
     "multer": "^2.1.1",
-    "mysql2": "^3.16.0",
     "node-cron": "^4.2.1",
-    "pm2": "^6.0.14",
     "serialport": "^13.0.0",
     "unzipper": "^0.12.3",
     "ws": "^8.18.3"
