@@ -1,7 +1,7 @@
 {
   "name": "my-app",
   "private": true,
-  "version": "0.0.1",
+  "version": "1.4.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,6 +22,7 @@
     "fix": "^0.0.3",
     "npm": "^11.10.0",
     "pinia": "^3.0.4",
+    "swagger-ui-dist": "^5.32.1",
     "tailwindcss": "^4.1.18",
     "vue": "^3.5.26",
     "vue-chartjs": "^5.3.3",
