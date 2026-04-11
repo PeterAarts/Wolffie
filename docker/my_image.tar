@@ -1,4 +1,8 @@
 1 - ensure Docker desktop is installed locally on your workstation/laptop
+2 - copy all files from root to local folder
+3 - copy my-app and server-folder to local folder
+4 - copy modules folder to local folder
+5 - create a folder /data , /logs and /modules
 2 - open PowerShell and execute the following commands :
     - docker build --build-arg NPM_FONTAWESOME_TOKEN=--your_npm_token -t wolffie:latest .
     - docker save wolffie:latest -o C:\website\myAlphaESS\wolffie-latest.tar
