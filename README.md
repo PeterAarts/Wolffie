@@ -1,4 +1,4 @@
-# Wolffie— Home Energy Management System
+# Wolffie — your Home Energy Management System
 
 ## Project Overview
 
