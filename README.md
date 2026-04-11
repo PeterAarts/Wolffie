@@ -1,11 +1,11 @@
-# Wolffie — your Home Energy Management System
+# Wolffie - your Home Energy Management System
 
 ## Project Overview
 
 Wolffie is a comprehensive, self-hosted energy monitoring and management platform designed for residential solar and battery systems. 
 https://wolffieenergy.nl
 It is created to enable management of your battery inverter and solar converter in 1 system and not to depend on public/external API's from vendors.
-It collects, stores, and visualizes real-time and historical energy data from multiple sources — including AlphaESS solar/battery inverters, HomeWizard smart devices, and SolarEdge systems — through a modern web interface. 
+It collects, stores, and visualizes real-time and historical energy data from multiple sources - including AlphaESS solar/battery inverters, HomeWizard smart devices, and SolarEdge systems — through a modern web interface. 
 The system is built for extensibility, allowing new energy sources to be integrated as modular plug-ins without changing the core application.
 
 ![](homePage_dashboard.png)
@@ -13,18 +13,18 @@ The system is built for extensibility, allowing new energy sources to be integra
 
 ## Architecture
 
-### Backend — Node.js + Express
+### Backend - Node.js + Express
 
 The server-side application is built on **Node.js with Express** and is responsible for data collection, API endpoints, real-time communication, and system orchestration.
 
 **Core services:**
 
-- **Data Collector** (`dataCollector.js`) — Central orchestrator that manages data acquisition from all configured sources. It implements automatic failover logic: Cloud API is the primary source, with ModBus TCP/RTU as a local fallback. Snapshots are collected every 10–60 seconds depending on the active source and stored in MariaDB.
-- **WebSocket Server** (`websocket.js`) — Provides real-time push updates to connected frontend clients. Broadcasts power data, connection status changes, and source-switch notifications so dashboards update instantly.
-- **Scheduler** (`scheduler.js`) — Manages timed tasks including periodic data collection, minute/hourly aggregation, and daily summary generation at 00:05.
-- **Database Service** (`database.js`) — Handles all MariaDB interactions including snapshot storage, multi-tier aggregation, event logging, and dispatch history tracking.
-- **System Architecture Service** (`systemArchitectureService.js`) — Reads the component hierarchy and energy flow definitions from the database, enabling a fully dynamic system diagram on the frontend.
-- **Settings Service** (`settingsService.js`) — Database-driven configuration management with change history and live reload capability.
+- **Data Collector** (`dataCollector.js`) - Central orchestrator that manages data acquisition from all configured sources. It implements automatic failover logic: Cloud API is the primary source, with ModBus TCP/RTU as a local fallback. Snapshots are collected every 10–60 seconds depending on the active source and stored in MariaDB.
+- **WebSocket Server** (`websocket.js`) - Provides real-time push updates to connected frontend clients. Broadcasts power data, connection status changes, and source-switch notifications so dashboards update instantly.
+- **Scheduler** (`scheduler.js`) - Manages timed tasks including periodic data collection, minute/hourly aggregation, and daily summary generation at 00:05.
+- **Database Service** (`database.js`) - Handles all MariaDB interactions including snapshot storage, multi-tier aggregation, event logging, and dispatch history tracking.
+- **System Architecture Service** (`systemArchitectureService.js`) - Reads the component hierarchy and energy flow definitions from the database, enabling a fully dynamic system diagram on the frontend.
+- **Settings Service** (`settingsService.js`) - Database-driven configuration management with change history and live reload capability.
 
 ### Frontend — Vue.js 3
 
@@ -32,13 +32,13 @@ The single-page application is built with **Vue.js 3**, **Pinia** for state mana
 
 **Key pages and components:**
 
-- **Dashboard** (`Dashboard.vue`) — Live overview with real-time power flow, battery SOC, solar generation, grid import/export, and home consumption.
-- **Dynamic System Diagram** (`DynamicSystemDiagram.vue`) — Renders the energy system topology directly from the database-defined architecture, showing components, sub-components, and animated power flows.
-- **History** (`History.vue`) — Interactive charts for historical energy data with smart granularity selection (15-minute intervals for daily views, hourly for weekly, daily for monthly).
-- **Analytics** (`Analytics.vue`) — Deeper energy analysis and performance metrics.
-- **Control** (`Control.vue`) — Manual dispatch operations such as grid charging and discharging (requires ModBus connection).
-- **Settings** (`Settings.vue`) — System configuration UI with live Cloud API and ModBus connection testing.
-- **Setup Wizard** (`SetupWizard.vue`) — Guided initial configuration flow.
+- **Dashboard** (`Dashboard.vue`) - Live overview with real-time power flow, battery SOC, solar generation, grid import/export, and home consumption.
+- **Dynamic System Diagram** (`DynamicSystemDiagram.vue`) - Renders the energy system topology directly from the database-defined architecture, showing components, sub-components, and animated power flows.
+- **History** (`History.vue`) - Interactive charts for historical energy data with smart granularity selection (15-minute intervals for daily views, hourly for weekly, daily for monthly).
+- **Analytics** (`Analytics.vue`) - Deeper energy analysis and performance metrics.
+- **Control** (`Control.vue`) - Manual dispatch operations such as grid charging and discharging (requires ModBus connection).
+- **Settings** (`Settings.vue`) - System configuration UI with live Cloud API and ModBus connection testing.
+- **Setup Wizard** (`SetupWizard.vue`) - Guided initial configuration flow.
 
 ### Communication Protocols
 
@@ -78,10 +78,10 @@ The system uses **MariaDB/MySQL** with a multi-tier time-series storage strategy
 
 Snapshots are collected continuously and aggregated through an automated pipeline:
 
-1. **Every minute** — Raw snapshots → `energy_minutes` (averages, min/max)
-2. **Every hour** — Minute data → `energy_hours` (energy in Wh, import/export separation)
-3. **Daily at 00:05** — Hourly data → `energy_daily` (kWh totals, self-consumption rate, self-sufficiency rate, peak power)
-4. **After daily aggregation** — Snapshots older than 7 days are purged
+1. **Every minute** - Raw snapshots → `energy_minutes` (averages, min/max)
+2. **Every hour** - Minute data → `energy_hours` (energy in Wh, import/export separation)
+3. **Daily at 00:05** - Hourly data → `energy_daily` (kWh totals, self-consumption rate, self-sufficiency rate, peak power)
+4. **After daily aggregation** - Snapshots older than 7 days are purged
 
 This pre-aggregation approach delivers 5–10× query performance improvements over on-the-fly calculations.
 
@@ -134,11 +134,11 @@ The **Collector Manager** discovers and loads modules at startup, orchestrating 
 
 ## Key Design Principles
 
-1. **Cloud-first, local-enhanced** — Cloud API provides reliable baseline data; local protocols add detail and control capabilities.
-2. **Database-driven configuration** — UI layouts, system topology, and settings are all stored in the database rather than hardcoded, enabling diverse system architectures without code changes.
-3. **Graceful degradation** — The system remains functional even when individual data sources are unavailable.
-4. **Separation of concerns** — API communication lives in dedicated service files; collectors consume those services rather than making direct external calls.
-5. **Pre-aggregated analytics** — Multi-tier aggregation ensures fast historical queries at any time scale.
+1. **Cloud-first, local-enhanced** - Cloud API provides reliable baseline data; local protocols add detail and control capabilities.
+2. **Database-driven configuration** - UI layouts, system topology, and settings are all stored in the database rather than hardcoded, enabling diverse system architectures without code changes.
+3. **Graceful degradation** - The system remains functional even when individual data sources are unavailable.
+4. **Separation of concerns** - API communication lives in dedicated service files; collectors consume those services rather than making direct external calls.
+5. **Pre-aggregated analytics** - Multi-tier aggregation ensures fast historical queries at any time scale.
 
 ---
 
