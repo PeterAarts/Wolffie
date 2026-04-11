@@ -152,7 +152,7 @@ The **Collector Manager** discovers and loads modules at startup, orchestrating 
 | Charts | Chart.js |
 | Backend runtime | Node.js |
 | Web framework | Express |
-| Database | MariaDB / MySQL |
+| Database | SQLite |
 | Real-time | WebSocket (native) |
 | ModBus | modbus-serial library |
 | Authentication | JWT + refresh tokens |
