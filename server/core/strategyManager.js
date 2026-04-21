@@ -19,6 +19,7 @@ import smartEcoStrategy    from './strategies/SmartEcoStrategy.js';
 import pureSolarStrategy   from './strategies/PureSolarStrategy.js';
 import peakShavingStrategy from './strategies/PeakShavingStrategy.js';
 import manualStrategy      from './strategies/ManualStrategy.js';
+import { padName } from './utils/logger.js';
 
 const STRATEGIES = {
   'smart-eco':    smartEcoStrategy,
@@ -26,6 +27,7 @@ const STRATEGIES = {
   'peak-shaving': peakShavingStrategy,
   'manual':       manualStrategy,
 };
+const PREFIX = padName('Strategy-Manager');
 
 export const STRATEGY_META = {
   'smart-eco': {
@@ -76,7 +78,7 @@ class StrategyManager {
     this._running = true;
 
     const intervalSec = await settings.get('strategy', 'evaluation_interval') ?? 300;
-    console.log(`   • StrategyManager Starting — evaluating every ${intervalSec}s`);
+    console.log(`   • ${PREFIX} - evaluating every ${intervalSec}s`);
 
     await this._curtailmentWatchdog();
     await this._evaluate();
@@ -89,7 +91,7 @@ class StrategyManager {
       - now.getSeconds() * 1000
       - now.getMilliseconds();
 
-    console.log(`   • StrategyManager Day plan will regenerate in ${Math.round(msUntilNextHour / 60000)} min, then every hour`);
+    console.log(`   • ${PREFIX} - Day plan will regenerate in ${Math.round(msUntilNextHour / 60000)} min, then every hour`);
 
     this._dayPlanTimer = setTimeout(async () => {
       await this.regenerateDayPlan();
@@ -105,7 +107,7 @@ class StrategyManager {
     if (this._dayPlanTimer)  { clearTimeout(this._dayPlanTimer);   this._dayPlanTimer  = null; }
     if (this._dayPlanInterval){ clearInterval(this._dayPlanInterval); this._dayPlanInterval = null; }
     this._running = false;
-    console.log('   • StrategyManager Stopped');
+    console.log(`   • ${PREFIX} - Stopped`);
   }
 
   // ── Public API ────────────────────────────────────────────────────────────
@@ -212,7 +214,7 @@ class StrategyManager {
     const strategy = STRATEGIES[activeId];
 
     if (!strategy?.generateFullDayPlan) {
-      console.warn(`   • StrategyManager Strategy '${activeId}' has no generateFullDayPlan() — skipping`);
+      console.warn(`   • ${PREFIX} '${activeId}' has no generateFullDayPlan() — skipping`);
       return;
     }
 
@@ -224,7 +226,7 @@ class StrategyManager {
         [planDate, activeId]
       );
       if (existing.length > 0) {
-        console.warn(`   • StrategyManager Skipping day plan regen — no price data, keeping existing plan`);
+        console.warn(`   • ${PREFIX} - Skipping day plan regen — no price data, keeping existing plan`);
         return;
       }
     }
@@ -248,7 +250,7 @@ class StrategyManager {
     );
 
     console.log(
-      `   • StrategyManager Day plan regenerated: ${plan.length} slots, ` +
+      `   • ${PREFIX} - Day plan regenerated: ${plan.length} slots, ` +
       `${windowHours}h window (SoC: ${context.soc ?? '?'}%)`
     );
   }
@@ -262,7 +264,7 @@ class StrategyManager {
       const autoExecute = await settings.get('strategy', 'auto_execute') ?? true;
 
       if (!strategy) {
-        console.warn(`   • StrategyManager No strategy implementation for '${activeId}'`);
+        console.warn(`   • ${PREFIX} - No strategy implementation for '${activeId}'`);
         return;
       }
 
@@ -280,7 +282,7 @@ class StrategyManager {
         if (currentSlot) {
           const drift = Math.abs(currentSlot.projectedSoc - context.soc);
           if (drift > 5) {
-            console.warn(`   • StrategyManager SoC Drift: Plan expects ${currentSlot.projectedSoc}%, Reality is ${context.soc}%. Regenerating...`);
+            console.warn(`   • ${PREFIX} - SoC Drift: Plan expects ${currentSlot.projectedSoc}%, Reality is ${context.soc}%. Regenerating...`);
             await this.regenerateDayPlan();
             return this._evaluate();
           }
@@ -293,7 +295,7 @@ class StrategyManager {
         decision.action === 'IDLE' && decision.reason?.includes('not ready');
 
       if (isDataUnavailable) {
-        console.warn(`   • StrategyManager Skipping evaluation — context incomplete: ${decision.reason}`);
+        console.warn(`   • ${PREFIX} - Skipping evaluation — context incomplete: ${decision.reason}`);
         return;
       }
 
@@ -319,7 +321,7 @@ class StrategyManager {
       }
 
     } catch (e) {
-      console.error('   • StrategyManager Evaluation error:', e.message);
+      console.error(`   • ${PREFIX} - Evaluation error:`, e.message);
     }
   }
 
@@ -335,7 +337,7 @@ class StrategyManager {
 
     const handler = registry.get(capType);
     if (!handler) {
-      console.warn(`   • StrategyManager Action '${decision.action}' requires '${capType}' — not available`);
+      console.warn(`   • ${PREFIX} - Action '${decision.action}' requires '${capType}' — not available`);
       return;
     }
 
@@ -352,9 +354,9 @@ class StrategyManager {
         [JSON.stringify(result), decisionId]
       );
 
-      console.log(`   • StrategyManager Executed '${decision.action}' via '${capType}'`);
+      console.log(`   • ${PREFIX} - Executed '${decision.action}' via '${capType}'`);
     } catch (e) {
-      console.error(`   • StrategyManager Execution failed for '${decision.action}':`, e.message);
+      console.error(`   • ${PREFIX} - Execution failed for '${decision.action}':`, e.message);
       await db.pool.query(
         'UPDATE strategy_decisions SET executed = 0, result = ? WHERE id = ?',
         [JSON.stringify({ error: e.message }), decisionId]
@@ -477,7 +479,7 @@ class StrategyManager {
     try {
       const savedState = await settings.get('strategy', 'curtailment_state');
       if (savedState === 'CURTAILED') {
-        console.warn('   • StrategyManager Watchdog: server restarted while solar was curtailed — restoring to 100%');
+        console.warn(`   • ${PREFIX} Watchdog: server restarted while solar was curtailed — restoring to 100%`);
         await this._curtailSolar(false);
         await settings.upsert('strategy', 'curtailment_state', 'NORMAL', {
           changedBy: 'system', reason: 'Watchdog restore on startup', valueType: 'string',
@@ -486,7 +488,7 @@ class StrategyManager {
       this._curtailState        = 'NORMAL';
       this._curtailPendingSince = null;
     } catch (e) {
-      console.error('   • StrategyManager Curtailment watchdog error:', e.message);
+      console.error(`   • ${PREFIX} Curtailment watchdog error:`, e.message);
     }
   }
 
@@ -497,22 +499,22 @@ class StrategyManager {
         changedBy: 'system', reason: 'Solar curtailment state', valueType: 'string',
       });
     } catch (e) {
-      console.error('   • StrategyManager Could not persist curtailment state:', e.message);
+      console.error(`   • ${PREFIX} Could not persist curtailment state:`, e.message);
     }
   }
 
   async _curtailSolar(curtail) {
     const handler = registry.get('solar:curtail');
     if (!handler) {
-      console.warn('   • StrategyManager solar:curtail capability not available');
+      console.warn(`   • ${PREFIX} solar:curtail capability not available`);
       return false;
     }
     try {
       const result = await handler({ enabled: !curtail, pct: curtail ? 0 : 100 });
-      console.log(`   • StrategyManager Solar curtailment ${curtail ? 'ACTIVE (0%)' : 'RESTORED (100%)'}`);
+      console.log(`   • ${PREFIX} Solar curtailment ${curtail ? 'ACTIVE (0%)' : 'RESTORED (100%)'}`);
       return result?.success ?? true;
     } catch (e) {
-      console.error('   • StrategyManager solar:curtail failed:', e.message);
+      console.error(`   • ${PREFIX} solar:curtail failed: `, e.message);
       return false;
     }
   }
@@ -546,14 +548,14 @@ class StrategyManager {
 
           this._curtailPendingSince = Date.now();
           await this._saveCurtailState('PENDING');
-          console.log(`   • StrategyManager Curtailment PENDING — auto-act in ${PENDING_MINUTES} min`);
+          console.log(`   • ${PREFIX} Curtailment PENDING — auto-act in ${PENDING_MINUTES} min`);
         }
 
       } else if (this._curtailState === 'PENDING') {
         if (shouldRestore) {
           this._curtailPendingSince = null;
           await this._saveCurtailState('NORMAL');
-          console.log('   • StrategyManager Curtailment PENDING cancelled — condition cleared');
+          console.log(`   • ${PREFIX} Curtailment PENDING cancelled — condition cleared`);
 
         } else if (conditionMet) {
           const pendingAlerts  = await alertService.getActive(0);
@@ -563,7 +565,7 @@ class StrategyManager {
           if (alertDismissed) {
             this._curtailPendingSince = null;
             await this._saveCurtailState('NORMAL');
-            console.log('   • StrategyManager Curtailment PENDING — user dismissed, cancelling');
+            console.log(`   • ${PREFIX} Curtailment PENDING — user dismissed, cancelling`);
           } else if (elapsedMin >= PENDING_MINUTES) {
             const ok = await this._curtailSolar(true);
             if (ok) {
@@ -578,7 +580,7 @@ class StrategyManager {
               await this._saveCurtailState('CURTAILED');
             }
           } else {
-            console.log(`   • StrategyManager Curtailment PENDING — ${Math.round(elapsedMin)}/${PENDING_MINUTES} min elapsed`);
+            console.log(`   • ${PREFIX} Curtailment PENDING — ${Math.round(elapsedMin)}/${PENDING_MINUTES} min elapsed`);
           }
         }
 
@@ -589,14 +591,14 @@ class StrategyManager {
           await alertService.resolveByTypePrefix('strategy', 'solar_curtailment_pending');
           this._curtailPendingSince = null;
           await this._saveCurtailState('NORMAL');
-          console.log(`   • StrategyManager Curtailment RESTORED (price=${price.toFixed(1)}ct, SoC=${soc.toFixed(0)}%)`);
+          console.log(`   • ${PREFIX} Curtailment RESTORED (price=${price.toFixed(1)}ct, SoC=${soc.toFixed(0)}%)`);
         } else {
-          console.log(`   • StrategyManager Solar remains curtailed (SoC=${soc.toFixed(0)}%, price=${price.toFixed(1)}ct)`);
+          console.log(`   • ${PREFIX} Solar remains curtailed (SoC=${soc.toFixed(0)}%, price=${price.toFixed(1)}ct)`);
         }
       }
 
     } catch (e) {
-      console.error('   • StrategyManager _evaluateCurtailment error:', e.message);
+      console.error(`   • ${PREFIX} _evaluateCurtailment error: `, e.message);
     }
   }
 
@@ -651,7 +653,7 @@ class StrategyManager {
         const b = await batteryHandler({});
         context.soc           = b.soc;
         context.batteryPowerW = b.power;
-      } catch (e) { console.warn('   • StrategyManager battery:read failed:', e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} battery:read failed:`, e.message); }
     }
 
     const solarHandler = registry.get('solar:read');
@@ -659,7 +661,7 @@ class StrategyManager {
       try {
         const s = await solarHandler({});
         context.solarPowerW = s.total_power ?? s.power;
-      } catch (e) { console.warn('   • StrategyManager solar:read failed:', e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} solar:read failed:`, e.message); }
     }
 
     const gridHandler = registry.get('grid:read');
@@ -667,7 +669,7 @@ class StrategyManager {
       try {
         const g = await gridHandler({});
         context.gridPowerW = g.total_active_power ?? g.power;
-      } catch (e) { console.warn('   • StrategyManager grid:read failed:', e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} grid:read failed:`, e.message); }
     }
 
     const pricingHandler = registry.get('grid:pricing');
@@ -676,7 +678,7 @@ class StrategyManager {
         const p = await pricingHandler({ windowStart, windowHours: planningHours });
         context.prices       = p.prices       ?? [];
         context.currentPrice = p.currentPrice ?? null;
-      } catch (e) { console.warn('   • StrategyManager grid:pricing failed:', e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} grid:pricing failed:`, e.message); }
     }
 
     const forecastHandler = registry.get('solar:forecast');
@@ -684,7 +686,7 @@ class StrategyManager {
       try {
         const f = await forecastHandler({ windowStart, windowHours: planningHours });
         context.solarForecast = f.hourly ?? [];
-      } catch (e) { console.warn('   • StrategyManager solar:forecast failed:', e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} solar:forecast failed:`, e.message); }
     }
 
     return context;

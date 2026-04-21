@@ -14,19 +14,29 @@ const router = express.Router();
 
 router.get('/summary', async (req, res) => {
   try {
-    const [snapshots] = await db.pool.query(
-      `SELECT
-         timestamp, source,
-         solar_power, battery_power, battery_soc, grid_power, load_power,
-         solar_energy_today, grid_energy_import_today, grid_energy_export_today,
-         load_energy_today, battery_charge_today, battery_discharge_today,
-         trees_equivalent, co2_offset_kg
-       FROM energy_snapshots
-       ORDER BY timestamp DESC
-       LIMIT 1`
-    );
+    // Fetch the latest snapshot per source within the last 2 hours.
+    // This ensures each module (SolarEdge, AlphaESS, HomeWizard) contributes
+    // its own fields, instead of a single LIMIT 1 always returning the module
+    // that collects most frequently (HomeWizard), whose solar/battery fields are null.
+    // When AlphaESS Cloud is the only source, GROUP BY returns one row with all
+    // fields — firstNonNull() reads from that single row, so it works identically.
+    const [rows] = await db.pool.query(`
+      SELECT s.timestamp, s.source,
+             s.solar_power, s.battery_power, s.battery_soc, s.grid_power, s.load_power,
+             s.solar_energy_today, s.grid_energy_import_today, s.grid_energy_export_today,
+             s.load_energy_today, s.battery_charge_today, s.battery_discharge_today,
+             s.trees_equivalent, s.co2_offset_kg
+      FROM energy_snapshots s
+      INNER JOIN (
+        SELECT source, MAX(timestamp) AS latest
+        FROM energy_snapshots
+        WHERE timestamp >= datetime('now', '-2 hours')
+        GROUP BY source
+      ) latest ON s.source = latest.source AND s.timestamp = latest.latest
+      ORDER BY s.timestamp DESC
+    `);
 
-    if (snapshots.length === 0) {
+    if (rows.length === 0) {
       return res.json({
         collector:     { connected: false, message: 'No data yet' },
         today:         {},
@@ -35,36 +45,78 @@ router.get('/summary', async (req, res) => {
       });
     }
 
-    const snapshot  = snapshots[0];
-    const lastUpdate = new Date(snapshot.timestamp);
-    const dataAge   = Date.now() - lastUpdate.getTime();
+    // Return the first non-null value for a field across all source rows.
+    // Rows are ordered newest-first, so the freshest value always wins.
+    const firstNonNull = (field) => {
+      for (const row of rows) {
+        if (row[field] !== null && row[field] !== undefined) return row[field];
+      }
+      return null;
+    };
+
+    const newest     = rows[0]; // Most recent row overall — used for timestamp/source reporting
+    const lastUpdate = new Date(newest.timestamp);
+    const dataAge    = Date.now() - lastUpdate.getTime();
     const isConnected = dataAge < 300000;
+
+    // Resolve shared power values used for derivation
+    const rawSolarP   = parseFloat(firstNonNull('solar_power'))   || 0;
+    const rawBatteryP = parseFloat(firstNonNull('battery_power')) || 0;
+    const rawGridP    = parseFloat(firstNonNull('grid_power'))    || 0;
+    const rawHomeP    = firstNonNull('load_power');
+
+    // Home consumption is not directly measured in AC-coupled topology.
+    // Derive from power balance: home = solar + battery + grid
+    //   battery_power < 0 → charging (consuming)   grid_power < 0 → exporting
+    // Use a direct load_power measurement when available and non-zero.
+    const homePower = (rawHomeP !== null && parseFloat(rawHomeP) > 0)
+      ? parseFloat(rawHomeP)
+      : Math.max(0, rawSolarP + rawBatteryP + rawGridP);
+
+    // Resolve daily energy totals — reuse named vars to avoid double firstNonNull calls
+    const pvGen         = parseFloat(firstNonNull('solar_energy_today'))       || 0;
+    const battCharge    = parseFloat(firstNonNull('battery_charge_today'))     || 0;
+    const battDischarge = parseFloat(firstNonNull('battery_discharge_today'))  || 0;
+    const gridImport    = parseFloat(firstNonNull('grid_energy_import_today')) || 0;
+    const gridExport    = parseFloat(firstNonNull('grid_energy_export_today')) || 0;
+    const rawLoadEnergy = firstNonNull('load_energy_today');
+
+    // Daily home consumption: pv_gen + batt_discharge − batt_charge + import − export
+    const loadEnergy = (rawLoadEnergy !== null && parseFloat(rawLoadEnergy) > 0)
+      ? parseFloat(rawLoadEnergy)
+      : Math.max(0, pvGen + battDischarge - battCharge + gridImport - gridExport);
 
     res.json({
       collector: {
         connected:  isConnected,
         lastUpdate: lastUpdate.toISOString(),
         ageSeconds: Math.floor(dataAge / 1000),
-        source:     snapshot.source,
+        source:     newest.source,
       },
       today: {
-        pv_generation:     parseFloat(snapshot.solar_energy_today)        || 0,
-        load_consumption:  parseFloat(snapshot.load_energy_today)         || 0,
-        grid_import:       parseFloat(snapshot.grid_energy_import_today)  || 0,
-        grid_export:       parseFloat(snapshot.grid_energy_export_today)  || 0,
-        battery_charge:    parseFloat(snapshot.battery_charge_today)      || 0,
-        battery_discharge: parseFloat(snapshot.battery_discharge_today)   || 0,
+        pv_generation:     pvGen,
+        load_consumption:  loadEnergy,
+        grid_import:       gridImport,
+        grid_export:       gridExport,
+        battery_charge:    battCharge,
+        battery_discharge: battDischarge,
       },
       realtime: {
-        timestamp: snapshot.timestamp,
-        battery: { soc: parseFloat(snapshot.battery_soc) || 0, power: parseFloat(snapshot.battery_power) || 0 },
-        solar:   { total: parseFloat(snapshot.solar_power) || 0, pv1: 0, pv2: 0, pv3: 0 },
-        grid:    { power: parseFloat(snapshot.grid_power) || 0 },
-        home:    { power: parseFloat(snapshot.load_power) || 0 },
+        timestamp: newest.timestamp,
+        battery: {
+          soc:   parseFloat(firstNonNull('battery_soc')) || 0,
+          power: rawBatteryP,
+        },
+        solar: {
+          total: rawSolarP,
+          pv1: 0, pv2: 0, pv3: 0,
+        },
+        grid: { power: rawGridP },
+        home: { power: homePower },
       },
       environmental: {
-        co2_saved:        parseFloat(snapshot.co2_offset_kg)    || 0,
-        trees_equivalent: parseFloat(snapshot.trees_equivalent) || 0,
+        co2_saved:        parseFloat(firstNonNull('co2_offset_kg'))    || 0,
+        trees_equivalent: parseFloat(firstNonNull('trees_equivalent')) || 0,
       },
     });
   } catch (error) {
@@ -111,24 +163,47 @@ router.get('/collector-status', async (req, res) => {
 router.get('/realtime', async (req, res) => {
   console.log(`   • Front-End - [${new Date().toLocaleString()}] - Collect Power measurements...`);
   try {
-    const [snapshots] = await db.pool.query(
-      `SELECT battery_soc, battery_power, solar_power, grid_power, load_power, timestamp
-       FROM energy_snapshots
-       ORDER BY timestamp DESC
-       LIMIT 1`
-    );
+    // Same per-source strategy as /summary — see comment there.
+    const [rows] = await db.pool.query(`
+      SELECT s.battery_soc, s.battery_power, s.solar_power, s.grid_power, s.load_power, s.timestamp, s.source
+      FROM energy_snapshots s
+      INNER JOIN (
+        SELECT source, MAX(timestamp) AS latest
+        FROM energy_snapshots
+        WHERE timestamp >= datetime('now', '-2 hours')
+        GROUP BY source
+      ) latest ON s.source = latest.source AND s.timestamp = latest.latest
+      ORDER BY s.timestamp DESC
+    `);
 
-    if (snapshots.length === 0) {
+    if (rows.length === 0) {
       return res.status(503).json({ error: 'No data available' });
     }
 
-    const s = snapshots[0];
+    const firstNonNull = (field) => {
+      for (const row of rows) {
+        if (row[field] !== null && row[field] !== undefined) return row[field];
+      }
+      return null;
+    };
+
+    const rawSolarP   = parseFloat(firstNonNull('solar_power'))   || 0;
+    const rawBatteryP = parseFloat(firstNonNull('battery_power')) || 0;
+    const rawGridP    = parseFloat(firstNonNull('grid_power'))    || 0;
+    const rawHomeP    = firstNonNull('load_power');
+    const homePower   = (rawHomeP !== null && parseFloat(rawHomeP) > 0)
+      ? parseFloat(rawHomeP)
+      : Math.max(0, rawSolarP + rawBatteryP + rawGridP);
+
     res.json({
-      timestamp: s.timestamp,
-      battery: { soc: parseFloat(s.battery_soc) || 0, power: parseFloat(s.battery_power) || 0 },
-      solar:   { total: parseFloat(s.solar_power) || 0, pv1: 0, pv2: 0, pv3: 0 },
-      grid:    { power: parseFloat(s.grid_power) || 0 },
-      home:    { power: parseFloat(s.load_power) || 0 },
+      timestamp: rows[0].timestamp,
+      battery: {
+        soc:   parseFloat(firstNonNull('battery_soc')) || 0,
+        power: rawBatteryP,
+      },
+      solar: { total: rawSolarP, pv1: 0, pv2: 0, pv3: 0 },
+      grid:  { power: rawGridP },
+      home:  { power: homePower },
     });
   } catch (error) {
     console.error('Error getting realtime data:', error);
@@ -151,7 +226,7 @@ router.get('/devices', async (req, res) => {
 
     const [devices] = await db.pool.query(`
       SELECT
-        dm.*,
+        dm.*,ds.id as device_settings_id,
         ds.name, ds.ip_address, ds.product_type, ds.module,
         ds.enabled, ds.brightness, ds.switch_lock, ds.priority,
         (
@@ -205,6 +280,7 @@ router.get('/devices', async (req, res) => {
 
       return {
         id:            device.id,
+        device_settings_id: device.device_settings_id,
         timestamp:     device.timestamp,
         device_id:     device.device_id,
         device_type:   device.device_type,
@@ -392,5 +468,126 @@ router.get('/events', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// ── GET /api/system/devices/chart ─────────────────────────────────────────
+//
+// Returns time-bucketed average power per smart device for a given date.
+// Excludes P1 meter (HWE-P1). Only returns devices with actual usage (MAX > 0).
+// Device name always sourced from device_settings to avoid stale names in
+// device_measurements (some rows have generic "Energy Socket" as device_name).
 
+router.get('/devices-chart', async (req, res) => {
+  try {
+    const { date, granularity = '5' } = req.query;
+
+    if (!date) {
+      return res.status(400).json({ error: 'date parameter required (YYYY-MM-DD)' });
+    }
+
+    const interval = Math.max(1, Math.min(60, parseInt(granularity, 10) || 5));
+    const start    = `${date} 00:00:00`;
+    const end      = `${date} 23:59:59`;
+
+    // interval appears twice: once for integer division, once for multiplication
+    const [rows] = await db.pool.query(`
+      SELECT
+        dm.device_id,
+        ds.name                                             AS device_name,
+        STRFTIME('%Y-%m-%d %H:', dm.timestamp) ||
+          PRINTF('%02d',
+            (CAST(STRFTIME('%M', dm.timestamp) AS INTEGER) / ?) * ?
+          )                                                 AS bucket,
+        ROUND(AVG(dm.power), 1)                             AS avg_power,
+        ROUND(MAX(dm.power), 1)                             AS peak_power
+      FROM device_measurements dm
+      JOIN device_settings ds ON ds.serial = dm.device_id
+      WHERE dm.device_type  = 'HWE-SKT'
+        AND dm.timestamp   >= ?
+        AND dm.timestamp   <= ?
+        AND dm.power       IS NOT NULL
+      GROUP BY dm.device_id, bucket
+      HAVING MAX(dm.power) >= 0
+      ORDER BY ds.name, bucket
+    `, [interval, interval, start, end]);
+
+    // Pivot flat rows → one entry per device, preserving insertion order (sorted by name)
+    const deviceMap = new Map();
+    for (const row of rows) {
+      if (!deviceMap.has(row.device_id)) {
+        deviceMap.set(row.device_id, {
+          device_id:   row.device_id,
+          device_name: row.device_name,
+          data:        [],
+        });
+      }
+      deviceMap.get(row.device_id).data.push({
+        bucket:     row.bucket,
+        avg_power:  row.avg_power,
+        peak_power: row.peak_power,
+      });
+    }
+
+    res.json({
+      date,
+      granularity: interval,
+      devices:     [...deviceMap.values()],
+      count:       deviceMap.size,
+    });
+
+  } catch (error) {
+    console.error('✗ Error fetching device chart data:', error.message);
+    res.status(500).json({
+      error:   'Failed to fetch device chart data',
+      message: error.message,
+      stack:   process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    });
+  }
+});
+router.get('/devices-daily', async (req, res) => {
+  try {
+    const { date } = req.query;
+ 
+    if (!date) {
+      return res.status(400).json({ error: 'date parameter required (YYYY-MM-DD)' });
+    }
+ 
+    const [rows] = await db.pool.query(`
+      SELECT
+        ds.serial AS device_id,
+        ds.name   AS device_name,
+        ROUND(
+          COALESCE((
+            SELECT energy_total FROM device_measurements
+            WHERE device_id       = ds.serial
+              AND date(timestamp) = ?
+            ORDER BY timestamp DESC LIMIT 1
+          ), 0)
+          -
+          COALESCE((
+            SELECT energy_total FROM device_measurements
+            WHERE device_id       = ds.serial
+              AND date(timestamp) = date(?, '-1 day')
+            ORDER BY timestamp DESC LIMIT 1
+          ), 0)
+        , 3) AS daily_kwh
+      FROM device_settings ds
+      WHERE ds.product_type = 'HWE-SKT'
+        AND ds.enabled      = 1
+      ORDER BY daily_kwh DESC
+    `, [date, date]);
+ 
+    res.json({
+      date,
+      devices: rows,
+      count:   rows.length,
+    });
+ 
+  } catch (error) {
+    console.error('✗ Error fetching daily device usage:', error.message);
+    res.status(500).json({
+      error:   'Failed to fetch daily device usage',
+      message: error.message,
+      stack:   process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    });
+  }
+});
 export default router;

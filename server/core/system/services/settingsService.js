@@ -111,8 +111,8 @@ class SettingsService {
     try {
       const [current] = await db.pool.query(
         `SELECT id, setting_value, is_encrypted, value_type
-         FROM system_settings
-         WHERE module_id = ? AND setting_key = ?`,
+        FROM system_settings
+        WHERE category = ? AND setting_key = ?`,
         [moduleId, key]
       );
 

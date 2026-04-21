@@ -15,6 +15,7 @@
 
 import express from 'express';
 import registry from '../../capabilityRegistry.js';
+import { normalize } from '../../capabilitySchemas.js';
 
 const router = express.Router();
 
@@ -36,7 +37,8 @@ async function dispatch(type, req, res) {
   }
 
   try {
-    const result = await handler(req.body, req);
+    const raw    = await handler(req.body, req);
+    const result = normalize(type, raw);
     res.json(result ?? { success: true });
   } catch (e) {
     console.error(`[CapabilityRouter] Error executing '${type}':`, e.message);

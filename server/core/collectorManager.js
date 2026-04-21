@@ -117,29 +117,38 @@ class CollectorManager {
       return;
     }
     this.isRunning = true;
-    // Convert the entries to names and join them with a separator
 
+    // Phase 1 — resolve enabled state and interval for every module (DB reads,
+    // fast and sequential so logs appear in a predictable order).
     for (const [id, entry] of this.schedules) {
-      //console.log(`   [DEBUG] start() schedule: ${id}`);
-      // Check database for enabled status
       const isEnabled = await this.isModuleEnabled(id);
-      entry.enabled = isEnabled; // Update the entry with database value
-      
-      //console.log(`   - Starting: ${entry.name} (interval: ${entry.interval / 1000}s)`);
+      entry.enabled = isEnabled;
+
       if (!isEnabled) {
         console.log(`\x1b[91m   - Skipped (disabled): ${entry.name} \x1b[37m`);
         continue;
       }
 
-      // Resolve final interval from device_settings if available
       entry.interval = await this._resolveInterval(id, entry.interval);
-      // Immediate first collection
-      await this._runCollector(id);
-      // Arm the first scheduled timeout (next run after interval)
-      this._armNext(id);
+      console.log(`\x1b[37m   - Collector activated: ${entry.name} (interval: ${entry.interval / 1000}s)\x1b[37m`);
     }
 
-    console.log('\x1b[32m   • all collectors started\n \x1b[37m');
+    // Phase 2 — fire all initial collections concurrently and WITHOUT awaiting.
+    // Each collector arms its own next timer after its first run completes.
+    // This makes start() return immediately so server init can continue
+    // (aggregatorService, strategyManager) without waiting for slow collectors.
+    for (const [id, entry] of this.schedules) {
+      if (!entry.enabled) continue;
+
+      this._runCollector(id)
+        .then(() => this._armNext(id))
+        .catch((err) => {
+          console.error(`\x1b[91m   - ${entry.name}: initial collect failed — ${err.message}\x1b[37m`);
+          this._armNext(id); // still arm next even after a hard failure
+        });
+    }
+
+    console.log('\x1b[32m   • all collectors fired (running in background)\n \x1b[37m');
   }
 
   /**
@@ -210,9 +219,13 @@ class CollectorManager {
 
     console.log(` - CollectorManager: restarting ${entry.name} (interval: ${entry.interval / 1000}s)`);
 
-    // Immediate collect + re-arm
-    await this._runCollector(moduleId);
-    this._armNext(moduleId);
+    // Fire non-blocking
+    this._runCollector(moduleId)
+      .then(() => this._armNext(moduleId))
+      .catch((err) => {
+        console.error(`\x1b[91m   ❌ ${entry.name}: collect after restart failed — ${err.message}\x1b[37m`);
+        this._armNext(moduleId);
+      });
   }
   /**
    * Enable or disable a single collector at runtime.
@@ -247,9 +260,13 @@ class CollectorManager {
 
       console.log(`\x1b[32m   ▶ Collector enabled: ${entry.name} (interval: ${entry.interval / 1000}s)\x1b[37m`);
 
-      // Immediate collect + arm next
-      await this._runCollector(moduleId);
-      this._armNext(moduleId);
+      // Fire non-blocking so the settings route returns immediately
+      this._runCollector(moduleId)
+        .then(() => this._armNext(moduleId))
+        .catch((err) => {
+          console.error(`\x1b[91m   ❌ ${entry.name}: collect after enable failed — ${err.message}\x1b[37m`);
+          this._armNext(moduleId);
+        });
     } else {
       entry.paused = false; // not paused, just disabled
       entry.nextRun = null;

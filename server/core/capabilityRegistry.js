@@ -41,10 +41,14 @@ class CapabilityRegistry {
     const existing = this._registry.get(type);
 
     if (existing && existing.priority >= priority) {
-      console.log(
-        `     - CapabilityRegistry '${type}' kept for '${existing.moduleId}' ` +
-        `(priority ${existing.priority}) — '${moduleId}' (priority ${priority}) did not win`
-      );
+      // Same module re-registering (e.g. after reinitialize) — silent no-op.
+      // Only log "did not win" when a genuinely different module is competing.
+      if (existing.moduleId !== moduleId) {
+        console.log(
+          `     - CapabilityRegistry '${type}' kept for '${existing.moduleId}' ` +
+          `(priority ${existing.priority}) — '${moduleId}' (priority ${priority}) did not win`
+        );
+      }
       return;
     }
 

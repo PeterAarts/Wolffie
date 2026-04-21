@@ -234,21 +234,51 @@ class HistoryController {
         grouped.set(bucketTs, { solar: [], battery_p: [], battery_s: [], grid: [], home: [] });
       }
       const b = grouped.get(bucketTs);
-      b.solar.push(parseFloat(s.solar_power)     || 0);
-      b.battery_p.push(parseFloat(s.battery_power) || 0);
-      b.battery_s.push(parseFloat(s.battery_soc)   || 0);
-      b.grid.push(parseFloat(s.grid_power)       || 0);
-      b.home.push(parseFloat(s.load_power)       || 0);
+
+      // Only push when the field is actually present (non-null).
+      // null means "this source doesn't own this field", not "value is zero".
+      // Pushing 0 for null rows dilutes the real value from the authoritative source:
+      //   e.g. 2 AlphaESS readings at -475W + 40 HomeWizard nulls-as-0 → avg ≈ -23W.
+      if (s.solar_power   != null) b.solar.push(parseFloat(s.solar_power));
+      if (s.battery_power != null) b.battery_p.push(parseFloat(s.battery_power));
+      if (s.battery_soc   != null) b.battery_s.push(parseFloat(s.battery_soc));
+      if (s.grid_power    != null) b.grid.push(parseFloat(s.grid_power));
+
+      // load_power: only push when directly measured (non-null, non-zero).
+      // AlphaESS in AC-coupled topology reports 0 (not a real measurement).
+      if (s.load_power != null && parseFloat(s.load_power) > 0) {
+        b.home.push(parseFloat(s.load_power));
+      }
     }
 
-    return Array.from(grouped.entries()).map(([ts, v]) => ({
-      timestamp:     this._localTimestamp(ts),
-      solar:         this.avg(v.solar),
-      battery_power: this.avg(v.battery_p),
-      battery_soc:   this.avg(v.battery_s),
-      grid:          this.avg(v.grid),
-      home:          this.avg(v.home),
-    }));
+    return Array.from(grouped.entries()).map(([ts, v]) => {
+      // Return null for fields with no authoritative readings in this bucket.
+      // Chart.js will render a gap (or interpolate with spanGaps:true) instead
+      // of a false zero that would misrepresent the system state.
+      const avgSolar   = v.solar.length     ? this.avg(v.solar)     : null;
+      const avgBattery = v.battery_p.length ? this.avg(v.battery_p) : null;
+      const avgGrid    = v.grid.length      ? this.avg(v.grid)      : null;
+
+      // Derive home from power balance when not directly measured.
+      // Use 0 as fallback for unknown components (conservative, avoids NaN).
+      let home;
+      if (v.home.length > 0) {
+        home = this.avg(v.home);
+      } else if (avgSolar !== null || avgBattery !== null || avgGrid !== null) {
+        home = Math.max(0, (avgSolar ?? 0) + (avgBattery ?? 0) + (avgGrid ?? 0));
+      } else {
+        home = null;
+      }
+
+      return {
+        timestamp:     this._localTimestamp(ts),
+        solar:         avgSolar,
+        battery_power: avgBattery,
+        battery_soc:   v.battery_s.length ? this.avg(v.battery_s) : null,
+        grid:          avgGrid,
+        home,
+      };
+    });
   }
 
   avg(arr) {

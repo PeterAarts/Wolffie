@@ -19,6 +19,9 @@
 //   SUBSTRING_INDEX(MAX(CONCAT(...)))     →  subquery met ORDER BY + LIMIT 1
 
 import db from '../../database.js';
+import capabilityRegistry from '../../capabilityRegistry.js';
+import { padName } from '../../utils/logger.js';
+const PREFIX = padName('Aggregator');
 
 class AggregatorService {
   constructor() {
@@ -28,13 +31,24 @@ class AggregatorService {
     this.lastNightlyProfileDate = null;
   }
 
+  _buildSourceMap() {
+    const entries = capabilityRegistry.list();
+    const find = (type) => entries.find(e => e.type === type)?.moduleId ?? null;
+    return {
+      solar:   find('solar:read'),
+      battery: find('battery:read'),
+      grid:    find('grid:read'),
+      home:    find('home:read'),
+    };
+  }
+
   start() {
     if (this.isRunning) {
-      console.log('   - Aggregator already running');
+      console.log(`   - {${PREFIX}} already running`);
       return;
     }
 
-    console.log('   - Starting data aggregator...');
+    console.log(`   - {${PREFIX}} starting...`);
     this.isRunning = true;
 
     this.aggregate();
@@ -43,7 +57,7 @@ class AggregatorService {
       await this.aggregate();
     }, 60000);
 
-    console.log('   - Data aggregator started (1 minute interval)');
+    console.log(`   - {${PREFIX}} started (1 minute interval)`);
   }
 
   stop() {
@@ -52,14 +66,16 @@ class AggregatorService {
       this.aggregationInterval = null;
     }
     this.isRunning = false;
-    console.log('   - Data aggregator stopped');
+    console.log(`   - {${PREFIX}} stopped`);
   }
 
   async aggregate() {
     try {
-      await this.aggregateMinutes();
+      const sourceMap = this._buildSourceMap();
+
+      await this.aggregateMinutes(sourceMap);
       await this.aggregateHours();
-      await this.aggregateDaily();
+      await this.aggregateDaily(sourceMap);
       await this.aggregateMonthly();
       await this.aggregateDevices();
 
@@ -79,19 +95,22 @@ class AggregatorService {
       }
 
     } catch (error) {
-      console.error('   - Aggregator error:', error.message);
+      console.error(`   - {${PREFIX}} error:`, error.message);
     }
   }
 
   // ── Minuut-aggregatie ───────────────────────────────────────────────────────
 
-  async aggregateMinutes() {
+  async aggregateMinutes(sourceMap) {
     try {
-      const [lastAgg] = await db.pool.query(
-        'SELECT MAX(timestamp) as last_time FROM energy_minutes'
-      );
-      const lastTime = lastAgg[0]?.last_time || new Date(0).toISOString();
-
+      // Rolling 2-hour window instead of a cursor.
+      // Reason: different source modules may use different clock offsets
+      // (UTC vs local time), causing cursor-based MAX(timestamp) to drift
+      // ahead and permanently skip rows from other sources.
+      // ON CONFLICT(timestamp) DO UPDATE re-writes existing rows safely.
+      //
+      // CASE WHEN source = ? ensures each domain's values come only from the
+      // authoritative module registered in capabilityRegistry.
       const [result] = await db.pool.query(`
         INSERT INTO energy_minutes (
           timestamp,
@@ -103,13 +122,21 @@ class AggregatorService {
         )
         SELECT
           strftime('%Y-%m-%d %H:%M:00', timestamp) AS minute_timestamp,
-          AVG(battery_soc),   MIN(battery_soc),   MAX(battery_soc),
-          AVG(battery_power), AVG(battery_temp),
-          AVG(grid_power),    MIN(grid_power),     MAX(grid_power),
-          AVG(solar_power),   MAX(solar_power),
-          AVG(load_power),    COUNT(*)
+          AVG(CASE WHEN source = ? THEN battery_soc   END),
+          MIN(CASE WHEN source = ? THEN battery_soc   END),
+          MAX(CASE WHEN source = ? THEN battery_soc   END),
+          AVG(CASE WHEN source = ? THEN battery_power END),
+          AVG(CASE WHEN source = ? THEN battery_temp  END),
+          AVG(CASE WHEN source = ? THEN grid_power    END),
+          MIN(CASE WHEN source = ? THEN grid_power    END),
+          MAX(CASE WHEN source = ? THEN grid_power    END),
+          AVG(CASE WHEN source = ? THEN solar_power   END),
+          MAX(CASE WHEN source = ? THEN solar_power   END),
+          AVG(CASE WHEN source = ? THEN load_power    END),
+          COUNT(*)
         FROM energy_snapshots
-        WHERE timestamp > ?
+        WHERE timestamp >= datetime('now', '-2 hours')
+          AND timestamp <  strftime('%Y-%m-%d %H:%M:00', datetime('now'))
         GROUP BY minute_timestamp
         ON CONFLICT(timestamp) DO UPDATE SET
           battery_soc_avg         = excluded.battery_soc_avg,
@@ -124,12 +151,18 @@ class AggregatorService {
           pv_power_max            = excluded.pv_power_max,
           load_power_avg          = excluded.load_power_avg,
           sample_count            = excluded.sample_count
-      `, [lastTime]);
+      `, [
+        sourceMap.battery, sourceMap.battery, sourceMap.battery,  // soc avg/min/max
+        sourceMap.battery, sourceMap.battery,                      // power avg, temp avg
+        sourceMap.grid,    sourceMap.grid,    sourceMap.grid,      // grid avg/min/max
+        sourceMap.solar,   sourceMap.solar,                        // pv avg/max
+        sourceMap.home,                                            // load avg
+      ]);
 
       if (result.affectedRows > 0)
-        console.log('\x1b[37m   • Aggregator - snapshots → minutes');
+        console.log(`\x1b[37m   • ${PREFIX} - snapshots → minutes`);
     } catch (error) {
-      console.error('\x1b[91m   • Aggregator - Minute aggregation failed:', error.message, '\x1b[37m');
+      console.error(`\x1b[91m   • ${PREFIX} - Minute aggregation failed:`, error.message, '\x1b[37m');
     }
   }
 
@@ -137,11 +170,7 @@ class AggregatorService {
 
   async aggregateHours() {
     try {
-      const [lastAgg] = await db.pool.query(
-        'SELECT MAX(timestamp) as last_time FROM energy_hours'
-      );
-      const lastTime = lastAgg[0]?.last_time || new Date(0).toISOString();
-
+      // Rolling 25-hour window to match the minute aggregation approach.
       const [result] = await db.pool.query(`
         INSERT INTO energy_hours (
           timestamp,
@@ -153,7 +182,8 @@ class AggregatorService {
           AVG(battery_soc_avg), AVG(battery_power_avg),
           AVG(pv_power_avg),    AVG(grid_power_avg),   AVG(load_power_avg)
         FROM energy_minutes
-        WHERE timestamp > ?
+        WHERE timestamp >= datetime('now', '-25 hours')
+          AND timestamp <  strftime('%Y-%m-%d %H:00:00', datetime('now'))
         GROUP BY hour_timestamp
         ON CONFLICT(timestamp) DO UPDATE SET
           battery_soc_avg   = excluded.battery_soc_avg,
@@ -161,24 +191,21 @@ class AggregatorService {
           pv_power_avg      = excluded.pv_power_avg,
           grid_power_avg    = excluded.grid_power_avg,
           load_power_avg    = excluded.load_power_avg
-      `, [lastTime]);
+      `, []);
 
       if (result.affectedRows > 0)
-        console.log('\x1b[37m   • Aggregator - minutes → hours');
+        console.log(`\x1b[37m   • ${PREFIX} - minutes → hours`);
     } catch (error) {
-      console.error('\x1b[91m   • Aggregator - Hour aggregation failed:', error.message, '\x1b[37m');
+      console.error(`\x1b[91m   • ${PREFIX} - Hour aggregation failed:`, error.message, '\x1b[37m');
     }
   }
 
   // ── Dag-aggregatie ──────────────────────────────────────────────────────────
 
-  async aggregateDaily() {
+  async aggregateDaily(sourceMap) {
     try {
-      const [lastAgg] = await db.pool.query(
-        'SELECT MAX(date) as last_date FROM energy_daily'
-      );
-      const lastDate = lastAgg[0]?.last_date || '1970-01-01';
-
+      // Rolling 2-day window: today and yesterday, re-aggregated on every cycle.
+      // Covers midnight rollover and ensures today's running totals stay current.
       const [result] = await db.pool.query(`
         INSERT INTO energy_daily (
           date,
@@ -188,14 +215,14 @@ class AggregatorService {
         )
         SELECT
           date(timestamp)                  AS day,
-          MAX(solar_energy_today),
-          MAX(load_energy_today),
-          MAX(grid_energy_import_today),
-          MAX(grid_energy_export_today),
-          MAX(battery_charge_today),
-          MAX(battery_discharge_today)
+          MAX(CASE WHEN source = ? THEN solar_energy_today         END),
+          MAX(CASE WHEN source = ? THEN load_energy_today          END),
+          MAX(CASE WHEN source = ? THEN grid_energy_import_today   END),
+          MAX(CASE WHEN source = ? THEN grid_energy_export_today   END),
+          MAX(CASE WHEN source = ? THEN battery_charge_today       END),
+          MAX(CASE WHEN source = ? THEN battery_discharge_today    END)
         FROM energy_snapshots
-        WHERE date(timestamp) > ?
+        WHERE date(timestamp) >= date('now', '-1 days')
         GROUP BY day
         ON CONFLICT(date) DO UPDATE SET
           pv_generation_kwh     = excluded.pv_generation_kwh,
@@ -204,12 +231,19 @@ class AggregatorService {
           grid_export_kwh       = excluded.grid_export_kwh,
           battery_charge_kwh    = excluded.battery_charge_kwh,
           battery_discharge_kwh = excluded.battery_discharge_kwh
-      `, [lastDate]);
+      `, [
+        sourceMap.solar,
+        sourceMap.home,
+        sourceMap.grid,
+        sourceMap.grid,
+        sourceMap.battery,
+        sourceMap.battery,
+      ]);
 
       if (result.affectedRows > 0)
-        console.log('\x1b[37m   • Aggregator - snapshots → daily');
+        console.log(`\x1b[37m   • ${PREFIX} - snapshots → daily`);
     } catch (error) {
-      console.error('\x1b[91m   • Aggregator - Daily aggregation failed:', error.message, '\x1b[37m');
+      console.error(`\x1b[91m   • ${PREFIX} - Daily aggregation failed:`, error.message, '\x1b[37m');
     }
   }
 
@@ -256,9 +290,9 @@ class AggregatorService {
       `, [lastMonth]);
 
       if (result.affectedRows > 0)
-        console.log('\x1b[37m   • Aggregator - daily → monthly');
+        console.log(`\x1b[37m   • ${PREFIX} - daily → monthly`);
     } catch (error) {
-      console.error('\x1b[91m   • Aggregator - Monthly aggregation failed:', error.message, '\x1b[37m');
+      console.error(`\x1b[91m   • ${PREFIX} - Monthly aggregation failed:`, error.message, '\x1b[37m');
     }
   }
 
@@ -325,11 +359,11 @@ class AggregatorService {
 
       if (insertResult.affectedRows > 0 || purgeResult.affectedRows > 0)
         console.log(
-          `\x1b[37m   • Aggregator - devices: aggregated ${dateStr}` +
+          `\x1b[37m   • ${PREFIX} - devices: aggregated ${dateStr}` +
           `, purged ${purgeResult.affectedRows} rows >7d`
         );
     } catch (error) {
-      console.error('\x1b[91m   • Aggregator - Device aggregation failed:', error.message, '\x1b[37m');
+      console.error(`\x1b[91m   • ${PREFIX} - Device aggregation failed:`, error.message, '\x1b[37m');
     }
   }
 
@@ -338,6 +372,7 @@ class AggregatorService {
   // Geen MySQL-specifieke syntax — werkt ongewijzigd met de SQLite shim.
 
   async compareForecastWithActual() {
+    const modulePrefix = padName('Solar Forecast');
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     const dateStr = yesterday.toISOString().split('T')[0];
@@ -349,7 +384,7 @@ class AggregatorService {
       );
 
       if (!daily[0]) {
-        console.log(`\x1b[37m   • SolarForecast - No energy_daily row for ${dateStr}, skipping`);
+        console.log(`\x1b[37m   • ${modulePrefix} - No energy_daily row for ${dateStr}, skipping`);
         return;
       }
 
@@ -361,7 +396,7 @@ class AggregatorService {
       );
 
       if (!forecast[0]) {
-        console.log(`\x1b[37m   • SolarForecast - No forecast row for ${dateStr}, skipping`);
+        console.log(`\x1b[37m   • ${modulePrefix} - No forecast row for ${dateStr}, skipping`);
         return;
       }
 
@@ -379,12 +414,11 @@ class AggregatorService {
       );
 
       console.log(
-        `\x1b[37m   • SolarForecast - Accuracy ${dateStr}: ` +
-        `${actualKwh} kWh actual / ${expectedKwh} kWh forecast = ${accuracyPct}%`
+        `\x1b[37m   • ${modulePrefix} - Accuracy ${dateStr}: ${actualKwh} kWh actual / ${expectedKwh} kWh forecast = ${accuracyPct}%`
       );
 
     } catch (error) {
-      console.error('\x1b[91m   • SolarForecast - comparison failed:', error.message, '\x1b[37m');
+      console.error(`\x1b[91m   • ${modulePrefix} - comparison failed:`, error.message, '\x1b[37m');
     }
   }
 
@@ -398,7 +432,8 @@ class AggregatorService {
   //   ON DUPLICATE KEY UPDATE              →  ON CONFLICT(strategy_id) DO UPDATE SET
 
   async calculateNightlyProfile() {
-    console.log('   • NightlyProfile - Calculating morning energy profile...');
+    const modulePrefix = padName('Nightly Profile');
+    console.log(`\x1b[37m   • ${modulePrefix} - Calculating morning energy profile...`);
 
     try {
       // 1. Gemiddeld uurlijks verbruiksprofiel over de laatste 14 dagen
@@ -523,13 +558,13 @@ class AggregatorService {
       `, ['smart-eco', JSON.stringify(mergedConfig)]);
 
       console.log(
-        `\x1b[37m   • NightlyProfile - Done: morning=${morningKwhNeeded} kWh, ` +
+        `\x1b[37m   • ${modulePrefix} - Done: morning=${morningKwhNeeded} kWh, ` +
         `solarStart=h${solarStartHour}, solarForecast=${solarTotalKwh} kWh, ` +
         `accuracy=${Math.round(forecastAccuracyFactor * 100)}%`
       );
 
     } catch (error) {
-      console.error('\x1b[91m   • NightlyProfile - Failed:', error.message, '\x1b[37m');
+      console.error(`\x1b[91m   • ${modulePrefix} - Failed:`, error.message, '\x1b[37m');
     }
   }
 }
