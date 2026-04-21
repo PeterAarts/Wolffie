@@ -11,6 +11,7 @@ export const useRealtimeStore = defineStore('realtime', () => {
   
   const connectionSource = ref('disconnected');
   const isConnected = computed(() => connectionSource.value !== 'disconnected');
+  const systemHealth = ref('offline'); // 'ok' | 'degraded' | 'offline'
   const isLoading = ref(false);
   const hasInitialized = ref(false);
   const wsListenerActive = ref(false);
@@ -98,39 +99,52 @@ export const useRealtimeStore = defineStore('realtime', () => {
    */
   function transformBackendData(backendData) {
     console.log('🔄 Transforming backend data');
-    
-    return {
-      batterySOC: backendData.battery?.soc || 0,
-      components: {
-        battery_1: {
-          currentIn: backendData.battery?.power > 0 ? backendData.battery.power : 0,
-          currentOut: backendData.battery?.power < 0 ? Math.abs(backendData.battery.power) : 0,
-          dailyIn: 0,
-          dailyOut: 0
-        },
-        grid: {
-          currentIn: backendData.grid?.power > 0 ? backendData.grid.power : 0,
-          currentOut: backendData.grid?.power < 0 ? Math.abs(backendData.grid.power) : 0,
-          dailyIn: 0,
-          dailyOut: 0
-        },
-        solar: {
-          currentOut: 0,
-          dailyOut: 0
-        },
-        home_usage: {
-          currentIn: Math.abs(backendData.load?.power) || 0,
-          dailyIn: 0
-        },
-        backup_unit: {
-          currentIn: backendData.load?.inverterPower || 0,
-          currentOut: backendData.load?.inverterPower || 0,
-          dailyIn: 0,
-          dailyOut: 0
-        }
-      },
-      flows: {}
-    };
+
+    const result = { components: {} };
+
+    // Only set batterySOC when the payload actually carries it.
+    // Passing undefined means updateRealtimeData() will leave the existing value intact.
+    if (backendData.battery?.soc != null) {
+      result.batterySOC = backendData.battery.soc;
+    }
+
+    // Battery — only when present in payload
+    if (backendData.battery != null) {
+      const power = backendData.battery.power ?? 0;
+      result.components.battery_1 = {
+        currentIn:  power > 0 ? power : 0,
+        currentOut: power < 0 ? Math.abs(power) : 0,
+        dailyIn:  0,
+        dailyOut: 0,
+      };
+    }
+
+    // Grid — only when present in payload
+    if (backendData.grid != null) {
+      const power = backendData.grid.power ?? 0;
+      result.components.grid = {
+        currentIn:  power > 0 ? power : 0,
+        currentOut: power < 0 ? Math.abs(power) : 0,
+        dailyIn:  0,
+        dailyOut: 0,
+      };
+    }
+
+    // Home — only when present in payload
+    if (backendData.load != null) {
+      result.components.home_usage = {
+        currentIn: Math.abs(backendData.load.power ?? 0),
+        dailyIn: 0,
+      };
+    }
+
+    // Solar is intentionally excluded here.
+    // WebSocket power_update payloads originate from AlphaESS/HomeWizard and
+    // carry no solar data. Including solar: { currentOut: 0 } would overwrite
+    // the correct value that fetchSummary() loaded from the SolarEdge snapshot.
+    // Solar is populated exclusively via the HTTP summary poll.
+
+    return result;
   }
 
   /**
@@ -233,10 +247,8 @@ async function fetchSummary() {
             }
           });
           
-          // Update connection status from collector info
-          if (data.collector) {
-            connectionSource.value = data.collector.connected ? 'modbus' : 'disconnected';
-          }
+          // Update connection status from collector health (module-agnostic)
+          await fetchCollectorHealth();
           
           console.log('✅ Realtime data loaded from summary');
         }
@@ -246,6 +258,33 @@ async function fetchSummary() {
     }
   }
 
+
+  /**
+   * Derive system health from /api/collectors/status.
+   * ok       — server reachable, no collector errors
+   * degraded — server reachable, ≥1 collector has consecutive errors
+   * offline  — server unreachable
+   */
+  async function fetchCollectorHealth() {
+    try {
+      const res = await apiClient.get('/collectors/status', { timeout: 4000 });
+      const { running, collectors = [] } = res.data;
+
+      if (!running) {
+        systemHealth.value = 'offline';
+        connectionSource.value = 'disconnected';
+        return;
+      }
+
+      const anyError = collectors.some(c => c.enabled && c.consecutiveErrors > 0);
+      systemHealth.value = anyError ? 'degraded' : 'ok';
+      // Keep connectionSource in sync for backward compat
+      connectionSource.value = anyError ? 'degraded' : 'modbus';
+    } catch {
+      systemHealth.value = 'offline';
+      connectionSource.value = 'disconnected';
+    }
+  }
 
   /**
    * Check collector status
@@ -425,7 +464,8 @@ async function fetchSummary() {
 
   return { 
     connectionSource, 
-    isConnected, 
+    isConnected,
+    systemHealth,
     isLoading,
     hasInitialized,
     lastUpdate,

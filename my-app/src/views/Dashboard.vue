@@ -1,7 +1,7 @@
 <template>
   <div class="lg:grid lg:grid-cols-4 lg:gap-6 p-6 overflow-hidden text-primary">
     <!-- ── Left: hero + chart ──────────────────────────────────────────────── -->
-    <div class="hero-card lg:col-span-3 p-6 lg:p-10 overflow-y-auto bg-secondary-100 shadow-xl" >
+    <div class="hero-card lg:col-span-3 p-6 lg:p-10 overflow-y-auto bg-secondary-50" >
 
       <!-- Total consumed header -->
       <div class="mb-2">
@@ -42,7 +42,7 @@
         </div>
       </div>
 
-      <!-- Date nav + chart (desktop only) -->
+      <!-- Date nav + both charts (desktop only) -->
       <div class="hidden lg:block mt-6 mb-6">
         <div class="date-nav mb-4">
           <button class="date-btn" @click="goToPrevDay"><i class="fa-light fa-chevron-left"></i></button>
@@ -55,9 +55,18 @@
           :date="graphDate"
           :auto-update="isToday"
           :height="'300px'"
-          :granularity="15"
+          :granularity="2"
         />
+
+        <!--<SmartDeviceFlowGraph
+          :period="graphPeriod"
+          :date="graphDate"
+          :auto-update="isToday"
+          :height="'250px'"
+          :granularity="5"
+        /> -->
       </div>
+
     </div>
 
     <!-- ── Right: power cards ──────────────────────────────────────────────── -->
@@ -187,7 +196,7 @@
               </button>
             </div>
             <div class="flex-1 overflow-y-auto">
-              <EnergySocketsList @socket-selected="onSocketSelected" />
+              <SmartDeviceList @socket-selected="onSocketSelected" />
             </div>
           </div></transition>
       </div>
@@ -195,6 +204,7 @@
 
   </div>
 </template>
+
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -204,8 +214,9 @@ import { useLocale } from '../composables/useLocale';
 import apiClient from '@/services/api';
 
 // Components
-import EnergyFlowGraph from '@/components/common/EnergyFlowGraph.vue';
-import EnergySocketsList from '@/components/EnergySocketsList.vue';
+import EnergyFlowGraph      from '@/components/common/EnergyFlowGraph.vue';
+import SmartDeviceFlowGraph from '@/components/common/SmartDeviceFlowGraph.vue';
+import SmartDeviceList    from '@/components/SmartDeviceList.vue';
 
 const router = useRouter();
 const realtimeStore = useRealtimeStore();
@@ -215,10 +226,10 @@ const { t, formatLocaleEnergy, formatLocalePower } = useLocale();
 console.log('Dashboard step 1 loaded');
 // PERIOD LOGIC: EXACTLY AS PER YOUR CODE
 const periods = [
-  { value: 'day', label: t('dashboard.periodDay') },
-  { value: 'week', label: t('dashboard.periodWeek')  },
-  { value: 'month', label: t('dashboard.periodMonth')  },
-  { value: 'year', label: t('dashboard.periodYear')  }
+  { value: 'day',   label: t('dashboard.periodDay')   },
+  { value: 'week',  label: t('dashboard.periodWeek')  },
+  { value: 'month', label: t('dashboard.periodMonth') },
+  { value: 'year',  label: t('dashboard.periodYear')  },
 ];
 const activePeriod = ref('day');
 
@@ -252,10 +263,16 @@ const goToNextDay = () => {
   d.setDate(d.getDate() + 1);
   selectedDate.value = d;
 };
+
 console.log('Dashboard step 2 loaded');
 const graphPeriod = computed(() => isToday.value ? 'today' : 'date');
 
-const graphDate = computed(() => selectedDate.value.toISOString().split('T')[0]);
+// Timezone-safe date string — avoids toISOString() which returns UTC and can
+// produce the wrong date after midnight CET (UTC+2).
+const graphDate = computed(() => {
+  const d = selectedDate.value;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+});
 
 // REAL-TIME COMPUTEDS: STRICTLY FROM YOUR DASHBOARD.VUE
 const currentBatterySOC = computed(() => {
@@ -333,6 +350,7 @@ const gridStatusClass = computed(() => {
     default:          return 'text-secondary-500';
   }
 });
+
 console.log('Dashboard step 3 loaded');
 // FUNCTIONS: EXACTLY AS PER YOUR CODE
 const showSocketsList = ref(false);
@@ -377,14 +395,15 @@ const strategyModeClass = computed(() => {
     default:          return 'text-secondary-500';
   }
 });
-console.log('Dashboard step 5 loaded');
 
+console.log('Dashboard step 5 loaded');
 console.log('Dashboard step 6 loaded');
+
 // ── TIME & LIFECYCLE ───────────────────────────────────────────────────────
 const currentTime = ref('');
 const updateCurrentTime = () => {
   const now = new Date();
-  currentTime.value = now.toLocaleTimeString('nl-NL', { 
+  currentTime.value = now.toLocaleTimeString('nl-NL', {
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   });
 };
@@ -403,6 +422,7 @@ onUnmounted(() => {
   // stopPolling() removed — polling ownership belongs to App.vue
 });
 </script>
+
 <style lang="css" scoped>
 /* Hero value font size — too large for Tailwind's scale */
 .hero-value           { font-size: 4rem; }

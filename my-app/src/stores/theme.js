@@ -1,5 +1,6 @@
 // src/stores/theme.js
 import { defineStore } from 'pinia';
+import apiClient from '@/services/api';
 import { ref, watch } from 'vue';
 
 // ── Named presets ─────────────────────────────────────────────────────────────
@@ -180,19 +181,16 @@ export const useThemeStore = defineStore('theme', () => {
     borderRadius.value    = preset.borderRadius;
     activePreset.value    = presetKey;
     applyTheme();
-    // Persist to server (fire-and-forget)
-    fetch('/api/settings/core', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ theme: presetKey }),
-    }).catch(err => console.warn('[theme] failed to persist to server:', err));
+    // Persist to server (fire-and-forget) via shared apiClient so the correct
+    // base URL, auth token, and session cookie are all applied automatically.
+    apiClient.post('/settings/core', { theme: presetKey })
+      .catch(err => console.warn('[theme] failed to persist to server:', err));
   }
 
   async function loadFromServer() {
     try {
-      const res  = await fetch('/api/settings/core', { credentials: 'include' });
-      const data = await res.json();
+      const res  = await apiClient.get('/settings/core');
+      const data = res.data;
       const settings = data.settings ?? data;
       const serverPreset = settings.theme ?? settings['system.theme'];
       if (serverPreset && THEME_PRESETS[serverPreset] && serverPreset !== activePreset.value) {

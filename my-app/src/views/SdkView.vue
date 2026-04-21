@@ -79,7 +79,7 @@ onBeforeUnmount(() => {
 .sdk-view .swagger-ui .topbar { display: none !important; }
 
 /* ── Root background ─────────────────────────────────────────────────────── */
-.sdk-view           {background: var(--color-bg-primary);min-height: calc(100vh - 4rem);font-family: var(--font-family);}
+.sdk-view           {;min-height: calc(100vh - 4rem);font-family: var(--font-family);}
 
 /* ── Our custom header bar ───────────────────────────────────────────────── */
 .sdk-header {
@@ -141,7 +141,6 @@ onBeforeUnmount(() => {
 /* ── Swagger wrapper padding ─────────────────────────────────────────────── */
 #wolffie-swagger {
   padding: 1.5rem 2rem 4rem;
-  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -191,7 +190,7 @@ onBeforeUnmount(() => {
 }
 .sdk-view .swagger-ui select {
   font-family: var(--font-family) !important;
-  background: var(--color-bg-primary) !important;
+  background: var(--color-secondary-300) !important;
   color: var(--color-text-primary) !important;
   border: 1px solid var(--color-border-dark) !important;
   border-radius: var(--radius-sm) !important;
@@ -204,7 +203,7 @@ onBeforeUnmount(() => {
   font-family: var(--font-family) !important;
   background: var(--color-primary) !important;
   border-color: var(--color-primary) !important;
-  color: var(--color-bg-primary) !important;
+  color: var(--color-white) !important;
   font-weight: 600 !important;
   font-size: 0.8125rem !important;
   border-radius: var(--radius-sm) !important;
