@@ -7,7 +7,7 @@
 //   import dotenv from 'dotenv';
 //   dotenv.config();              // ← dotenv can load AFTER, env is read lazily
 //
-// Log files are written to: ./logs/wattson-YYYY-MM-DD.log
+// Log files are written to: ./logs/wolffie-YYYY-MM-DD.log
 // Old files are automatically deleted after LOG_RETENTION_DAYS (default: 21)
 
 import fs from 'fs';
@@ -18,7 +18,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ─── Constants (safe to resolve at import time) ───────────────────────────────
 
-const LOG_DIR = path.join(__dirname, 'logs');
+const LOG_DIR = process.env.LOG_DIR || path.join(__dirname, 'logs');
 
 // ─── Always create the logs folder ───────────────────────────────────────────
 // Done unconditionally so it's ready regardless of when dotenv loads.
@@ -39,7 +39,7 @@ const retentionDays = () => parseInt(process.env.LOG_RETENTION_DAYS || '21', 10)
 
 function todayLogPath() {
   const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-  return path.join(LOG_DIR, `wattson-${date}.log`);
+  return path.join(LOG_DIR, `wolffie-${date}.log`);
 }
 
 function formatLine(level, args) {
@@ -69,7 +69,7 @@ function cleanOldLogs() {
 
     let removed = 0;
     for (const file of files) {
-      if (!file.startsWith('wattson-') || !file.endsWith('.log')) continue;
+      if (!file.startsWith('wolffie-') || !file.endsWith('.log')) continue;
       const filePath = path.join(LOG_DIR, file);
       const stat     = fs.statSync(filePath);
       if (stat.mtimeMs < cutoff) {
@@ -151,7 +151,7 @@ process.nextTick(() => {
   if (!logToFile()) return;
 
   writeToFile(formatLine('INFO ', [
-    `WattsOn started | PID=${process.pid} | env=${process.env.NODE_ENV} | retention=${retentionDays()}d | logDir=${LOG_DIR}`
+    `Wolffie started | PID=${process.pid} | env=${process.env.NODE_ENV} | retention=${retentionDays()}d | logDir=${LOG_DIR}`
   ]));
   originalConsole.log(`Logging to: ${todayLogPath()}`);
 

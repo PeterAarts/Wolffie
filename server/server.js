@@ -1,4 +1,6 @@
 import './systemLogger.js'; 
+import dotenv from 'dotenv';
+dotenv.config();  
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -132,18 +134,18 @@ app.get('/{*path}', (req, res, next) => {
 async function initializeModules() {
   try {
     console.log('');
-    console.log(' - \x1b[32mDiscovering available modules...\x1b[37m');
+    console.log(` - \x1b[32mDiscovering available modules... ${new Date().toLocaleString()} \x1b[37m`);
     console.log('   -------------------------------------------');
     const allModules = await moduleLoader.discoverModules();
     console.log(`   ✓ Found ${allModules.size} modules`);
     
     console.log(' ');
-    console.log(' - \x1b[32mSyncing settings schemas...\x1b[37m');
+    console.log(` - \x1b[32mSyncing settings schemas... ${new Date().toLocaleString()} \x1b[37m`);
     console.log('   -------------------------------------------'); 
     await settingsService.initializeModules();
     
     console.log(' ');
-    console.log(' - \x1b[32mInitializing active modules...');
+    console.log(` - \x1b[32mInitializing active modules... ${new Date().toLocaleString()} \x1b[37m`);
     console.log('   -------------------------------------------\x1b[37m');
     const enabledModules = await moduleLoader.getEnabledModules();
     console.log(`   \x1b[32m✓\x1b[37m ${enabledModules.length} modules enabled`);
@@ -156,7 +158,7 @@ async function initializeModules() {
     }
     
     console.log(' ');    
-    console.log(' - \x1b[32mRegistering module routes...\x1b[37m');
+    console.log(` - \x1b[32mRegistering module routes... ${new Date().toLocaleString()} \x1b[37m`);
     console.log('   -------------------------------------------');
     const enabledModulesMap = new Map(
       enabledModules.map(m => [m.manifest.id, m])
@@ -164,22 +166,22 @@ async function initializeModules() {
     routeManager.registerModuleRoutes(enabledModulesMap);
     
     console.log(' ');    
-    console.log(' - \x1b[32mStarting collectors...\x1b[37m');
+    console.log(` - \x1b[32mStarting collectors... ${new Date().toLocaleString()} \x1b[37m`);
     console.log('   -------------------------------------------');
     await collectorManager.start();
 
     console.log(' ');    
-    console.log(' - \x1b[32mStarting data aggregator...\x1b[37m');
+    console.log(` - \x1b[32mStarting data aggregator... ${new Date().toLocaleString()} \x1b[37m`);
     console.log('   -------------------------------------------');
     aggregatorService.start();
 
     console.log(' ');
-    console.log(' - \x1b[32mStarting strategy manager...\x1b[37m');
+    console.log(` - \x1b[32mStarting strategy manager... ${new Date().toLocaleString()} \x1b[37m`);
     console.log('   -------------------------------------------');
     await strategyManager.start();
     await strategyManager.regenerateDayPlan();
     
-    console.log('\x1b[32m - All modules initialized\x1b[37m');
+    console.log(` - \x1b[32mAll modules initialized... ${new Date().toLocaleString()} \x1b[37m`);
     console.log('   -------------------------------------------');
     console.log('');
   } catch (error) {
