@@ -14,14 +14,14 @@
       
       <div v-if="schema.groups" class="groups-container">
         <div v-for="(group, gIdx) in schema.groups" :key="gIdx" class="settings-group mb-3">
-          <h3 class="text-md border-b border-secondary-200 font-medium mb-4">{{ resolve(group.title) }}</h3>
+          <!-- <h3 class="text-md border-b border-secondary-200 font-medium mb-4">{{ resolve(group.title) }}</h3> -->
           
           <div v-for="(section, sIdx) in group.sections" :key="sIdx" class="settings-section   ">
               <div v-if="section.title" class="section-header ">
                 <h4 class=" font-semibold m-0">{{ resolve(section.title) }}</h4>
                 <p v-if="section.description" class="text-secondary-400 text-xs font-normal mt-1 mb-0">{{ resolve(section.description) }}</p>
               </div>
-              <div v-if="section.fields?.length" class="grid grid-cols-12 gap-4 fields-container" :class="{ 'drawer-mode': props.drawerMode }">
+              <div v-if="section.fields?.length" class="gap-4 fields-container" :class="{ 'drawer-mode': props.drawerMode }">
                 <div 
                   v-for="field in section.fields" 
                   :key="field.key" 
@@ -69,6 +69,26 @@
             severity="secondary"
             outlined
           />
+        </div>
+      </div>
+
+      <!-- schema.actions — module-defined action buttons -->
+      <div v-if="schema.actions?.length" class="module-actions mt-4">
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="action in schema.actions"
+            :key="action.id"
+            class="btn"
+            :disabled="actionLoading[action.id]"
+            @click="handleSchemaAction(action)"
+          >
+            <i class="fa-solid mr-1" :class="actionLoading[action.id] ? 'fa-spinner fa-spin' : (action.icon || 'fa-bolt')"></i>
+            {{ resolve(action.label) }}
+          </button>
+        </div>
+        <div v-if="actionResult" class="action-result mt-2" :class="actionResult.success ? 'action-result--ok' : 'action-result--err'">
+          <i class="fa-solid mr-1" :class="actionResult.success ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+          {{ actionResult.message }}
         </div>
       </div>
     </div>
@@ -142,6 +162,8 @@ const error = ref(null);
 // Flips to true after module messages have been merged into vue-i18n,
 // used to delay child components that depend on those keys.
 const messagesReady = ref(false);
+const actionLoading = ref({});   // { [action.id]: bool }
+const actionResult  = ref(null); // { success, message }
 
 // Helpers
 function getFieldColumnClass(field) {
@@ -283,6 +305,29 @@ async function handleAction(action) {
   }
 }
 
+async function handleSchemaAction(action) {
+  actionResult.value  = null;
+  actionLoading.value = { ...actionLoading.value, [action.id]: true };
+  try {
+    const payload = action.sendValues === false ? undefined : values.value;
+    const method  = (action.method || 'POST').toLowerCase();
+    const res     = await apiClient[method](`/${action.endpoint.replace(/^\//, '')}`, payload);
+    const ok      = res.data?.success !== false;
+    actionResult.value = {
+      success: ok,
+      message: res.data?.message || (ok ? t('common.done') : t('common.error')),
+    };
+    if (ok) toast.add({ severity: 'success', summary: t('common.done'), detail: res.data?.message || resolve(action.label) });
+  } catch (err) {
+    const detail = err.response?.data?.message || err.message;
+    actionResult.value = { success: false, message: detail };
+    toast.add({ severity: 'error', summary: t('common.error'), detail });
+  } finally {
+    actionLoading.value = { ...actionLoading.value, [action.id]: false };
+    setTimeout(() => { actionResult.value = null; }, 6000);
+  }
+}
+
 onMounted(loadSchema);
 </script>
 
@@ -297,105 +342,39 @@ onMounted(loadSchema);
 .universal-settings-panel   {position: relative;min-height: 400px;}
 
 /* Loading State */
-.loading-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-}
-
+.loading-container          { display: flex;flex-direction: column;align-items: center;justify-content: center;min-height: 400px;}
 /* Error State */
-.error-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 400px;
-  padding: 2rem;
-}
-
+.error-container            { display: flex;flex-direction: column;align-items: center;justify-content: center;min-height: 400px;padding: 2rem;}
 /* Module Header */
-.module-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 1.5rem;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-}
-
-.module-icon {
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  flex-shrink: 0;
-}
-
-.module-icon i {
-  font-size: 2rem;
-}
-
-.module-info {
-  flex: 1;
-}
-
-.module-info h2 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.75rem;
-  color: #111827;
-}
-
-.module-info p {
-  margin: 0 0 0.75rem 0;
-  color: #6b7280;
-  line-height: 1.5;
-}
-
-.module-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
+.module-header              { display: flex;align-items: flex-start;gap: 1.5rem;padding: 1.5rem;margin-bottom: 1.5rem;border-radius: 12px;border: 1px solid #e5e7eb;}
+.module-icon                { width: 64px;height: 64px;display: flex;align-items: center;justify-content: center;border-radius: 12px;flex-shrink: 0;}
+.module-icon i              { font-size: 2rem;}
+.module-info                { flex: 1;}
+.module-info h2             { margin: 0 0 0.5rem 0;font-size: 1.75rem;}
+.module-info p              { margin: 0 0 0.75rem 0;color: var(--color-secondary-400);line-height: 1.5;}
+.module-meta                { display: flex;align-items: center;gap: 0.75rem;}
 /* Settings Accordion */
-.settings-accordion {
-  margin-bottom: 2rem;
-}
-
-.group-description {
-  color: #6b7280;
-  margin: 0 0 1.5rem 0;
-  line-height: 1.6;
-}
-
+.settings-accordion         { margin-bottom: 2rem;}
+.group-description          { color: var(--color-secondary-400);margin: 0 0 1.5rem 0;line-height: 1.6;}
 /* Sections */
-.settings-section           {margin-bottom: 1rem;}
-.section-with-border        {padding-bottom: 2rem;border-bottom: 1px solid #e5e7eb;}
+.settings-section           { margin-bottom: 1rem;}
+.section-with-border        { padding-bottom: 2rem;border-bottom: 1px solid #e5e7eb;}
 .section-with-border:last-child 
-                            {border-bottom: none;padding-bottom: 0;}
-.section-header             {margin-bottom: 1rem;border-bottom:1px solid var(--color-secondary-200);}
-.section-title              {margin: 0 0 0.5rem 0;font-size: 1.1rem;color: #374151;font-weight: 500;}
-.section-description        {margin: 0;color: #6b7280;font-size: 0.95rem;line-height: 1.5;}
+                            { border-bottom: none;padding-bottom: 0;}
+.section-header             { margin-bottom: 1rem;border-bottom:1px solid var(--color-secondary-200);}
+.section-title              { margin: 0 0 0.5rem 0;font-size: 1.1rem;color: #374151;font-weight: 500;}
+.section-description        { margin: 0;color: #6b7280;font-size: 0.95rem;line-height: 1.5;}
 /* Fields Container */
-.fields-container {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-}
+.fields-container           { display: grid;grid-template-columns: 1fr;gap: 1.5rem;}
 
 @media (min-width: 768px) {
-  .fields-container     {grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));}
+  .fields-container         { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));}
 }
 
 /* Global Actions */
-.global-actions         {margin-top: 2rem;}
-.global-actions h4      {margin: 1rem 0;color: #374151;}
-.actions-grid           {display: flex;flex-wrap: wrap;gap: 0.75rem;}
+.global-actions             {margin-top: 2rem;}
+.global-actions h4          {margin: 1rem 0;color: #374151;}
+.actions-grid               {display: flex;flex-wrap: wrap;gap: 0.75rem;}
 
 /* Save Bar (Sticky) */
 .save-bar               {position: sticky;bottom: 0;left: 0;right: 0;padding: 1rem 1.5rem;transform: translateY(100%);transition: transform 0.3s ease;z-index: 100;}
@@ -404,6 +383,10 @@ onMounted(loadSchema);
 .save-bar-info          {display: flex;align-items: center;gap: 0.75rem;color: #92400e;font-weight: 600;}
 .save-bar-info i        {font-size: 1.25rem;}
 .save-bar-actions       {display: flex;gap: 0.75rem;}
+.module-actions         {border-top: 1px solid var(--color-secondary-200); padding-top: 1rem;}
+.action-result          {font-size: 0.85rem; padding: 0.4rem 0.75rem; border-radius: 6px;}
+.action-result--ok      {color: var(--color-success); background: color-mix(in srgb, var(--color-success) 10%, transparent);}
+.action-result--err     {color: var(--color-danger);  background: color-mix(in srgb, var(--color-danger)  10%, transparent);}
 /* Nested Tabs */
 .nested-tabs            {margin-top: 1rem;}
 /* HTML Content */

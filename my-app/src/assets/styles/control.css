@@ -76,5 +76,5 @@
 /* ── Cell helpers ─────────────────────────────────────────────────────────── */
 .cell-primary           { font-size: 0.8125rem; font-weight: 600; color: var(--color-text-primary); }
 .cell-secondary         { font-size: 0.725rem;  color: var(--color-text-tertiary); margin-top: 0.1rem; }
-aside nav button        { border-radius: var(--radius-lg);}
+aside nav button        { border-radius: var(--radius-sm);}
 aside                   { width:13rem;}

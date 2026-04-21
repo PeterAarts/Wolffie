@@ -93,7 +93,7 @@ function close() {
 .drawer__title              { font-size: 0.9375rem; }
 .drawer__close              { width: 26px; height: 26px; border-radius: var(--radius-sm, 4px); }
 /* ── Body ────────────────────────────────────────────────────────────────── */
-.drawer__body               { padding: 1.25rem; gap: 1.5rem; }
+.drawer__body               { padding: 1.5rem; gap: 1.5rem; }
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 .drawer__footer             { gap: 0.5rem; padding: 0.875rem 1.25rem; }
 /* ── Transitions ─────────────────────────────────────────────────────────── */

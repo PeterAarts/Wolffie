@@ -51,7 +51,7 @@ const { t, currentLanguage } = useLocale();
 const props = defineProps({
   period: { type: String, default: 'today' },
   date: { type: String, default: () => new Date().toISOString().split('T')[0] },
-  granularity: { type: Number, default: 5 },
+  granularity: { type: Number, default: 1 },
   height: { type: String, default: '200px' },
   showStats: { type: Boolean, default: false }
 });
@@ -490,11 +490,7 @@ onUnmounted(() => {
 .tt-dash                        { display: inline-block;width: 14px; height: 0;border-top: 2px dashed;margin-bottom: 1px;}
 .tt-label                       { flex: 1;font-size: 13px;color: #6b7280;}
 .tt-value                       { font-size: 13px;font-weight: 600;color: #111827;text-align: right;font-variant-numeric: tabular-nums;}
-.stats-overview                 { /*display: grid;grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));*/display:flex;gap: 16px;}
-.stat-card                      { background-color: var(--color-white);padding: 1rem;display: flex;flex-direction: column;gap: 8px;border-radius:var(--radius-lg); border-width:0px;}
-.stat-card .label               { font-size: .9rem;color: var(--color-secondary-600);font-weight: 500;letter-spacing: 0.5px;}
-.stat-card .value               { font-size: 1.25rem;font-weight: 700;font-family: 'Rubik', sans-serif;color: var(--color-text-primary, #111827);line-height: 1.2;}
-.stat-card .value small         { font-size: 12px;font-weight: 500;opacity: 0.7;margin-left: 4px;}
+
 .stat-card.solar .tt-dot        { background-color: #f59e0b; }
 .stat-card.home .tt-dot         { background-color: #3b82f6; }
 .stat-card.grid .tt-dot         { background-color: #ef4444; }

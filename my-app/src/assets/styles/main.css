@@ -133,10 +133,12 @@ body                    { font-family: var(--font-family);font-weight: var(--fon
 .p-card-title           { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); font-size: var(--font-size-lg); margin-bottom: var(--gap-md); }
 .p-card-subtitle        { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); }
 
-.stat-card              { background: var(--color-white);border: 1px solid var(--color-border);border-radius: var(--radius-lg);padding: var(--gap-lg);transition: all 0.2s ease;}
-.stat-card:hover        { border-color: var(--color-border-dark); }
-.stat-card-value        { font-size: var(--font-size-3xl); font-weight: var(--font-weight-bold); color: var(--color-text-primary); line-height: 1; margin-bottom: var(--gap-xs); }
-.stat-card-label        { font-size: var(--font-size-sm); color: var(--color-text-secondary); font-weight: var(--font-weight-medium); }
+/* Stats cards — identical structure to EnergyFlowGraph stat cards */
+.stats-overview         { display: flex; gap: 16px; flex-wrap: wrap; }
+.stat-card              { background-color: var(--color-secondary-200); padding: .5rem 1rem; display: flex; flex-direction: column; gap: 8px; border-radius: var(--radius-lg); }
+.stat-card .label,
+.stat-card .value small { font-size: 80%; color: var(--color-secondary-600); font-weight: 400; }
+.stat-card .value       { font-weight: 500; color: var(--color-text-primary, #111827); line-height: 1; }
 
 .card-dark              { background: var(--color-text-primary); color: #fff; border: none; }
 .card-dark .stat-card-value,
@@ -191,7 +193,7 @@ input:focus             { border-color: var(--color-secondary-400); }
 
 /* ── Layout helpers ───────────────────────────────────────────────────────── */
 .info-section           { height: calc(100vh - 4rem); }
-.hero-card              { height: calc(100vh - 7rem);border-radius: var(--radius-lg); }
+.hero-card              { height: calc(100vh - 9rem);border-radius: var(--radius-lg); }
 .right-section          { min-width: 320px; }
 .canvas                 { min-height: calc(100vh - 4rem); overflow-y: auto; }
 .inner-canvas           { min-height: calc(100vh - 7rem); }

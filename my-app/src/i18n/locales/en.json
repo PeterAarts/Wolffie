@@ -52,7 +52,11 @@
     "targetBuffer": "Target buffer",
     "home": "Home",
     "clickForDetails": "click for details",
-    "alertConfirm": "Confirm & execute"
+    "alertConfirm": "Confirm & execute",
+    "smartDevices": {
+      "title": "smart devices",
+      "noUsage": "No smart device usage recorded for this day"
+    }
   },
   "cards": {
     "homeSolar": "Home & Solar",
@@ -547,6 +551,7 @@
       "checksum_placeholder": "Paste hash to verify before installing…",
       "installed": "Installed",
       "updated": "Updated",
+      "edit_settings": "Edit settings",
       "install_failed": "Installation failed",
       "restart_required": "Restart the server to activate this module.",
       "installed_title": "Installed modules",

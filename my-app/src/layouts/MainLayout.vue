@@ -21,16 +21,23 @@
           <div class="flex items-center">
             <span class="relative flex h-2.5 w-2.5">
               <span
-                v-if="realtimeStore.isConnected"
+                v-if="realtimeStore.systemHealth === 'ok'"
                 class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"
               ></span>
               <span
-                :class="['relative inline-flex rounded-full h-2.5 w-2.5',
-                  realtimeStore.isConnected ? 'bg-green-500' : 'bg-amber-500']"
+                :class="['relative inline-flex rounded-full h-2.5 w-2.5', {
+                  'bg-green-500':  realtimeStore.systemHealth === 'ok',
+                  'bg-amber-400':  realtimeStore.systemHealth === 'degraded',
+                  'bg-red-500':    realtimeStore.systemHealth === 'offline',
+                }]"
               ></span>
             </span>
             <span class="connection-label text-xs lowercase tracking-wider text-secondary-500 hidden lg:block">
-              {{ realtimeStore.isConnected ? t('header.connected') : t('header.disconnected') }}
+              {{
+                realtimeStore.systemHealth === 'ok'       ? t('header.connected') :
+                realtimeStore.systemHealth === 'degraded' ? t('header.degraded')  :
+                                                            t('header.disconnected')
+              }}
             </span>
           </div>
         </div>
@@ -105,7 +112,7 @@
           </div>
         </div>
 
-        <div class="drawer-section">
+        <div class="drawer-section mt-6">
           <div class="drawer-section__title">{{ t('profile.changePassword') }}</div>
           <div class="form-field">
             <label class="form-label">{{ t('profile.currentPassword') }} <span class="req">*</span></label>
