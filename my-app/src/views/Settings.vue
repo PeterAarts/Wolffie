@@ -1,10 +1,10 @@
 <template>
   <div class="p-6 float-canvas">
-    <div class="flex flex-col md:flex-row  text-secondary-500 bg-secondary-100 hero-card shadow-xl">
+    <div class="flex flex-col md:flex-row  text-secondary-500 bg-secondary-50 hero-card ">
       <aside class="w-full flex-shrink-0 flex flex-col md:w-64  ">
 
-        <nav class="flex-1 overflow-y-auto p-6 space-y-4 settingsmenu">
-          <p class="p-4 text-xs font-normal text-secondary-500 lowercase border-b border-secondary-200 tracking-wider mb-2">{{ t('settings.system') }}</p>
+        <nav class="flex-1 overflow-y-auto p-6 lg:space-y-4 settingsmenu">
+          <p class="hidden lg:content p-4 text-xs font-normal text-secondary-500 lowercase border-b border-secondary-200 tracking-wider mb-2">{{ t('settings.system') }}</p>
           
           <button v-for="item in staticMenu" :key="item.id"
             @click="activeModuleId = item.id"
@@ -13,26 +13,10 @@
     <!--       <i :class="[item.icon, 'w-6 text-lg', activeModuleId === item.id ? 'text-white' : 'text-secondary-500 group-hover:text-secondary-900']"></i>-->
             <span class="p-2 font-medium text-secondary-700">{{ item.label }}</span>
           </button>
-
-          <div class="my-6 border-t border-secondary-100"></div>
-  <!--
-          <p class="p-4 text-xs font-normal text-secondary-500 lowercase border-b border-secondary-200 tracking-wider mb-2">{{ t('settings.modules') }}</p>
-          
-          <button v-for="mod in settingsModules" :key="mod.module_id"
-            @click="activeModuleId = mod.module_id"
-            class="w-full flex items-center p-4 transition-all duration-200 group text-sm text-secondary-700"
-            :class="[
-              activeModuleId === mod.module_id ? 'bg-white' : 'hover:bg-secondary-200 text-secondary-700',
-              !mod.enabled ? 'opacity-50 grayscale' : ''
-            ]">
-            <i :class="[getModuleIcon(mod), 'w-6 text-lg', activeModuleId === mod.module_id ? 'text-white' : 'text-secondary-500 group-hover:text-secondary-900']"></i>
-            <span class="ml-3 font-medium text-secondary-700s">{{ mod.module_name }}</span>
-            <span v-if="!mod.enabled" class="ml-auto text-[10px] bg-secondary-200 text-secondary-600 px-1.5 py-0.5 rounded">OFF</span>
-          </button>-->
         </nav>
       </aside>
 
-      <main class="flex-1  p-6 ">
+      <main class="flex-1  lg:p-6 ">
         <div class="mx-auto p-6 bg-white rounded-lg overflow-y-auto h-full">
           <div class="flex justify-between items-end">
             <div>
@@ -77,9 +61,9 @@ const activeModuleId = ref('core');
 const settingsModules = ref([]);
 
 const staticMenu = [
-  { id: 'core', label: t('settings.general'), icon: 'fa-light fa-server' },
-  { id: 'users', label: t('settings.usermanagement'), icon: 'fa-light fa-users-gear' },
-  { id: 'modules', label: t('modulesTab.install'), icon: 'fa-light fa-puzzle-piece' },
+  { id: 'core', label: t('settings.general'), icon: 'ph-light ph-server' },
+  { id: 'users', label: t('settings.usermanagement'), icon: 'ph-light ph-users-gear' },
+  { id: 'modules', label: t('modulesTab.install'), icon: 'ph-light ph-puzzle-piece' },
 ];
 
 const activeLabel = computed(() => {
@@ -90,11 +74,11 @@ const activeLabel = computed(() => {
 function getModuleIcon(mod) {
   // Map module IDs to FontAwesome Pro icons
   const icons = {
-    'homewizard': 'fa-light fa-plug-circle-bolt',
-    'alphaess-cloud': 'fa-light fa-cloud-sun',
-    'solaredge': 'fa-light fa-solar-panel'
+    'homewizard': 'ph-light ph-devices',
+    'alphaess-cloud': 'ph-light ph-cloud-sun',
+    'solaredge': 'ph-light ph-solar-panel'
   };
-  return icons[mod.module_id] || 'fa-light fa-box-open';
+  return icons[mod.module_id] || 'ph-light ph-box-open';
 }
 
 async function loadConfigurableModules() {

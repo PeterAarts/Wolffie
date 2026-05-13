@@ -1,8 +1,9 @@
 // src/stores/realtime.js - WITH INITIAL SNAPSHOT SUPPORT
 import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import apiClient from "../services/api";
 import websocketService from '@/services/websocket';
+import { useToastStore } from '@/stores/toast';
 
 export const useRealtimeStore = defineStore('realtime', () => {
   // ============================================
@@ -41,10 +42,11 @@ export const useRealtimeStore = defineStore('realtime', () => {
         dailyOut: 0
       },
       grid: {
-        currentIn: 0,
-        currentOut: 0,
-        dailyIn: 0,
-        dailyOut: 0
+        currentIn:     0,
+        currentOut:    0,
+        dailyIn:       0,
+        dailyOut:      0,
+        gridConnected: true,
       },
       solar: {
         currentOut: 0,
@@ -62,6 +64,39 @@ export const useRealtimeStore = defineStore('realtime', () => {
       }
     },
     flows: {}
+  });
+
+  // ── Dashboard v2 additive blocks ────────────────────────────────────────
+  // Populated from /api/system/summary's new top-level keys: peak, dayPlan,
+  // forecast, advisory, _meta. Default values match the endpoint's stub
+  // shapes so the UI can render before the first poll completes.
+  const peakInfo = ref({
+    state:        'idle',
+    severity:     null,
+    window:       null,
+    minutesUntil: null,
+    reason:       null,
+  });
+  const dayPlan = ref({
+    batteryAtPeakStartPct:        null,
+    batteryAtPeakEndPct:          null,
+    expectedGridImportKwhTonight: null,
+  });
+  const forecast = ref([]);
+  const advisory = ref({
+    id:        'idle-default',
+    tone:      'neutral',
+    headline:  '',
+    body:      '',
+    constraint: null,
+  });
+  const dashboardMeta = ref({
+    partialImplementation: [],
+  });
+  const healthInfo = ref({
+    lastCollectorRunAt: null,
+    stale:              false,
+    degradedSources:    [],
   });
 
   // ============================================
@@ -85,6 +120,10 @@ export const useRealtimeStore = defineStore('realtime', () => {
     const gridOut = realtimeData.value.components.grid?.currentOut || 0;
     return gridIn - gridOut;
   });
+
+  const gridConnected = computed(() =>
+    realtimeData.value.components.grid?.gridConnected ?? true
+  );
   
   const loadPower = computed(() => {
     return realtimeData.value.components.home_usage?.currentIn || 0;
@@ -123,10 +162,11 @@ export const useRealtimeStore = defineStore('realtime', () => {
     if (backendData.grid != null) {
       const power = backendData.grid.power ?? 0;
       result.components.grid = {
-        currentIn:  power > 0 ? power : 0,
-        currentOut: power < 0 ? Math.abs(power) : 0,
-        dailyIn:  0,
-        dailyOut: 0,
+        currentIn:     power > 0 ? power : 0,
+        currentOut:    power < 0 ? Math.abs(power) : 0,
+        dailyIn:       0,
+        dailyOut:      0,
+        gridConnected: backendData.grid.gridConnected ?? true,
       };
     }
 
@@ -231,10 +271,11 @@ async function fetchSummary() {
                 dailyOut: parseFloat(data.today.battery_discharge) || 0
               },
               grid: {
-                currentIn: rt.grid.power > 0 ? rt.grid.power : 0,
-                currentOut: rt.grid.power < 0 ? Math.abs(rt.grid.power) : 0,
-                dailyIn: parseFloat(data.today.grid_import) || 0,
-                dailyOut: parseFloat(data.today.grid_export) || 0
+                currentIn:     rt.grid.power > 0 ? rt.grid.power : 0,
+                currentOut:    rt.grid.power < 0 ? Math.abs(rt.grid.power) : 0,
+                dailyIn:       parseFloat(data.today.grid_import) || 0,
+                dailyOut:      parseFloat(data.today.grid_export) || 0,
+                gridConnected: rt.grid.gridConnected ?? true,
               },
               solar: {
                 currentOut: rt.solar.total || 0,
@@ -252,6 +293,16 @@ async function fetchSummary() {
           
           console.log('✅ Realtime data loaded from summary');
         }
+
+        // ── v2 dashboard additive blocks (peak / dayPlan / forecast / advisory / health / _meta)
+        // Each is optional; if the field is missing from the response we leave
+        // the existing reactive value untouched (last-known-good).
+        if (data.peak)      peakInfo.value      = data.peak;
+        if (data.dayPlan)   dayPlan.value       = data.dayPlan;
+        if (data.forecast)  forecast.value      = data.forecast;
+        if (data.advisory)  advisory.value      = data.advisory;
+        if (data.health)    healthInfo.value    = data.health;
+        if (data._meta)     dashboardMeta.value = data._meta;
       }
     } catch (err) {
       console.error('❌ Failed to fetch summary data:', err);
@@ -458,11 +509,27 @@ async function fetchSummary() {
     };
   });
 
+  // ── Grid restored toast ──────────────────────────────────────────────────
+  // Fires once on false → true transition. Skips the initial value (immediate: false)
+  // so a page load while grid is online doesn't trigger a spurious toast.
+
+  watch(gridConnected, (isConnected, wasConnected) => {
+    if (!wasConnected && isConnected) {
+      const toastStore = useToastStore();
+      toastStore.add({
+        severity: 'success',
+        summary:  'Grid restored',
+        detail:   'Power supply returned to normal.',
+        life:     8000,
+      });
+    }
+  });
+
   // ============================================
   // RETURN PUBLIC API
   // ============================================
 
-  return { 
+  return {
     connectionSource, 
     isConnected,
     systemHealth,
@@ -477,8 +544,17 @@ async function fetchSummary() {
     batteryPower,
     solarPower,
     gridPower,
+    gridConnected,
     loadPower,
     connectionInfo,
+    
+    // Dashboard v2 additive blocks
+    peakInfo,
+    dayPlan,
+    forecast,
+    advisory,
+    healthInfo,
+    dashboardMeta,
     
     initialize,
     manualRefresh,

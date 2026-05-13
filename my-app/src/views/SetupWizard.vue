@@ -6,7 +6,7 @@
       <!-- ── Header ─────────────────────────────────────────────────────────── -->
       <div class="text-center mb-10">
         <div class="flex items-center justify-center gap-3 mb-3">
-          <i class="fa-light fa-bolt text-3xl text-[var(--color-primary)]"></i>
+          <i class="ph-light ph-bolt text-3xl text-[var(--color-primary)]"></i>
           <h1 class="text-2xl font-semibold text-[var(--color-text-primary)]">
             {{ isEditMode ? 'Edit Configuration' : 'Welcome to Wolffie' }}
           </h1>
@@ -27,7 +27,7 @@
                  : currentStep === step.number
                    ? 'bg-[var(--color-primary)] text-white shadow-[0_0_0_4px_var(--color-secondary-100)]'
                    : 'bg-[var(--color-secondary-100)] text-[var(--color-text-tertiary)]'">
-            <i v-if="currentStep > step.number" class="fa-light fa-check text-xs"></i>
+            <i v-if="currentStep > step.number" class="ph-light ph-check text-xs"></i>
             <span v-else>{{ step.number }}</span>
           </div>
           <span class="text-xs font-medium text-[var(--color-text-secondary)]">
@@ -39,7 +39,7 @@
       <!-- ── Step 1 — System Settings ──────────────────────────────────────── -->
       <div v-if="currentStep === 1">
         <div class="drawer-section__title mb-4">
-          <i class="fa-light fa-gear"></i> System Settings
+          <i class="ph-light ph-gear"></i> System Settings
         </div>
         <div class="grid grid-cols-2 gap-4">
           <UniversalField
@@ -65,7 +65,7 @@
       <!-- ── Step 2 — Data Retention ───────────────────────────────────────── -->
       <div v-if="currentStep === 2">
         <div class="drawer-section__title mb-1">
-          <i class="fa-light fa-database"></i> Data Retention
+          <i class="ph-light ph-database"></i> Data Retention
         </div>
         <p class="text-xs mb-5 text-[var(--color-text-tertiary)]">
           How long raw measurement data is kept before aggregation removes it.
@@ -89,7 +89,7 @@
         </div>
         <div class="p-3 text-xs flex flex-col gap-1 bg-[var(--color-secondary-50)] border border-[var(--color-border)] rounded-[var(--radius-md)] text-[var(--color-text-secondary)]">
           <div class="flex items-center gap-2">
-            <i class="fa-light fa-circle-info text-[var(--color-primary)]"></i>
+            <i class="ph-light ph-circle-info text-[var(--color-primary)]"></i>
             Recommended: snapshots 7d · minutes 30d · hours 365d
           </div>
         </div>
@@ -98,7 +98,7 @@
       <!-- ── Step 3 — Energy Contract ──────────────────────────────────────── -->
       <div v-if="currentStep === 3">
         <div class="drawer-section__title mb-1">
-          <i class="fa-light fa-file-contract"></i> Energy Contract
+          <i class="ph-light ph-file-contract"></i> Energy Contract
         </div>
         <p class="text-xs mb-5 text-[var(--color-text-tertiary)]">
           Configure your electricity contract so Wolffie can optimise charging and discharging.
@@ -123,7 +123,7 @@
         </div>
         <div v-if="contractSettings.contract_type === 'dynamic'"
              class="mt-4 p-3 text-xs flex items-center gap-2 bg-[var(--color-secondary-50)] border border-[var(--color-border)] rounded-[var(--radius-md)] text-[var(--color-text-secondary)]">
-          <i class="fa-light fa-circle-info text-[var(--color-primary)]"></i>
+          <i class="ph-light ph-circle-info text-[var(--color-primary)]"></i>
           Enable the <strong class="mx-1">Day-Ahead Prices</strong> module after setup to use dynamic pricing.
         </div>
       </div>
@@ -131,7 +131,7 @@
       <!-- ── Step 4 — Modules ───────────────────────────────────────────────── -->
       <div v-if="currentStep === 4">
         <div class="drawer-section__title mb-1">
-          <i class="fa-light fa-puzzle-piece"></i> Install Modules
+          <i class="ph-light ph-puzzle-piece"></i> Install Modules
         </div>
         <p class="text-xs mb-5 text-[var(--color-text-tertiary)]">
           Upload your module zip files. You can also skip this step and install modules later via Settings.
@@ -148,7 +148,7 @@
           @dragleave="dragOver = false"
           @drop.prevent="onDrop"
         >
-          <i class="fa-light fa-cloud-arrow-up text-3xl"
+          <i class="ph-light ph-cloud-arrow-up text-3xl"
              :class="dragOver ? 'text-[var(--color-primary)]' : 'text-[var(--color-text-tertiary)]'"></i>
           <div class="text-sm font-medium text-[var(--color-text-primary)]">
             Drop module zip files here
@@ -162,7 +162,7 @@
         <div v-if="uploadQueue.length > 0" class="flex flex-col gap-2 mb-4">
           <div v-for="item in uploadQueue" :key="item.name"
                class="flex items-center gap-3 px-3 py-2 border border-[var(--color-border)] rounded-[var(--radius-md)] bg-[var(--color-bg-secondary)]">
-            <i class="fa-light fa-file-zipper text-sm text-[var(--color-primary)]"></i>
+            <i class="ph-light ph-file-zipper text-sm text-[var(--color-primary)]"></i>
             <span class="flex-1 text-xs font-medium text-[var(--color-text-primary)]">
               {{ item.name }}
             </span>
@@ -171,24 +171,24 @@
               Pending
             </span>
             <span v-else-if="item.status === 'uploading'" class="text-xs text-[var(--color-primary)]">
-              <i class="fa-light fa-spinner fa-spin mr-1"></i>Uploading...
+              <i class="ph-light ph-spinner ph-spin mr-1"></i>Uploading...
             </span>
             <span v-else-if="item.status === 'success'" class="text-xs text-green-800">
-              <i class="fa-light fa-circle-check mr-1"></i>Installed
+              <i class="ph-light ph-circle-check mr-1"></i>Installed
             </span>
             <span v-else-if="item.status === 'skipped'" class="text-xs text-[var(--color-text-tertiary)]">
-              <i class="fa-light fa-circle-minus mr-1"></i>Skipped
+              <i class="ph-light ph-circle-minus mr-1"></i>Skipped
               <span v-if="item.installedVersion" class="ml-1">(v{{ item.installedVersion }} already installed)</span>
             </span>
             <span v-else-if="item.status === 'error'" class="text-xs text-red-800"
                   :title="item.error">
-              <i class="fa-light fa-circle-xmark mr-1"></i>Failed
+              <i class="ph-light ph-circle-xmark mr-1"></i>Failed
             </span>
             <!-- Remove pending -->
             <button v-if="item.status === 'pending'"
                     class="icon-btn icon-btn--danger ml-1"
                     @click.stop="removeFromQueue(item.name)">
-              <i class="fa-light fa-xmark text-xs"></i>
+              <i class="ph-light ph-xmark text-xs"></i>
             </button>
           </div>
         </div>
@@ -196,7 +196,7 @@
         <!-- Upload button -->
         <div v-if="pendingUploads.length > 0" class="flex items-center gap-3">
           <button class="btn btn--primary" @click="uploadAll" :disabled="uploading">
-            <i class="fa-light" :class="uploading ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+            <i class="ph-light" :class="uploading ? 'ph-spinner ph-spin' : 'ph-upload'"></i>
             Install {{ pendingUploads.length }} module{{ pendingUploads.length > 1 ? 's' : '' }}
           </button>
           <span v-if="uploading" class="text-xs text-[var(--color-text-tertiary)]">
@@ -207,7 +207,7 @@
         <!-- Installed summary -->
         <div v-if="installedModules.length > 0"
              class="mt-4 p-3 flex items-center gap-2 text-xs bg-green-50 border border-green-200 rounded-[var(--radius-md)] text-green-800">
-          <i class="fa-light fa-circle-check"></i>
+          <i class="ph-light ph-circle-check"></i>
           {{ installedModules.length }} module{{ installedModules.length > 1 ? 's' : '' }} installed successfully
         </div>
       </div>
@@ -215,14 +215,14 @@
       <!-- ── Step 5 — Review ────────────────────────────────────────────────── -->
       <div v-if="currentStep === 5">
         <div class="drawer-section__title mb-5">
-          <i class="fa-light fa-circle-check"></i> Review Your Configuration
+          <i class="ph-light ph-circle-check"></i> Review Your Configuration
         </div>
 
         <div class="grid grid-cols-2 gap-4">
           <!-- System -->
           <div class="border border-secondary-100 bg-secondary-50 rounded-md overflow-hidden">
             <div class="flex items-center gap-2 px-4 py-3 bg-secondary-50">
-              <i class="fa-light fa-gear text-sm text-secondary-400"></i>
+              <i class="ph-light ph-gear text-sm text-secondary-400"></i>
               <span class="text-sm font-semibold text-primary">System</span>
             </div>
             <div class="p-4 flex flex-col gap-2">
@@ -240,7 +240,7 @@
           <!-- Retention -->
           <div class="border border-secondary-100 bg-secondary-50 rounded-md overflow-hidden">
             <div class="flex items-center gap-2 px-4 py-3 bg-secondary-50">
-              <i class="fa-light fa-gear text-sm text-secondary-400"></i>
+              <i class="ph-light ph-gear text-sm text-secondary-400"></i>
               <span class="text-sm font-semibold text-primary">Data Retention</span>
             </div>
             <div class="p-4 flex flex-col gap-2">
@@ -258,7 +258,7 @@
           <!-- Contract -->
           <div class="border border-secondary-100 bg-secondary-50 rounded-md overflow-hidden">
             <div class="flex items-center gap-2 px-4 py-3 bg-secondary-50">
-              <i class="fa-light fa-gear text-sm text-secondary-400"></i>
+              <i class="ph-light ph-gear text-sm text-secondary-400"></i>
               <span class="text-sm font-semibold text-primary">Energy Contract</span>
             </div>
             <div class="p-4 flex flex-col gap-2">
@@ -280,7 +280,7 @@
           <!-- Modules -->
           <div class="border border-secondary-100 bg-secondary-50 rounded-md overflow-hidden">
             <div class="flex items-center gap-2 px-4 py-3 bg-secondary-50">
-              <i class="fa-light fa-gear text-sm text-secondary-400"></i>
+              <i class="ph-light ph-gear text-sm text-secondary-400"></i>
               <span class="text-sm font-semibold text-primary">Modules</span>
             </div>
             <div class="p-4">
@@ -290,7 +290,7 @@
               </div>
               <div v-for="mod in installedModules" :key="mod.name"
                    class="flex items-center gap-2 text-xs py-1">
-                <i class="fa-light fa-circle-check text-xs text-green-800"></i>
+                <i class="ph-light ph-circle-check text-xs text-green-800"></i>
                 <span class="text-[var(--color-text-primary)]">{{ mod.name }}</span>
               </div>
             </div>
@@ -301,7 +301,7 @@
       <!-- ── Navigation ─────────────────────────────────────────────────────── -->
       <div class="flex items-center gap-3 mt-8 pt-6 border-t border-[var(--color-border)]">
         <button v-if="currentStep > 1" class="btn" @click="previousStep">
-          <i class="fa-light fa-arrow-left"></i> Back
+          <i class="ph-light ph-arrow-left"></i> Back
         </button>
 
         <div class="flex-1"></div>
@@ -316,14 +316,14 @@
                 class="btn btn--primary"
                 @click="nextStep"
                 :disabled="!canProceed">
-          Next <i class="fa-light fa-arrow-right"></i>
+          Next <i class="ph-light ph-arrow-right"></i>
         </button>
 
         <button v-if="currentStep === 5"
                 class="btn btn--primary"
                 @click="completeSetup"
                 :disabled="completing">
-          <i class="fa-light" :class="completing ? 'fa-spinner fa-spin' : 'fa-check'"></i>
+          <i class="ph-light" :class="completing ? 'ph-spinner ph-spin' : 'ph-check'"></i>
           Complete Setup
         </button>
       </div>
@@ -334,7 +334,7 @@
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div class="w-full max-w-sm p-6 bg-[var(--card-bg-color)] border border-[var(--color-border)] rounded-[var(--radius-xl)]">
         <div class="flex items-center gap-2 mb-3">
-          <i class="fa-light fa-triangle-exclamation text-[var(--color-warning)]"></i>
+          <i class="ph-light ph-triangle-exclamation text-[var(--color-warning)]"></i>
           <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">Module already installed</h3>
         </div>
         <p class="text-xs mb-1 text-[var(--color-text-secondary)]">
@@ -345,7 +345,7 @@
             <div class="text-[var(--color-text-tertiary)]">Installed</div>
             <div class="font-semibold text-[var(--color-text-primary)]">v{{ conflictItem?.installedVersion }}</div>
           </div>
-          <i class="fa-light fa-arrow-right self-center text-[var(--color-text-tertiary)]"></i>
+          <i class="ph-light ph-arrow-right self-center text-[var(--color-text-tertiary)]"></i>
           <div class="text-right">
             <div class="text-[var(--color-text-tertiary)]">New</div>
             <div class="font-semibold text-[var(--color-primary)]">v{{ conflictItem?.newVersion }}</div>
@@ -359,7 +359,7 @@
             Skip
           </button>
           <button class="btn btn--primary" @click="resolveConflict(true)">
-            <i class="fa-light fa-arrow-up-from-bracket"></i> Upgrade
+            <i class="ph-light ph-arrow-up-from-bracket"></i> Upgrade
           </button>
         </div>
       </div>

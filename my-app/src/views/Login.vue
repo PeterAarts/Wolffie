@@ -45,7 +45,7 @@
                 placeholder=""
               />
               <label class="field-label" :class="{ 'field-label--active': usernameFocused || username }">username</label>
-              <i class="fa-light fa-user field-icon transition-colors text-secondary-400"></i>
+              <i class="ph-light ph-user field-icon transition-colors text-secondary-400"></i>
             </div>
 
             <!-- Password -->
@@ -68,14 +68,14 @@
                 @click="showPassword = !showPassword"
                 class="field-icon field-icon--btn transition-colors bg-transparent border-none cursor-pointer text-secondary-400"
               >
-                <i :class="['fa-light', showPassword ? 'fa-eye-slash' : 'fa-eye']"></i>
+                <i :class="['ph-light', showPassword ? 'ph-eye-slash' : 'ph-eye']"></i>
               </button>
             </div>
 
             <!-- Error -->
             <transition name="fade">
               <div v-if="authStore.error" class="error-banner flex items-center gap-3 bg-red-50 text-red-700 text-sm">
-                <i class="fa-light fa-circle-exclamation text-base"></i>
+                <i class="ph-light ph-circle-exclamation text-base"></i>
                 {{ authStore.error }}
               </div>
             </transition>
@@ -87,8 +87,8 @@
                 :disabled="authStore.loading"
                 class="login-btn w-full text-sm focus:outline-none transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-3"
               >
-                <i v-if="authStore.loading" class="fa-light fa-spinner-third fa-spin"></i>
-                <i v-else class="fa-light fa-right-to-bracket"></i>
+                <i v-if="authStore.loading" class="ph-light ph-spinner-third ph-spin"></i>
+                <i v-else class="ph-light ph-right-to-bracket"></i>
                 Sign in
               </button>
             </div>

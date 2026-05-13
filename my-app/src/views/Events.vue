@@ -17,7 +17,7 @@
 
         <template #toolbar-right>
           <button class="btn btn--sm" :disabled="loading" @click="fetchEvents">
-            <i class="fa-duotone fa-rotate mr-2" /> {{ t('control.devices.refresh') }}
+            <i class="ph-duotone ph-rotate mr-2" /> {{ t('control.devices.refresh') }}
           </button>
         </template>
 
@@ -29,14 +29,14 @@
 
         <template #user_name="{ value }">
           <div class="flex items-center gap-2">
-            <i v-if="value.user_id === 0" class="fa-duotone fa-robot text-blue-500" />
-            <i v-else class="fa-duotone fa-user text-secondary-500" />
+            <i v-if="value.user_id === 0" class="ph-duotone ph-robot text-blue-500" />
+            <i v-else class="ph-duotone ph-user text-secondary-500" />
             <span>{{ value.user_id === 0 ? 'System' : value.user_name }}</span>
           </div>
         </template>
 
         <template #status="{ value }">
-          <i :class="value.status === 'SUCCESS' ? 'fa-solid fa-circle-check text-green-500' : 'fa-solid fa-circle-exclamation text-red-500'" />
+          <i :class="value.status === 'SUCCESS' ? 'ph-fill ph-circle-check text-green-500' : 'ph-fill ph-circle-exclamation text-red-500'" />
         </template>
       </AppTable>
     </div>

@@ -86,7 +86,7 @@ export const useAlertStore = defineStore('alerts', () => {
     }
   }
 
-  function startPolling(intervalMs = 5 * 60 * 1000) {
+  function startPolling(intervalMs = 30 * 1000) {
     stopPolling();
     fetchAlerts();
     _pollTimer = setInterval(fetchAlerts, intervalMs);

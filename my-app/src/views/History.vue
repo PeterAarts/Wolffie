@@ -1,6 +1,6 @@
 <template>
-  <div class="p-6">
-    <div class="history-page inner-canvas bg-secondary-100 rounded-lg shadow-xl">
+  <div class="lg:p-6 p-1">
+    <div class="history-page inner-canvas bg-secondary-50 rounded-lg ">
 
       <!-- Header with controls -->
       <div class="history-header">
@@ -20,12 +20,12 @@
 
           <!-- Date navigator — only shown for single-day view -->
           <div v-if="selectedPeriod === 'day'" class="date-nav rounded-md">
-            <button class="date-btn" @click="goToPrevDay"><i class="fa-light fa-chevron-left"></i></button>
+            <button class="date-btn" @click="goToPrevDay"><i class="ph-light ph-caret-left"></i></button>
             <span class="date-label">
               <span v-if="isToday" class="today-badge">{{ t('time.today') }}</span>
               {{ selectedDateLabel }}
             </span>
-            <button class="date-btn" :class="{ disabled: isToday }" @click="goToNextDay"><i class="fa-light fa-chevron-right"></i></button>
+            <button class="date-btn" :class="{ disabled: isToday }" @click="goToNextDay"><i class="ph-light ph-caret-right"></i></button>
           </div>
 
         </div>
@@ -46,7 +46,7 @@
       <!-- Smart device chart — day view only, below the energy graph -->
       <div v-if="selectedPeriod === 'day'" class="device-chart-wrapper">
         <div class="device-chart-header">
-          <i class="fa-light fa-plug-circle-bolt"></i>
+          <i class="ph-light ph-devices"></i>
           {{ t('dashboard.smartDevices.title') }}
         </div>
         <SmartDeviceFlowGraph

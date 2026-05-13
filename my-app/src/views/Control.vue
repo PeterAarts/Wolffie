@@ -1,6 +1,6 @@
 <template>
-  <div class="p-6 float-canvas">
-    <div class="flex flex-col md:flex-row  w-full overflow-hidden text-secondary-900 bg-secondary-100 p-6 rounded-lg shadow-xl inner-canvas">
+  <div class="lg:p-6 p-2 float-canvas">
+    <div class="flex flex-col md:flex-row w-full overflow-hidden text-secondary-900 bg-secondary-100 lg:p-6 p-2 rounded-lg  inner-canvas">
       
       <aside class="w-full  bg-secondary-100 flex-shrink-0 p-4 ps-0 flex flex-col">
 
@@ -60,9 +60,9 @@ const activeSection = ref('strategy');
 
 // Menu structure matching the pattern in Settings.vue
 const menuItems = [
-  { id: 'strategy', label: t('control.sectionStrategy'), icon: 'fa-duotone fa-chess-knight', description: t('control.sectionStrategyDesc') },
-  { id: 'dispatch', label: t('control.sectionDispatch'), icon: 'fa-duotone fa-bolt-lightning', description: t('control.sectionDispatchDesc') },
-  { id: 'devices', label: t('control.sectionDevices'), icon: 'fa-duotone fa-plug-circle-bolt', description: t('control.sectionDevicesDesc') },
+  { id: 'strategy', label: t('control.sectionStrategy'), icon: 'ph-duotone ph-castle-turret', description: t('control.sectionStrategyDesc') },
+  { id: 'dispatch', label: t('control.sectionDispatch'), icon: 'ph-duotone ph-bolt-lightning', description: t('control.sectionDispatchDesc') },
+  { id: 'devices', label: t('control.sectionDevices'), icon: 'ph-duotone ph-devices', description: t('control.sectionDevicesDesc') },
 ];
 
 const activeComponent = computed(() => {

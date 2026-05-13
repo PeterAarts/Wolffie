@@ -4,7 +4,7 @@
     <!-- Show loading screen during initial load -->
     <div v-if="isInitializing" class="loading-screen">
       <div class="loading-content">
-        <i class="fa-light fa-spinner-third fa-spin" style="font-size: 3rem"></i>
+        <i class="ph-light ph-spinner-third ph-spin" style="font-size: 3rem"></i>
         <p> Wolffie</p>
       </div>
     </div>

@@ -8,10 +8,10 @@ export const THEME_PRESETS = {
   default: {
     label:           'Default',
     primaryColor:    '#0a0a0a',
-    secondaryColor:  '#9ca3b3',
-    backgroundColor: '#f1f5f9',
+    secondaryColor:  '#9ea1a7',
+    backgroundColor: '#eef3f8;',
     cardBackgroundColor: '#ffffff',
-    borderRadius:    '0px',
+    borderRadius:    '.5rem',
   },
   olive: {
     label:           'Olive',

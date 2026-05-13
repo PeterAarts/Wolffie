@@ -4,7 +4,7 @@
     <div class="sdk-header">
       <div class="sdk-header__left">
         <span class="sdk-header__title">
-          <i class="fa-light fa-code sdk-header__icon" />
+          <i class="ph-light ph-code sdk-header__icon" />
           API Reference
         </span>
         <span class="sdk-header__badge">OpenAPI 3.0</span>
@@ -16,7 +16,7 @@
           class="sdk-header__link"
           title="Download swagger.json"
         >
-          <i class="fa-light fa-download" />
+          <i class="ph-light ph-download" />
           swagger.json
         </a>
       </div>
