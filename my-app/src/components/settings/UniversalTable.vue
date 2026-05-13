@@ -10,8 +10,8 @@
           :disabled="actionLoading[action.id]"
           class="flex items-center gap-2 p-4 bg-white border border-secondary-200  text-sm font-semibold text-secondary-700 hover:bg-secondary-50 hover:border-blue-300 transition-all shadow-sm disabled:opacity-50"
         >
-          <i v-if="actionLoading[action.id]" class="fa-light fa-spinner-third fa-spin text-slate-500"></i>
-          <i v-else :class="['fa-light', mapIcon(action.icon), 'text-blue-700']"></i>
+          <i v-if="actionLoading[action.id]" class="ph-light ph-spinner-third ph-spin text-slate-500"></i>
+          <i v-else :class="['ph-light', mapIcon(action.icon), 'text-blue-700']"></i>
           {{ r(action.label) }}
         </button>
       </div>
@@ -34,19 +34,19 @@
 
     <!-- Loading state -->
     <div v-if="loading" class="flex items-center justify-center py-12 text-secondary-400 text-sm gap-2">
-      <i class="fa-duotone fa-spinner-third fa-spin"></i>
+      <i class="ph-duotone ph-spinner-third ph-spin"></i>
       {{ t('common.loading') }}
     </div>
 
     <!-- Error state -->
     <div v-else-if="loadError" class="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
-      <i class="fa-duotone fa-circle-exclamation"></i>
+      <i class="ph-duotone ph-circle-exclamation"></i>
       {{ loadError }}
     </div>
 
     <!-- Empty state -->
     <div v-else-if="!tableData.length" class="flex flex-col items-center justify-center py-12 text-secondary-400 text-sm gap-2">
-      <i class="fa-duotone fa-table text-2xl"></i>
+      <i class="ph-duotone ph-table text-2xl"></i>
       {{ t('common.noData') }}
     </div>
 
@@ -86,7 +86,7 @@
               :class="compact ? 'px-3 py-2 text-xs text-secondary-600' : 'px-6 py-4 text-sm text-secondary-600 font-medium'"
             >
               <template v-if="col.template?.type === 'boolean'">
-                <i :class="row[col.field] ? 'fa-solid fa-circle-check text-green-500' : 'fa-solid fa-circle-xmark text-secondary-300'"></i>
+                <i :class="row[col.field] ? 'ph-fill ph-circle-check text-green-500' : 'ph-fill ph-circle-xmark text-secondary-300'"></i>
               </template>
 
               <template v-else-if="col.template?.type === 'status-badge'">
@@ -113,7 +113,7 @@
                   :title="btn.label"
                   :class="compact ? 'p-1 hover:bg-secondary-100 rounded group' : 'p-4 hover:bg-secondary-100 rounded-lg group'"
                 >
-                  <i :class="['fa-light ', mapIcon(btn.icon), 'text-secondary-400 group-hover:text-secondary-900 ']"></i>
+                  <i :class="['ph-light ', mapIcon(btn.icon), 'text-secondary-400 group-hover:text-secondary-900 ']"></i>
                 </button>
               </div>
             </td>
@@ -135,7 +135,7 @@
         <div class="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
           <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">{{ t('common.edit') }}</h3>
           <button class="icon-btn" @click="editDrawer.visible = false">
-            <i class="fa-light fa-xmark"></i>
+            <i class="ph-light ph-xmark"></i>
           </button>
         </div>
         <!-- Fields -->
@@ -161,7 +161,7 @@
         <div class="flex gap-3 justify-end px-5 py-4 border-t border-[var(--color-border)]">
           <button class="btn" @click="editDrawer.visible = false">{{ t('common.cancel') }}</button>
           <button class="btn btn--primary" :disabled="editDrawer.saving" @click="saveEdit">
-            <i v-if="editDrawer.saving" class="fa-light fa-spinner fa-spin mr-1"></i>
+            <i v-if="editDrawer.saving" class="ph-light ph-spinner ph-spin mr-1"></i>
             {{ t('common.save') }}
           </button>
         </div>
@@ -176,7 +176,7 @@
          @click.self="resolveConfirm(false)">
       <div class="w-full max-w-sm p-6 bg-[var(--card-bg-color)] border border-[var(--color-border)] rounded-[var(--radius-xl)]">
         <div class="flex items-center gap-2 mb-4">
-          <i class="fa-light fa-circle-question text-[var(--color-primary)]"></i>
+          <i class="ph-light ph-circle-question text-[var(--color-primary)]"></i>
           <h3 class="text-sm font-semibold text-[var(--color-text-primary)]">{{ confirmState.message }}</h3>
         </div>
         <div class="flex gap-3 justify-end">
@@ -390,8 +390,8 @@ function getVisibleButtons(buttons, rowData) {
 }
 
 function mapIcon(icon) {
-  if (!icon) return 'fa-question';
-  return icon.replace('pi pi-', 'fa-light fa-').replace('pi-', 'fa-light fa-');
+  if (!icon) return 'ph-question';
+  return icon.replace('pi pi-', 'ph-light ph-').replace('pi-', 'ph-light ph-');
 }
 
 function applyFilters() { loadData(); }

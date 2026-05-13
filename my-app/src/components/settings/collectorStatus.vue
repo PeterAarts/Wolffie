@@ -12,14 +12,14 @@
       <div class="header-right">
         <span class="last-refresh">{{ t('collectors.updated') }} {{ lastRefreshLabel }}</span>
         <button class="btn-icon" :class="{ spinning: loading }" @click="load" :title="t('common.refresh')">
-          <i class="fa-solid fa-rotate"></i>
+          <i class="ph-fill ph-rotate"></i>
         </button>
       </div>
     </div>
 
     <!-- Error banner -->
     <div v-if="error" class="error-banner">
-      <i class="fa-solid fa-triangle-exclamation"></i> {{ error }}
+      <i class="ph-fill ph-triangle-exclamation"></i> {{ error }}
     </div>
 
     <!-- Skeleton while loading for the first time -->
@@ -70,7 +70,7 @@
         <!-- Errors -->
         <div class="col-errors">
           <span v-if="c.consecutiveErrors > 0" class="error-count" :title="c.lastError ?? ''">
-            <i class="fa-solid fa-circle-exclamation"></i>
+            <i class="ph-fill ph-circle-exclamation"></i>
             {{ c.consecutiveErrors }} {{ c.consecutiveErrors > 1 ? t('collectors.errors') : t('collectors.error') }}
           </span>
           <span v-else class="no-errors">—</span>
@@ -85,11 +85,11 @@
             @click="restart(c.id)"
             :title="t('collectors.restart')"
           >
-            <i class="fa-solid fa-play"></i>
+            <i class="ph-fill ph-play"></i>
             {{ restarting === c.id ? t('collectors.starting') : t('collectors.restart') }}
           </button>
           <span v-else class="status-ok">
-            <i class="fa-solid fa-check"></i>
+            <i class="ph-fill ph-check"></i>
           </span>
         </div>
       </div>

@@ -1,6 +1,7 @@
-/* src/assets/styles/main.css */
-@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700;900&display=swap');
-@import "@fortawesome/fontawesome-pro/css/all.css";
+/* src/assets/styles/main.css 
+@import "./rubik.css";*/
+@import "./ph-light.css";
+@import "./ph-fill.css";
 @import "tailwindcss";
 
 /* ── Tailwind v4 theme tokens ─────────────────────────────────────────────────

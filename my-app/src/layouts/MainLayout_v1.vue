@@ -2,18 +2,20 @@
   <div class="app-section flex flex-col overflow-hidden font-sans bg-white text-primary">
 
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
-    <header class="app-header grid items-center p-2 bg-white z-40 shrink-0 bg-secondary-100">
+    <header class="app-header flex items-center justify-between p-2 bg-white z-40 shrink-0 bg-secondary-100 ">
 
       <div class="flex items-center gap-3">
+        <button
+          @click="sidebarOpen = !sidebarOpen"
+          class="nav-mobile-toggle lg:hidden flex items-center justify-center text-secondary-500 hover:bg-secondary-200 transition-colors"
+        >
+          <i class="ph-light ph-list text-xl"></i>
+        </button>
+
         <div class="flex items-center gap-3">
-          <router-link to="/" class="brand-link flex items-center gap-3 no-underline text-inherit">
+          <router-link to="/" class="flex items-center gap-3 no-underline text-inherit">
             <img src="@/assets/wolffie.svg" alt="Wolffie Logo" class="w-8 h-8 drop-shadow-sm" />
-            <span
-              :class="[
-                'brand-wordmark text-3xl font-black tracking-tight uppercase transition-colors relative',
-                isActive('/') ? 'brand-wordmark--active text-primary' : 'text-secondary-500 hover:text-primary'
-              ]"
-            >Wolffie</span>
+            <span class="text-3xl font-black tracking-tight uppercase">Wolffie</span>
           </router-link>
 
           <div class="flex items-center">
@@ -28,39 +30,21 @@
                   'bg-amber-400':  realtimeStore.systemHealth === 'degraded',
                   'bg-red-500':    realtimeStore.systemHealth === 'offline',
                 }]"
-                :title="
-                  realtimeStore.systemHealth === 'ok'       ? t('header.connected') :
-                  realtimeStore.systemHealth === 'degraded' ? t('header.degraded')  :
-                                                              t('header.disconnected')
-                "
               ></span>
+            </span>
+            <span class="connection-label text-xs lowercase tracking-wider text-secondary-500 hidden lg:block">
+              {{
+                realtimeStore.systemHealth === 'ok'       ? t('header.connected') :
+                realtimeStore.systemHealth === 'degraded' ? t('header.degraded')  :
+                                                            t('header.disconnected')
+              }}
             </span>
           </div>
         </div>
       </div>
 
-      <!-- CENTER: icon nav (three icon buttons, route-active gets underline + green) -->
-      <nav class="header-nav flex items-center gap-2 justify-center">
-        <router-link
-          v-for="item in navItems"
-          :key="item.id"
-          :to="item.to"
-          :title="item.label"
-          :aria-label="item.label"
-          class="nav-icon-btn flex items-center justify-center transition-colors relative"
-          :class="[
-            item.disabled ? 'opacity-50 pointer-events-none' : '',
-            isActive(item.to)
-              ? 'nav-icon-btn--active text-primary'
-              : 'text-secondary-500 hover:text-primary'
-          ]"
-        >
-          <i :class="[item.icon, 'text-lg']"></i>
-        </router-link>
-      </nav>
-
       <!-- Alert drawer trigger + User menu -->
-      <div class="flex items-center gap-2 relative justify-end">
+      <div class="flex items-center gap-2 relative">
         <AlertDrawer />
         <button
           @click="toggleUserMenu"
@@ -160,13 +144,50 @@
     </AppDrawer>
 
     <!-- ── Body ────────────────────────────────────────────────────────────── -->
-    <main class="flex-1 overflow-y-auto bg-white inner-canvas">
-      <router-view v-slot="{ Component }">
-        <transition name="fade" mode="out-in">
-          <component :is="Component" :key="$route.fullPath" />
-        </transition>
-      </router-view>
-    </main>
+    <div class="flex flex-1 overflow-hidden relative canvas">
+
+      <div
+        v-if="sidebarOpen"
+        class="fixed inset-0 bg-black/30 z-30 lg:hidden"
+        @click="sidebarOpen = false"
+      />
+
+      <aside
+        :class="[
+          'app-sidebar absolute inset-y-0 left-0 z-40 transition-transform duration-300 lg:translate-x-0 lg:static lg:block shrink-0 flex flex-col bg-white',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        ]"
+      >
+        <nav class="sidebar-nav mt-6 flex flex-col overflow-y-auto">
+          <router-link
+            v-for="item in navItems"
+            :key="item.id"
+            :to="item.to"
+            @click="sidebarOpen = false"
+            class="nav-item flex items-center p-2 mb-2 font-medium tracking-tight transition-colors no-underline"
+            :class="[
+              item.disabled ? 'opacity-50 pointer-events-none' : '',
+              isActive(item.to)
+                ? 'bg-primary text-white'
+                : 'text-secondary-500 hover:bg-secondary-100 hover:text-primary'
+            ]"
+          >
+            <div class="nav-item__icon flex justify-center shrink-0">
+              <i :class="[item.icon, 'text-base', isActive(item.to) ? 'text-white' : 'text-secondary-500']"></i>
+            </div>
+            <span class="nav-item__label text-sm">{{ item.label }}</span>
+          </router-link>
+        </nav>
+      </aside>
+
+      <main class="flex-1 overflow-y-auto bg-white inner-canvas">
+        <router-view v-slot="{ Component }">
+          <transition name="fade" mode="out-in">
+            <component :is="Component" :key="$route.fullPath" />
+          </transition>
+        </router-view>
+      </main>
+    </div>
 
   </div>
 </template>
@@ -240,6 +261,7 @@ const isActive = (path) => {
   return route.path.startsWith(path);
 };
 
+const sidebarOpen    = ref(false);
 const userMenuOpen   = ref(false);
 const profileDrawerOpen = ref(false);
 const savingPassword = ref(false);
@@ -274,7 +296,8 @@ async function savePassword() {
 }
 
 const allNavItems = [
-  { id: 'history',   label: t('nav.history'),   to: '/history',  icon: 'ph-light ph-chart-line',  roles: null },
+  { id: 'dashboard', label: t('nav.dashboard'), to: '/',         icon: 'ph-light ph-gauge', roles: null },
+  { id: 'history',   label: t('nav.history'),   to: '/history',  icon: 'ph-light ph-chart-line',   roles: null },
   { id: 'control',   label: t('nav.control'),   to: '/control',  icon: 'ph-light ph-git-branch',  roles: null },
   { id: 'settings',  label: t('nav.settings'),  to: '/settings', icon: 'ph-light ph-gear',        roles: ['admin', 'user'] },
 ];
@@ -322,41 +345,12 @@ onUnmounted(() => {
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
 .fade-enter-from,  .fade-leave-to      { opacity: 0; }
 
+/* nav-link needs explicit no-underline since router-link renders as <a> */
+.nav-item                   { text-decoration: none; }
 /* ── Header ─────────────────────────────────────────────────────────────── */
-/* Grid keeps the center nav anchored regardless of side widths.
-   1fr | auto | 1fr — left and right expand symmetrically, center is content-sized. */
-.app-header                 { height: 4rem; padding: 0 1.5rem; grid-template-columns: 1fr auto 1fr; gap: 1rem; }
-
-/* Icon nav buttons in the header — circular tap targets, underline when active. */
-.nav-icon-btn               { width: 2.5rem; height: 2.5rem; flex-shrink: 0; }
-
-/* Active state: 3px underline flush with the bottom of the button.
-   Browser-tab convention — full button width, primary green. */
-.nav-icon-btn--active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -2px;
-  height: 3px;
-  background: var(--color-primary);
-  border-radius: 2px 2px 0 0;
-}
-
-/* Wordmark uses the same underline treatment when on /.
-   Width matches the wordmark text itself, not the whole brand block. */
-.brand-wordmark--active::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -2px;
-  height: 3px;
-  background: var(--color-primary);
-  border-radius: 2px 2px 0 0;
-}
-
-.canvas                     { min-height : calc(100vh - 2rem);}
+.app-header                 { height: 4rem; padding: 0 1.5rem; }
+.nav-mobile-toggle          { width: 2.5rem; height: 2.5rem; }
+.connection-label           { padding: 0 0.5rem; }
 
 /* ── User menu ───────────────────────────────────────────────────────────── */
 .user-menu-btn              { gap: 0.5rem; padding: 0.5rem 0.5rem; border-radius:var(--radius-sm)}
@@ -365,7 +359,13 @@ onUnmounted(() => {
 .dropdown-inner             { padding: 0.375rem; }
 .dropdown-item              { padding: 0.375rem 0.625rem; gap: 0.625rem; }
 
-.canvas                     { min-height : calc(100vh - 2rem);}
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+.app-sidebar                { width: 13rem; }
+.canvas                     { min-height : calc(1oovh - 2rem);}
+.sidebar-nav                { padding-left: 1.5rem; gap: 0.25rem; flex: 1; }
+.nav-item                   { gap: 0; border-radius:var(--radius-sm)}
+.nav-item__icon             { width: 2.5rem; padding: 0.5rem 0; }
+.nav-item__label            { padding: 0.5rem 0.25rem; }
 
 /* ── Profile drawer ──────────────────────────────────────────────────────── */
 .profile-meta               { display: flex; flex-direction: column; align-items: center; padding: 1.5rem 1rem 1.25rem; text-align: center; }

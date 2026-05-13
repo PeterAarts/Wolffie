@@ -21,7 +21,7 @@
 
       <!-- Status dot -->
       <template #_status="{ value }">
-        <i :class="value.is_active ? 'fa-solid fa-circle text-secondary-400' : 'fa-light fa-circle text-secondary-300'" />
+        <i :class="value.is_active ? 'ph-fill ph-circle text-secondary-400' : 'ph-light ph-circle text-secondary-300'" />
       </template>
 
       <!-- Username -->
@@ -55,10 +55,10 @@
       <template #_actions="{ value }">
         <div class="row-actions" :class="{ 'row-actions--always-visible': isMobile }">
           <button class="icon-btn" :title="t('common.edit')" @click="openEdit(value)">
-            <i class="fa-light fa-pen" />
+            <i class="ph-light ph-pencil-simple" />
           </button>
           <button class="icon-btn icon-btn--danger" :title="t('common.delete')" @click="askRemove(value)">
-            <i class="fa-light fa-trash" />
+            <i class="ph-light ph-trash" />
           </button>
         </div>
       </template>

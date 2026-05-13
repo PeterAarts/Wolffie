@@ -25,7 +25,7 @@
 
     <div class="system-actions mt-4 p-3 border-top">
       <button class="btn-restart" @click="restartSystem">
-        <i class="fa-light fa-rotate-right"></i>
+        <i class="ph-light ph-rotate-right"></i>
         {{ t('settings.core.restart') }}
       </button>
     </div>

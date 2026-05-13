@@ -9,7 +9,7 @@
       <template v-if="['text', 'password', 'email', 'number', 'url'].includes(field.component)">
         <div class="relative flex items-center">
           <div v-if="field.icon" class="absolute left-4 text-secondary-400 group-focus-within:text-blue-500 transition-colors">
-            <i :class="['fa-light', field.icon]"></i>
+            <i :class="['ph-light', field.icon]"></i>
           </div>
 
           <input
@@ -87,7 +87,7 @@
       </div>
 
       <div v-if="validationError" class="mt-1 px-1 flex items-center gap-1.5 text-red-600">
-        <i class="fa-light fa-triangle-exclamation text-[10px]"></i>
+        <i class="ph-light ph-triangle-exclamation text-[10px]"></i>
         <small class="text-[11px] font-bold tracking-wide uppercase">{{ validationError }}</small>
       </div>
     </div>

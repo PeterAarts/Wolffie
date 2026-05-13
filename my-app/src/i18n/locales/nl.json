@@ -200,7 +200,9 @@
         "email_address_placeholder": "voorbeeld@domein.nl",
         "snapshots_days": "Snapshots",
         "minutes_days": "Minuut Data",
-        "hours_days": "Uur Data"
+        "hours_days": "Uur Data",
+        "derive_home_load": "Derive home load from solar, battery, and grid",
+        "derive_home_load_description": "Schat het thuisverbruik op basis van zon, batterij en netmetingen wanneer er geen aparte meter aanwezig is. Nuttig voor AC-gekoppelde omvormersystemen waarbij de omvormer nul belasting rapporteert. Standaard uitgeschakeld; de berekening heeft bekende beperkingen bij bidirectionele stromen."
       }
     },
     "users": {

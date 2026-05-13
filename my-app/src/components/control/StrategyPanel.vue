@@ -10,7 +10,7 @@
         :class="{ 'tab-btn--active': activeTab === tab.id }"
         @click="activeTab = tab.id"
       >
-        <i class="fa-light mr-1.5" :class="tab.icon"></i>
+        <i class="ph-light mr-1.5" :class="tab.icon"></i>
         {{ tab.label }}
       </button>
     </div>
@@ -24,7 +24,7 @@
       <div class="timeline-section ">
         <div class="timeline-header">
           <span class="section-label">
-            <i class="fa-light fa-calendar-day mr-1.5"></i>
+            <i class="ph-light ph-calendar-day mr-1.5"></i>
             {{ t('control.todaysPlan') }}
           </span>
           <span class="text-xs text-secondary-400">
@@ -35,7 +35,7 @@
         <StrategyChart @chart-area="ca => chartInset = ca" />
         <!-- Total daily solar forecast -->
         <div class="solar-forecast-total" v-if="totalSolarKwh > 0">
-          <i class="fa-light fa-sun-bright mr-1.5"></i>
+          <i class="ph-light ph-sun-bright mr-1.5"></i>
           {{ t('control.totalSolarForecast') }}: <strong>{{ totalSolarKwh.toFixed(1) }} kWh</strong>
         </div>
         <!-- Blocks + ruler — inset matches chart inner area so ticks align -->
@@ -57,7 +57,7 @@
               @mouseenter="hoveredBlock = idleFallbackBlock"
               @mouseleave="hoveredBlock = null"
             >
-              <i class="fa-light timeline-block__icon fa-minus"></i>
+              <i class="ph-light timeline-block__icon ph-minus"></i>
               <span class="timeline-block__time">{{ slotToTime(0) }}&ndash;{{ slotToTime(totalPlanSlots) }}</span>
             </div>
 
@@ -73,7 +73,7 @@
               @mouseenter="hoveredBlock = block"
               @mouseleave="hoveredBlock = null"
             >
-              <i class="fa-light timeline-block__icon" :class="blockIcon(block.action)"></i>
+              <i class="ph-light timeline-block__icon" :class="blockIcon(block.action)"></i>
               <span class="timeline-block__time">
                 {{ slotToTime(block.startSlot) }}&ndash;{{ slotToTime(block.endSlot + 1) }}
               </span>
@@ -111,13 +111,13 @@
                 {{ slotToTime(hoveredBlock.startSlot) }}&ndash;{{ slotToTime(hoveredBlock.endSlot + 1) }}
               </span>
               <span class="timeline-info-price" v-if="hoveredBlock.priceCtKwh != null">
-                <i class="fa-light fa-bolt mr-1"></i>{{ hoveredBlock.priceCtKwh.toFixed(1) }} ct/kWh
+                <i class="ph-light ph-bolt mr-1"></i>{{ hoveredBlock.priceCtKwh.toFixed(1) }} ct/kWh
               </span>
               <span class="timeline-info-solar" v-if="hoveredBlock.solarForecastW > 0">
-                <i class="fa-light fa-sun-bright mr-1"></i>{{ (hoveredBlock.solarForecastW / 1000).toFixed(2) }} kW
+                <i class="ph-light ph-sun-bright mr-1"></i>{{ (hoveredBlock.solarForecastW / 1000).toFixed(2) }} kW
               </span>
               <span class="timeline-info-soc" v-if="hoveredBlock.simSocPct != null">
-                <i class="fa-light fa-battery-half mr-1"></i>{{ hoveredBlock.simSocPct }}%
+                <i class="ph-light ph-battery-half mr-1"></i>{{ hoveredBlock.simSocPct }}%
               </span>
               <span class="timeline-info-reason">{{ hoveredBlock.reason }}</span>
             </template>
@@ -169,7 +169,7 @@
               <span v-else-if="!s.available" class="strategy-card__badge strategy-card__badge--dim">
                 {{ t('control.unavailable') }}
               </span>
-              <i class="fa-light fa-sliders text-secondary-400 text-xs mt-1"></i>
+              <i class="ph-light ph-sliders text-secondary-400 text-xs mt-1"></i>
             </div>
           </div>
         </button>
@@ -192,8 +192,8 @@
               :disabled="savingConfig"
               @click="saveConfig"
             >
-              <i class="fa-light mr-1"
-                :class="savingConfig ? 'fa-spinner-third fa-spin' : 'fa-floppy-disk'"></i>
+              <i class="ph-light mr-1"
+                :class="savingConfig ? 'ph-spinner-third ph-spin' : 'ph-floppy-disk'"></i>
               {{ savingConfig ? t('common.saving') : t('common.save') }}
             </button>
           </div>
@@ -210,7 +210,7 @@
           <!-- Nightly profile readout -->
           <div v-if="nightlyProfile" class="profile-readout mt-4">
             <div class="profile-readout__title">
-              <i class="fa-light fa-moon mr-1.5"></i>
+              <i class="ph-light ph-moon mr-1.5"></i>
               {{ t('control.nightlyProfile') }}
               <span class="text-xs text-secondary-400 ml-2">
                 {{ t('control.calculatedAt') }} {{ formatTime(nightlyProfile.calculatedAt) }}
@@ -246,7 +246,7 @@
             <span class="caps-group__label">{{ t('control.requires') }}</span>
             <span v-for="cap in drawerStrategy.requiredCapabilities"
               :key="cap" class="cap-badge cap-badge--required">
-              <i class="fa-light fa-circle-check mr-1"></i>{{ cap }}
+              <i class="ph-light ph-circle-check mr-1"></i>{{ cap }}
             </span>
           </div>
           <div v-if="drawerStrategy?.optionalCapabilities?.length" class="caps-group">
@@ -256,9 +256,9 @@
               class="cap-badge"
               :class="drawerStrategy.activeOptional?.includes(cap)
                 ? 'cap-badge--active' : 'cap-badge--inactive'">
-              <i class="fa-light mr-1"
+              <i class="ph-light mr-1"
                 :class="drawerStrategy.activeOptional?.includes(cap)
-                  ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+                  ? 'ph-circle-check' : 'ph-circle-xmark'"></i>
               {{ cap }}
             </span>
           </div>
@@ -268,7 +268,7 @@
         <template #footer>
           <span v-if="drawerStrategy?.id === strategyStore.activeId"
             class="text-xs text-green-600 font-semibold flex items-center gap-1 mr-auto">
-            <i class="fa-light fa-circle-check"></i>
+            <i class="ph-light ph-circle-check"></i>
             {{ t('control.currentlyActive') }}
           </span>
           <button
@@ -277,7 +277,7 @@
             :disabled="strategyStore.isLoading"
             @click="showActivateModal = true"
           >
-            <i class="fa-light fa-check mr-1.5"></i>
+            <i class="ph-light ph-check mr-1.5"></i>
             {{ t('control.activate') }}
           </button>
           <button class="btn btn--sm" @click="drawerOpen = false">
@@ -306,16 +306,16 @@
       <div class="tab-toolbar">
         <span class="text-xs text-secondary-400">{{ t('control.last48Decisions') }}</span>
         <button class="btn btn--sm" @click="loadDecisions" :disabled="decisionsLoading">
-          <i class="fa-light fa-arrows-rotate" :class="{ 'fa-spin': decisionsLoading }"></i>
+          <i class="ph-light ph-arrows-rotate" :class="{ 'ph-spin': decisionsLoading }"></i>
         </button>
       </div>
 
       <div v-if="decisionsLoading" class="tab-empty">
-        <i class="fa-light fa-spinner-third fa-spin text-2xl text-secondary-400"></i>
+        <i class="ph-light ph-spinner-third ph-spin text-2xl text-secondary-400"></i>
       </div>
 
       <div v-else-if="decisions.length === 0" class="tab-empty">
-        <i class="fa-light fa-inbox text-2xl text-secondary-400 mb-2"></i>
+        <i class="ph-light ph-inbox text-2xl text-secondary-400 mb-2"></i>
         <span class="text-sm text-secondary-400">{{ t('control.noDecisions') }}</span>
       </div>
 
@@ -340,8 +340,8 @@
             </span>
           </span>
           <span>
-            <i class="fa-light text-sm"
-              :class="d.executed ? 'fa-circle-check text-green-500' : 'fa-circle-xmark text-secondary-300'">
+            <i class="ph-light text-sm"
+              :class="d.executed ? 'ph-circle-check text-green-500' : 'ph-circle-xmark text-secondary-300'">
             </i>
           </span>
           <span class="text-xs text-secondary-400 truncate" :title="d.reason">{{ d.reason }}</span>
@@ -364,19 +364,19 @@
           </select>
         </div>
         <button class="btn btn--sm" @click="loadEffectiveness" :disabled="effectivenessLoading">
-          <i class="fa-light fa-arrows-rotate" :class="{ 'fa-spin': effectivenessLoading }"></i>
+          <i class="ph-light ph-arrows-rotate" :class="{ 'ph-spin': effectivenessLoading }"></i>
         </button>
       </div>
 
       <div v-if="effectivenessLoading" class="tab-empty">
-        <i class="fa-light fa-spinner-third fa-spin text-2xl text-secondary-400"></i>
+        <i class="ph-light ph-spinner-third ph-spin text-2xl text-secondary-400"></i>
       </div>
 
       <div v-else-if="effectiveness" class="effectiveness-grid">
 
         <!-- Solar self-consumption -->
         <div class="eff-card">
-          <div class="eff-card__icon text-amber-500"><i class="fa-light fa-sun-bright"></i></div>
+          <div class="eff-card__icon text-amber-500"><i class="ph-light ph-sun-bright"></i></div>
           <div class="eff-card__body">
             <div class="eff-card__value">
               {{ effectiveness.solar.selfConsumptionPct != null ? effectiveness.solar.selfConsumptionPct + '%' : '—' }}
@@ -391,13 +391,13 @@
 
         <!-- Grid import -->
         <div class="eff-card">
-          <div class="eff-card__icon text-orange-500"><i class="fa-light fa-utility-pole"></i></div>
+          <div class="eff-card__icon text-orange-500"><i class="ph-light ph-utility-pole"></i></div>
           <div class="eff-card__body">
             <div class="eff-card__value">{{ effectiveness.grid.totalImportKwh }} kWh</div>
             <div class="eff-card__label">{{ t('control.gridImport') }}</div>
             <div class="eff-card__sub" v-if="effectiveness.grid.gridImportDelta != null">
               <span :class="effectiveness.grid.gridImportDelta < 0 ? 'text-green-600' : 'text-red-500'">
-                <i class="fa-light" :class="effectiveness.grid.gridImportDelta < 0 ? 'fa-arrow-down' : 'fa-arrow-up'"></i>
+                <i class="ph-light" :class="effectiveness.grid.gridImportDelta < 0 ? 'ph-arrow-down' : 'ph-arrow-up'"></i>
                 {{ Math.abs(effectiveness.grid.gridImportDelta) }} kWh
               </span>
               {{ t('control.vsPriorPeriod') }}
@@ -407,7 +407,7 @@
 
         <!-- Forecast accuracy -->
         <div class="eff-card">
-          <div class="eff-card__icon text-blue-400"><i class="fa-light fa-cloud-sun"></i></div>
+          <div class="eff-card__icon text-blue-400"><i class="ph-light ph-cloud-sun"></i></div>
           <div class="eff-card__body">
             <div class="eff-card__value">
               {{ effectiveness.forecast.avgAccuracyPct != null ? effectiveness.forecast.avgAccuracyPct + '%' : '—' }}
@@ -419,7 +419,7 @@
 
         <!-- Decision accuracy -->
         <div class="eff-card">
-          <div class="eff-card__icon text-purple-500"><i class="fa-light fa-brain-circuit"></i></div>
+          <div class="eff-card__icon text-purple-500"><i class="ph-light ph-brain-circuit"></i></div>
           <div class="eff-card__body">
             <div class="eff-card__value">
               {{ effectiveness.decisions.accuracyPct != null ? effectiveness.decisions.accuracyPct + '%' : '—' }}
@@ -433,7 +433,7 @@
 
         <!-- Battery utilisation -->
         <div class="eff-card">
-          <div class="eff-card__icon text-green-600"><i class="fa-light fa-battery-bolt"></i></div>
+          <div class="eff-card__icon text-green-600"><i class="ph-light ph-battery-bolt"></i></div>
           <div class="eff-card__body">
             <div class="eff-card__value">{{ effectiveness.battery.avgDailyCycles }}</div>
             <div class="eff-card__label">{{ t('control.avgDailyCycles') }}</div>
@@ -489,8 +489,8 @@
               <span class="text-xs">{{ d.priceAtDecision != null ? d.priceAtDecision + ' ct' : '—' }}</span>
               <span class="text-xs">{{ d.medianPrice != null ? d.medianPrice + ' ct' : '—' }}</span>
               <span>
-                <i v-if="d.correct === true"  class="fa-light fa-circle-check text-green-500 text-sm"></i>
-                <i v-else-if="d.correct === false" class="fa-light fa-circle-xmark text-red-400 text-sm"></i>
+                <i v-if="d.correct === true"  class="ph-light ph-circle-check text-green-500 text-sm"></i>
+                <i v-else-if="d.correct === false" class="ph-light ph-circle-xmark text-red-400 text-sm"></i>
                 <span v-else class="text-secondary-300 text-xs">—</span>
               </span>
             </div>
@@ -520,9 +520,9 @@ const { t }         = useLocale();
 
 // ── Tabs ──────────────────────────────────────────────────────────────────
 const tabs = [
-  { id: 'strategy',      label: t('control.tabStrategy'),      icon: 'fa-chess-knight' },
-  { id: 'history',       label: t('control.tabHistory'),       icon: 'fa-clock-rotate-left' },
-  { id: 'effectiveness', label: t('control.tabEffectiveness'), icon: 'fa-chart-line' },
+  { id: 'strategy',      label: t('control.tabStrategy'),      icon: 'ph-castle-turret' },
+  { id: 'history',       label: t('control.tabHistory'),       icon: 'ph-clock-clockwise' },
+  { id: 'effectiveness', label: t('control.tabEffectiveness'), icon: 'ph-chart-line' },
 ];
 const activeTab = ref('strategy');
 
@@ -932,10 +932,10 @@ function blockColorClass(action) {
 
 function blockIcon(action) {
   switch (action) {
-    case 'CHARGE_FROM_GRID':  return 'fa-bolt-lightning';
-    case 'DISCHARGE_TO_GRID': return 'fa-arrow-up-from-arc';
-    case 'SOLAR_SURPLUS':     return 'fa-sun-bright';
-    default:                  return 'fa-minus';
+    case 'CHARGE_FROM_GRID':  return 'ph-bolt-lightning';
+    case 'DISCHARGE_TO_GRID': return 'ph-arrow-up-from-arc';
+    case 'SOLAR_SURPLUS':     return 'ph-sun-bright';
+    default:                  return 'ph-minus';
   }
 }
 const timelineLegend = [

@@ -219,10 +219,13 @@
         "snapshots_days": "Snapshots",
         "minutes_days": "Minute Data",
         "hours_days": "Hour Data",
+        "collector_restart_minutes": "Collector restart (min)",
         "contract_type": "Contract type",
         "contract_type_dynamic": "Dynamic (day-ahead)",
         "contract_type_fixed": "Fixed price",
-        "fixed_price_ct_kwh": "Fixed price"
+        "fixed_price_ct_kwh": "Fixed price",
+        "derive_home_load": "Derive home load from solar, battery, and grid",
+        "derive_home_load_description": "Estimate home power consumption from solar, battery, and grid readings when no dedicated meter is present. Useful for AC-coupled inverter setups where the inverter reports zero load. Disabled by default; calculation has known limitations with bidirectional power flows."
       }
     },
     "savedDetail": "Settings updated"

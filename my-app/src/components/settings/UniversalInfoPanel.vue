@@ -6,7 +6,7 @@
       :key="item.label"
       :class="['info-item', getColClass(item)]"     >
       <div class="info-icon" v-if="item.icon">
-        <i :class="`fa-light ${item.icon}`" :style="{ color: item.iconColor }"></i>
+        <i :class="`ph-light ${item.icon}`" :style="{ color: item.iconColor }"></i>
       </div>
       
       <div class="info-content">

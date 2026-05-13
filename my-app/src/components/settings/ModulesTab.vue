@@ -26,7 +26,7 @@
           {{ t('common.refresh') }}
         </button>
         <button class="btn btn--sm btn--primary" @click="openUpload">
-          <i class="fa-light fa-cloud-arrow-up mr-1" />
+          <i class="ph-light ph-cloud-arrow-up mr-1" />
           {{ t('modulesTab.install_btn') }}
         </button>
       </template>
@@ -87,7 +87,7 @@
       <template #_errors="{ value }">
         <template v-if="value._collector?.consecutiveErrors > 0">
           <span class="error-count" :title="value._collector.lastError ?? ''">
-            <i class="fa-solid fa-circle-exclamation" />
+            <i class="ph-fill ph-circle-exclamation" />
             {{ value._collector.consecutiveErrors }}
           </span>
         </template>
@@ -105,8 +105,8 @@
             :disabled="restarting === value.id"
             @click="restart(value.id)"
           >
-            <i v-if="restarting === value.id" class="fa-duotone fa-spinner-third fa-spin" />
-            <i v-else class="fa-light fa-play" />
+            <i v-if="restarting === value.id" class="ph-duotone ph-spinner-third ph-spin" />
+            <i v-else class="ph-light ph-play" />
           </button>
           <!-- Edit settings — only when module has a schema -->
           <button
@@ -115,16 +115,16 @@
             :title="t('modulesTab.edit_settings')"
             @click="openSettings(value)"
           >
-            <i class="fa-light fa-sliders" />
+            <i class="ph-light ph-sliders" />
           </button>
           <button class="icon-btn" :title="t('modulesTab.manifest_view')" @click="openManifest(value)">
-            <i class="fa-light fa-file-code" />
+            <i class="ph-light ph-file-code" />
           </button>
           <button class="icon-btn" :title="t('modulesTab.update_btn')" @click="openUpdate(value)">
-            <i class="fa-light fa-arrow-up-to-line" />
+            <i class="ph-light ph-arrow-line-up" />
           </button>
           <button class="icon-btn icon-btn--danger" :title="t('modulesTab.uninstall')" @click="askRemove(value)">
-            <i class="fa-light fa-trash" />
+            <i class="ph-light ph-trash" />
           </button>
         </div>
       </template>
@@ -132,7 +132,7 @@
 
     <!-- Error banner for collector errors -->
     <div v-if="collectorError" class="error-banner">
-      <i class="fa-solid fa-triangle-exclamation" /> {{ collectorError }}
+      <i class="ph-fill ph-triangle-exclamation" /> {{ collectorError }}
     </div>
 
     <!-- ── Settings drawer ───────────────────────────────────────────── -->
@@ -181,7 +181,7 @@
           @click="fileInput.click()"
         >
           <input ref="fileInput" type="file" accept=".zip" class="hidden" @change="onFileSelected" />
-          <i class="fa-light fa-cloud-arrow-up text-2xl text-secondary-400" />
+          <i class="ph-light ph-cloud-arrow-up text-2xl text-secondary-400" />
           <div class="text-center">
             <p class="text-sm text-secondary-600">
               {{ t('modulesTab.drop') }}
@@ -193,27 +193,27 @@
 
         <div v-if="pendingFile" class="mt-3 space-y-2">
           <div class="flex items-center gap-2 p-4 bg-secondary-100 border border-secondary-200 rounded text-sm text-secondary-700 w-fit">
-            <i class="fa-light fa-file-zipper text-secondary-400" />
+            <i class="ph-light ph-file-zipper text-secondary-400" />
             <span>{{ pendingFile.name }}</span>
             <button class="ml-1 text-secondary-400 hover:text-secondary-600" @click.stop="clearPending">
-              <i class="fa-solid fa-xmark text-xs" />
+              <i class="ph-fill ph-xmark text-xs" />
             </button>
           </div>
           <div v-if="pendingManifest" class="flex items-center gap-2">
             <div v-if="pendingIsUpdate" class="flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 border border-amber-200 rounded text-amber-700 text-xs font-medium">
-              <i class="fa-solid fa-arrow-up-to-line" />
+              <i class="ph-fill ph-arrow-line-up" />
               {{ t('modulesTab.update_detected') }}:
               <span class="font-mono">{{ installedVersion(pendingManifest.id) }}</span>
-              <i class="fa-solid fa-arrow-right text-[9px]" />
+              <i class="ph-fill ph-arrow-right text-[9px]" />
               <span class="font-mono">{{ pendingManifest.version }}</span>
             </div>
             <div v-else class="flex items-center gap-1.5 px-2.5 py-1.5 bg-green-50 border border-green-200 rounded text-green-700 text-xs font-medium">
-              <i class="fa-solid fa-sparkles" />
+              <i class="ph-fill ph-sparkles" />
               {{ t('modulesTab.new') }}: <span class="font-semibold ml-1">{{ pendingManifest.name }}</span>
             </div>
           </div>
           <div v-else-if="readingManifest" class="flex items-center gap-1.5 text-xs text-secondary-400">
-            <i class="fa-duotone fa-spinner-third fa-spin" />
+            <i class="ph-duotone ph-spinner-third ph-spin" />
             {{ t('modulesTab.reading') }}
           </div>
         </div>
@@ -238,8 +238,8 @@
           class="mt-4 flex items-start gap-3 p-4 rounded border text-xs"
           :class="uploadResult.success ? 'bg-green-100 border-green-200 text-green-800' : 'bg-red-100 border-red-200 text-red-800'"
         >
-          <i class="mt-0.5 fa-solid flex-shrink-0"
-             :class="uploadResult.success ? 'fa-circle-check' : 'fa-triangle-exclamation'" />
+          <i class="mt-0.5 ph-fill flex-shrink-0"
+             :class="uploadResult.success ? 'ph-circle-check' : 'ph-triangle-exclamation'" />
           <div class="flex-1 min-w-0">
             <p class="font-semibold">
               {{ uploadResult.success
@@ -249,12 +249,12 @@
             <p class="mt-0.5 opacity-80">{{ uploadResult.message }}</p>
             <p v-if="uploadResult.checksum" class="mt-1 font-mono opacity-60 break-all">SHA-256: {{ uploadResult.checksum }}</p>
             <p v-if="uploadResult.success && !uploadResult.hotLoaded" class="mt-1 font-medium">
-              <i class="fa-solid fa-triangle-exclamation mr-1" />
+              <i class="ph-fill ph-triangle-exclamation mr-1" />
               {{ t('modulesTab.restart_required') }}
             </p>
           </div>
           <button class="opacity-40 hover:opacity-80" @click="uploadResult = null">
-            <i class="fa-solid fa-xmark" />
+            <i class="ph-fill ph-xmark" />
           </button>
         </div>
       </div>
@@ -267,7 +267,7 @@
           :disabled="!pendingFile || uploading"
           @click="installPending"
         >
-          <i v-if="!uploading" :class="pendingIsUpdate ? 'fa-light fa-arrow-up-to-line' : 'fa-light fa-download'" class="mr-1" />
+          <i v-if="!uploading" :class="pendingIsUpdate ? 'ph-light ph-arrow-line-up' : 'ph-light ph-download'" class="mr-1" />
           {{ pendingIsUpdate ? t('modulesTab.update_btn') : t('modulesTab.install_btn') }}
         </button>
       </template>
@@ -297,7 +297,7 @@
           <div class="meta-card">
             <label>{{ t('common.status') }}</label>
             <div class="meta-value flex items-center gap-1">
-              <i :class="isEnabled(manifestDrawer.module._collector ?? manifestDrawer.module) ? 'fa-solid fa-circle text-green-500' : 'fa-solid fa-circle text-secondary-300'" style="font-size:8px" />
+              <i :class="isEnabled(manifestDrawer.module._collector ?? manifestDrawer.module) ? 'ph-fill ph-circle text-green-500' : 'ph-fill ph-circle text-secondary-300'" style="font-size:8px" />
               {{ isEnabled(manifestDrawer.module._collector ?? manifestDrawer.module) ? (te('common.enabled') ? t('common.enabled') : 'Enabled') : (te('common.disabled') ? t('common.disabled') : 'Disabled') }}
             </div>
           </div>
@@ -331,7 +331,7 @@
               v-for="(val, cap) in manifestDrawer.module._manifest.capabilities" :key="cap"
               class="capability-pill" :class="val ? 'capability-pill--on' : 'capability-pill--off'"
             >
-              <i :class="val ? 'fa-solid fa-check text-[9px]' : 'fa-solid fa-xmark text-[9px]'" />
+              <i :class="val ? 'ph-fill ph-check text-[9px]' : 'ph-fill ph-xmark text-[9px]'" />
               {{ cap }}
             </span>
           </div>
@@ -389,7 +389,7 @@
             <ul class="space-y-0.5 pl-3">
               <li v-for="(change, i) in entry.changes" :key="i"
                   class="text-[11px] text-[var(--color-text-secondary)] flex items-start gap-1.5">
-                <i class="fa-light fa-circle-small text-[var(--color-primary)] mt-0.5 flex-shrink-0" style="font-size:8px"></i>
+                <i class="ph-light ph-circle-small text-[var(--color-primary)] mt-0.5 flex-shrink-0" style="font-size:8px"></i>
                 {{ change }}
               </li>
             </ul>
@@ -406,10 +406,10 @@
 
       <template #footer>
         <button class="btn btn--sm" @click="openUpdate(manifestDrawer.module); manifestDrawer.visible = false">
-          <i class="fa-light fa-arrow-up-to-line mr-1" />{{ t('modulesTab.update_btn') }}
+          <i class="ph-light ph-arrow-line-up mr-1" />{{ t('modulesTab.update_btn') }}
         </button>
         <button class="btn btn--sm btn--danger" @click="askRemove(manifestDrawer.module); manifestDrawer.visible = false">
-          <i class="fa-light fa-trash mr-1" />{{ t('modulesTab.uninstall') }}
+          <i class="ph-light ph-trash mr-1" />{{ t('modulesTab.uninstall') }}
         </button>
       </template>
     </AppDrawer>

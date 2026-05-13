@@ -33,14 +33,14 @@
               :class="action.variant === 'primary' ? 'toast-action-btn--primary' : 'toast-action-btn--secondary'"
               @click="handleAction(toast, action)"
             >
-              <i v-if="action.icon" :class="['fa-light mr-1', action.icon]"></i>
+              <i v-if="action.icon" :class="['ph-light mr-1', action.icon]"></i>
               {{ action.label }}
             </button>
           </div>
         </div>
 
         <button @click="toastStore.remove(toast.id)" class="text-slate-300 hover:text-slate-900 transition-colors">
-          <i class="fa-light fa-xmark"></i>
+          <i class="ph-light ph-xmark"></i>
         </button>
       </div>
     </transition-group>
@@ -59,10 +59,10 @@ const severityClass = (sev) => ({
 });
 
 const iconClass = (sev) => ({
-  'fa-light fa-circle-info text-blue-600': sev === 'info',
-  'fa-light fa-circle-check text-secondary-700': sev === 'success',
-  'fa-light fa-triangle-exclamation text-amber-500': sev === 'warn',
-  'fa-light fa-circle-exclamation text-red-500': sev === 'error'
+  'ph-light ph-circle-info text-blue-600': sev === 'info',
+  'ph-light ph-circle-check text-secondary-700': sev === 'success',
+  'ph-light ph-triangle-exclamation text-amber-500': sev === 'warn',
+  'ph-light ph-circle-exclamation text-red-500': sev === 'error'
 });
 
 function handleAction(toast, action) {

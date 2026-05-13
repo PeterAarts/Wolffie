@@ -25,7 +25,7 @@
         <!-- Main row -->
         <div class="socket-row" @click="selectSocket(socket)">
           <div class="socket-name">
-            <i class="fa-light fa-bolt"></i>
+            <i class="ph-light ph-bolt"></i>
             <span class="device-name">{{ socket.device_name }}</span>
           </div>
           <div class="socket-meta">
@@ -36,15 +36,15 @@
 
             <!-- Current power -->
             <div class="socket-power">
-              <i v-if="socket.power > 0" class="fa fa-arrow-down power-import"></i>
+              <i v-if="socket.power > 0" class="fa ph-arrow-down power-import"></i>
               <span :class="socket.power > 0 ? 'power-import' : ''">
                 {{ Math.abs(socket.power).toFixed(0) }} W
               </span>
             </div>
 
             <!-- Chevron -->
-            <i class="fa-light chevron"
-              :class="selectedSocket === socket.id ? 'fa-chevron-up' : 'fa-chevron-down'"
+            <i class="ph-light chevron"
+              :class="selectedSocket === socket.id ? 'ph-caret-up' : 'ph-caret-down'"
             ></i>
           </div>
         </div>
@@ -60,7 +60,7 @@
               <ProgressSpinner style="width: 18px; height: 18px" strokeWidth="4" />
             </div>
             <div v-else-if="sparklineError[socket.id]" class="sparkline-state sparkline-state--error">
-              <i class="fa-light fa-triangle-exclamation"></i>
+              <i class="ph-light ph-triangle-exclamation"></i>
               <span>{{ $t('common.error', 'Could not load data') }}</span>
             </div>
             <div v-else-if="!sparklineData[socket.id]?.length" class="sparkline-state">

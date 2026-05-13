@@ -8,7 +8,7 @@
 
   <!-- ── Bell trigger button ───────────────────────────────────────────────── -->
   <button class="alert-bell" @click="open = true" :title="t('alerts.openDrawer')">
-    <i class="fa-light fa-bell"></i>
+    <i class="ph-light ph-bell"></i>
     <span v-if="alertStore.hasAlerts" class="alert-bell__badge">
       {{ alertStore.alerts.length > 9 ? '9+' : alertStore.alerts.length }}
     </span>
@@ -23,7 +23,7 @@
         class="ad-tab" :class="{ 'ad-tab--active': tab === 'active' }"
         @click="tab = 'active'"
       >
-        <i class="fa-light fa-bell mr-1.5"></i>
+        <i class="ph-light ph-bell mr-1.5"></i>
         {{ t('alerts.tabActive') }}
         <span v-if="alertStore.alerts.length" class="ad-tab__count">
           {{ alertStore.alerts.length }}
@@ -33,7 +33,7 @@
         class="ad-tab" :class="{ 'ad-tab--active': tab === 'history' }"
         @click="onHistoryTab"
       >
-        <i class="fa-light fa-clock-rotate-left mr-1.5"></i>
+        <i class="ph-light ph-clock-clockwise mr-1.5"></i>
         {{ t('alerts.tabHistory') }}
       </button>
     </div>
@@ -41,7 +41,7 @@
     <!-- ── Active tab ─────────────────────────────────────────────────────── -->
     <div v-if="tab === 'active'" class="ad-list">
       <div v-if="!alertStore.alerts.length" class="ad-empty">
-        <i class="fa-light fa-check-circle text-2xl text-secondary-300 mb-2"></i>
+        <i class="ph-light ph-check-circle text-2xl text-secondary-300 mb-2"></i>
         <span>{{ t('alerts.noActive') }}</span>
       </div>
       <div
@@ -51,7 +51,7 @@
         :class="severityClass(alert.severity)"
       >
         <div class="ad-item__icon">
-          <i class="fa-light" :class="severityIcon(alert.severity)"></i>
+          <i class="ph-light" :class="severityIcon(alert.severity)"></i>
         </div>
         <div class="ad-item__body">
           <div class="ad-item__source">{{ alert.source }} · {{ formatDate(alert.created_at) }}</div>
@@ -66,14 +66,14 @@
             @click="resolve(alert.id)"
             :title="t('alerts.confirm')"
           >
-            <i class="fa-light" :class="executing === alert.id ? 'fa-spinner-third fa-spin' : 'fa-bolt-lightning'"></i>
+            <i class="ph-light" :class="executing === alert.id ? 'ph-spinner-third ph-spin' : 'ph-bolt-lightning'"></i>
           </button>
           <button
             class="ad-btn ad-btn--ghost"
             @click="dismiss(alert.id)"
             :title="t('alerts.dismiss')"
           >
-            <i class="fa-light fa-xmark"></i>
+            <i class="ph-light ph-xmark"></i>
           </button>
         </div>
       </div>
@@ -82,10 +82,10 @@
     <!-- ── History tab ────────────────────────────────────────────────────── -->
     <div v-if="tab === 'history'" class="ad-list">
       <div v-if="historyLoading" class="ad-empty">
-        <i class="fa-light fa-spinner-third fa-spin text-2xl text-secondary-300"></i>
+        <i class="ph-light ph-spinner-third ph-spin text-2xl text-secondary-300"></i>
       </div>
       <div v-else-if="!history.length" class="ad-empty">
-        <i class="fa-light fa-inbox text-2xl text-secondary-300 mb-2"></i>
+        <i class="ph-light ph-inbox text-2xl text-secondary-300 mb-2"></i>
         <span>{{ t('alerts.noHistory') }}</span>
       </div>
       <div
@@ -95,14 +95,14 @@
         :class="severityClass(alert.severity)"
       >
         <div class="ad-item__icon">
-          <i class="fa-light" :class="severityIcon(alert.severity)"></i>
+          <i class="ph-light" :class="severityIcon(alert.severity)"></i>
         </div>
         <div class="ad-item__body">
           <div class="ad-item__source">{{ alert.source }} · {{ formatDate(alert.created_at) }}</div>
           <div class="ad-item__message">{{ alert.message }}</div>
           <div v-if="alert.suggestion" class="ad-item__suggestion">{{ alert.suggestion }}</div>
           <div class="ad-item__resolved-at" v-if="alert.resolved_at">
-            <i class="fa-light fa-check mr-1"></i>{{ t('alerts.resolvedAt') }} {{ formatDate(alert.resolved_at) }}
+            <i class="ph-light ph-check mr-1"></i>{{ t('alerts.resolvedAt') }} {{ formatDate(alert.resolved_at) }}
           </div>
         </div>
         <div class="ad-item__actions">
@@ -111,7 +111,7 @@
             @click="reResolve(alert.id)"
             :title="t('alerts.reResolve')"
           >
-            <i class="fa-light fa-rotate-right"></i>
+            <i class="ph-light ph-rotate-right"></i>
           </button>
         </div>
       </div>
@@ -199,9 +199,9 @@ function severityClass(severity) {
 
 function severityIcon(severity) {
   switch (severity) {
-    case 'error':   return 'fa-circle-exclamation';
-    case 'warning': return 'fa-triangle-exclamation';
-    default:        return 'fa-circle-info';
+    case 'error':   return 'ph-circle-exclamation';
+    case 'warning': return 'ph-triangle-exclamation';
+    default:        return 'ph-circle-info';
   }
 }
 

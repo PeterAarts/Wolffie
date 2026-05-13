@@ -24,7 +24,7 @@
       </template>
 
       <template #_status="{ value }">
-        <i :class="value.enabled ? 'fa-solid fa-circle text-secondary-500' : 'fa-light fa-circle text-secondary-400'" />
+        <i :class="value.enabled ? 'ph-fill ph-circle text-secondary-500' : 'ph-light ph-circle text-secondary-400'" />
       </template>
 
       <template #name="{ value }">
@@ -49,7 +49,7 @@
       </template>
 
       <template #_lock="{ value }">
-        <i v-if="value.switch_lock != null" :class="value.switch_lock === 1 ? 'fa-solid fa-lock text-secondary-700' : 'fa-light fa-lock-open text-secondary-400'" />
+        <i v-if="value.switch_lock != null" :class="value.switch_lock === 1 ? 'ph-fill ph-lock text-secondary-700' : 'ph-light ph-lock-open text-secondary-400'" />
         <span v-else class="cell-secondary">—</span>
       </template>
 
@@ -60,9 +60,9 @@
 
       <template #_actions="{ value }">
         <div class="row-actions" :class="{ 'row-actions--always-visible': isMobile }">
-          <button class="icon-btn" @click="openEdit(value)"><i class="fa-light fa-pen"></i></button>
-          <button class="icon-btn" @click="identify(value)"><i class="fa-light fa-lightbulb"></i></button>
-          <button class="icon-btn icon-btn--danger" @click="askRemove(value)"><i class="fa-light fa-trash"></i></button>
+          <button class="icon-btn" @click="openEdit(value)"><i class="ph-light ph-pencil-simple"></i></button>
+          <button class="icon-btn" @click="identify(value)"><i class="ph-light ph-lightbulb"></i></button>
+          <button class="icon-btn icon-btn--danger" @click="askRemove(value)"><i class="ph-light ph-trash"></i></button>
         </div>
       </template>
     </AppTable>

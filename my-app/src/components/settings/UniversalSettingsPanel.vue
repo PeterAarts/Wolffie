@@ -82,12 +82,12 @@
             :disabled="actionLoading[action.id]"
             @click="handleSchemaAction(action)"
           >
-            <i class="fa-solid mr-1" :class="actionLoading[action.id] ? 'fa-spinner fa-spin' : (action.icon || 'fa-bolt')"></i>
+            <i class="ph-fill mr-1" :class="actionLoading[action.id] ? 'ph-spinner ph-spin' : (action.icon || 'ph-bolt')"></i>
             {{ resolve(action.label) }}
           </button>
         </div>
         <div v-if="actionResult" class="action-result mt-2" :class="actionResult.success ? 'action-result--ok' : 'action-result--err'">
-          <i class="fa-solid mr-1" :class="actionResult.success ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
+          <i class="ph-fill mr-1" :class="actionResult.success ? 'ph-circle-check' : 'ph-circle-xmark'"></i>
           {{ actionResult.message }}
         </div>
       </div>
@@ -99,7 +99,7 @@
         <div class="save-bar-actions">
           <button class="btn" @click="resetChanges">{{ t('common.cancel') }}</button>
           <button class="btn btn--primary" :disabled="saving" @click="saveSettings">
-            <i v-if="saving" class="fa-duotone fa-spinner-third fa-spin mr-1"></i>
+            <i v-if="saving" class="ph-duotone ph-spinner-third ph-spin mr-1"></i>
             {{ t('common.save') }}
           </button>
         </div>
