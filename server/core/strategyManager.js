@@ -214,7 +214,7 @@ class StrategyManager {
     const strategy = STRATEGIES[activeId];
 
     if (!strategy?.generateFullDayPlan) {
-      console.warn(`   • ${PREFIX} '${activeId}' has no generateFullDayPlan() — skipping`);
+      console.warn(`   • ${PREFIX} - '${activeId}' has no generateFullDayPlan() — skipping`);
       return;
     }
 
@@ -447,7 +447,7 @@ class StrategyManager {
         },
       };
     } catch (e) {
-      console.error('   • StrategyManager Effectiveness calculation error:', e.message);
+      console.error(`   • ${PREFIX} - Effectiveness calculation error:`, e.message);
       throw e;
     }
   }
@@ -479,7 +479,7 @@ class StrategyManager {
     try {
       const savedState = await settings.get('strategy', 'curtailment_state');
       if (savedState === 'CURTAILED') {
-        console.warn(`   • ${PREFIX} Watchdog: server restarted while solar was curtailed — restoring to 100%`);
+        console.warn(`   • ${PREFIX} - Watchdog: server restarted while solar was curtailed — restoring to 100%`);
         await this._curtailSolar(false);
         await settings.upsert('strategy', 'curtailment_state', 'NORMAL', {
           changedBy: 'system', reason: 'Watchdog restore on startup', valueType: 'string',
@@ -488,7 +488,7 @@ class StrategyManager {
       this._curtailState        = 'NORMAL';
       this._curtailPendingSince = null;
     } catch (e) {
-      console.error(`   • ${PREFIX} Curtailment watchdog error:`, e.message);
+      console.error(`   • ${PREFIX} - Curtailment watchdog error:`, e.message);
     }
   }
 
@@ -499,22 +499,22 @@ class StrategyManager {
         changedBy: 'system', reason: 'Solar curtailment state', valueType: 'string',
       });
     } catch (e) {
-      console.error(`   • ${PREFIX} Could not persist curtailment state:`, e.message);
+      console.error(`   • ${PREFIX} - Could not persist curtailment state:`, e.message);
     }
   }
 
   async _curtailSolar(curtail) {
     const handler = registry.get('solar:curtail');
     if (!handler) {
-      console.warn(`   • ${PREFIX} solar:curtail capability not available`);
+      console.warn(`   • ${PREFIX} - solar:curtail capability not available`);
       return false;
     }
     try {
       const result = await handler({ enabled: !curtail, pct: curtail ? 0 : 100 });
-      console.log(`   • ${PREFIX} Solar curtailment ${curtail ? 'ACTIVE (0%)' : 'RESTORED (100%)'}`);
+      console.log(`   • ${PREFIX} - Solar curtailment ${curtail ? 'ACTIVE (0%)' : 'RESTORED (100%)'}`);
       return result?.success ?? true;
     } catch (e) {
-      console.error(`   • ${PREFIX} solar:curtail failed: `, e.message);
+      console.error(`   • ${PREFIX} - solar:curtail failed: `, e.message);
       return false;
     }
   }
@@ -548,14 +548,14 @@ class StrategyManager {
 
           this._curtailPendingSince = Date.now();
           await this._saveCurtailState('PENDING');
-          console.log(`   • ${PREFIX} Curtailment PENDING — auto-act in ${PENDING_MINUTES} min`);
+          console.log(`   • ${PREFIX} - Curtailment PENDING — auto-act in ${PENDING_MINUTES} min`);
         }
 
       } else if (this._curtailState === 'PENDING') {
         if (shouldRestore) {
           this._curtailPendingSince = null;
           await this._saveCurtailState('NORMAL');
-          console.log(`   • ${PREFIX} Curtailment PENDING cancelled — condition cleared`);
+          console.log(`   • ${PREFIX} - Curtailment PENDING cancelled — condition cleared`);
 
         } else if (conditionMet) {
           const pendingAlerts  = await alertService.getActive(0);
@@ -565,7 +565,7 @@ class StrategyManager {
           if (alertDismissed) {
             this._curtailPendingSince = null;
             await this._saveCurtailState('NORMAL');
-            console.log(`   • ${PREFIX} Curtailment PENDING — user dismissed, cancelling`);
+            console.log(`   • ${PREFIX} - Curtailment PENDING — user dismissed, cancelling`);
           } else if (elapsedMin >= PENDING_MINUTES) {
             const ok = await this._curtailSolar(true);
             if (ok) {
@@ -580,7 +580,7 @@ class StrategyManager {
               await this._saveCurtailState('CURTAILED');
             }
           } else {
-            console.log(`   • ${PREFIX} Curtailment PENDING — ${Math.round(elapsedMin)}/${PENDING_MINUTES} min elapsed`);
+            console.log(`   • ${PREFIX} - Curtailment PENDING — ${Math.round(elapsedMin)}/${PENDING_MINUTES} min elapsed`);
           }
         }
 
@@ -591,9 +591,9 @@ class StrategyManager {
           await alertService.resolveByTypePrefix('strategy', 'solar_curtailment_pending');
           this._curtailPendingSince = null;
           await this._saveCurtailState('NORMAL');
-          console.log(`   • ${PREFIX} Curtailment RESTORED (price=${price.toFixed(1)}ct, SoC=${soc.toFixed(0)}%)`);
+          console.log(`   • ${PREFIX} - Curtailment RESTORED (price=${price.toFixed(1)}ct, SoC=${soc.toFixed(0)}%)`);
         } else {
-          console.log(`   • ${PREFIX} Solar remains curtailed (SoC=${soc.toFixed(0)}%, price=${price.toFixed(1)}ct)`);
+          console.log(`   • ${PREFIX} - Solar remains curtailed (SoC=${soc.toFixed(0)}%, price=${price.toFixed(1)}ct)`);
         }
       }
 
@@ -653,7 +653,7 @@ class StrategyManager {
         const b = await batteryHandler({});
         context.soc           = b.soc;
         context.batteryPowerW = b.power;
-      } catch (e) { console.warn(`   • ${PREFIX} battery:read failed:`, e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} - battery:read failed:`, e.message); }
     }
 
     const solarHandler = registry.get('solar:read');
@@ -661,7 +661,7 @@ class StrategyManager {
       try {
         const s = await solarHandler({});
         context.solarPowerW = s.total_power ?? s.power;
-      } catch (e) { console.warn(`   • ${PREFIX} solar:read failed:`, e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} - solar:read failed:`, e.message); }
     }
 
     const gridHandler = registry.get('grid:read');
@@ -669,7 +669,7 @@ class StrategyManager {
       try {
         const g = await gridHandler({});
         context.gridPowerW = g.total_active_power ?? g.power;
-      } catch (e) { console.warn(`   • ${PREFIX} grid:read failed:`, e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} - grid:read failed:`, e.message); }
     }
 
     const pricingHandler = registry.get('grid:pricing');
@@ -678,7 +678,7 @@ class StrategyManager {
         const p = await pricingHandler({ windowStart, windowHours: planningHours });
         context.prices       = p.prices       ?? [];
         context.currentPrice = p.currentPrice ?? null;
-      } catch (e) { console.warn(`   • ${PREFIX} grid:pricing failed:`, e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} - grid:pricing failed:`, e.message); }
     }
 
     const forecastHandler = registry.get('solar:forecast');
@@ -686,7 +686,7 @@ class StrategyManager {
       try {
         const f = await forecastHandler({ windowStart, windowHours: planningHours });
         context.solarForecast = f.hourly ?? [];
-      } catch (e) { console.warn(`   • ${PREFIX} solar:forecast failed:`, e.message); }
+      } catch (e) { console.warn(`   • ${PREFIX} - solar:forecast failed:`, e.message); }
     }
 
     return context;

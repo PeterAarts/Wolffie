@@ -37,8 +37,8 @@ class AlertService {
         `SELECT id FROM app_alerts
           WHERE source        = ?
             AND type          = ?
-            AND auto_resolved = 0
-            AND created_at   >= DATE_SUB(NOW(), INTERVAL ? MINUTE)
+            AND (auto_resolved = 0 OR auto_resolved IS NULL)
+            AND created_at   >= datetime('now', '-' || ? || ' minutes')
           LIMIT 1`,
         [source, alert.type, dedupMinutes]
       );
@@ -49,8 +49,8 @@ class AlertService {
 
       const [result] = await db.pool.query(
         `INSERT INTO app_alerts
-           (source, source_id, type, severity, message, suggestion, action)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+           (source, source_id, type, severity, message, suggestion, action, auto_resolved, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 0, datetime('now'))`,
         [
           source,
           sourceId ?? null,
@@ -86,7 +86,7 @@ class AlertService {
        FROM app_alerts a
        LEFT JOIN app_alert_dismissals d
          ON d.alert_id = a.id AND d.user_id = ?
-       WHERE a.auto_resolved = 0
+       WHERE (a.auto_resolved = 0 OR a.auto_resolved IS NULL)
          AND d.id IS NULL
        ORDER BY a.created_at DESC
        LIMIT 50`,
@@ -104,7 +104,7 @@ class AlertService {
    */
   async dismiss(alertId, userId) {
     await db.pool.query(
-      `INSERT IGNORE INTO app_alert_dismissals (alert_id, user_id)
+      `INSERT OR IGNORE INTO app_alert_dismissals (alert_id, user_id)
        VALUES (?, ?)`,
       [alertId, userId]
     );
@@ -119,7 +119,7 @@ class AlertService {
   async resolve(alertId) {
     await db.pool.query(
       `UPDATE app_alerts
-          SET auto_resolved = 1, resolved_at = NOW()
+          SET auto_resolved = 1, resolved_at = datetime('now')
         WHERE id = ?`,
       [alertId]
     );
@@ -135,10 +135,10 @@ class AlertService {
   async resolveByTypePrefix(source, typePrefix) {
     await db.pool.query(
       `UPDATE app_alerts
-          SET auto_resolved = 1, resolved_at = NOW()
+          SET auto_resolved = 1, resolved_at = datetime('now')
         WHERE source        = ?
           AND type          LIKE ?
-          AND auto_resolved = 0`,
+          AND (auto_resolved = 0 OR auto_resolved IS NULL)`,
       [source, `${typePrefix}%`]
     );
   }

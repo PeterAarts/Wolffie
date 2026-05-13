@@ -178,13 +178,16 @@ router.get('/core', authorize('admin'), async (req, res) => {
             title: 'settings.core.groups.dataCollection.title',
             sections: [{
               fields: [
+                { key: 'enable_failover',    component: 'switch', label: 'settings.core.fields.enable_failover',    column: 2, editable: true },
+                 { key: 'derive_home_load',          component: 'switch', label: 'settings.core.fields.derive_home_load',          column: 2, editable: true, description: 'settings.core.fields.derive_home_load_description' },
                 { key: 'primary_source', component: 'dropdown', label: 'settings.core.fields.primary_source', column: 2, editable: true, options: [
                   { label: 'Cloud API', value: 'cloud' },
                   { label: 'ModBus TCP', value: 'modbus' }
                 ]},
-                { key: 'enable_failover',    component: 'switch', label: 'settings.core.fields.enable_failover',    column: 2, editable: true },
+
                 { key: 'cache_timeout',      component: 'number', label: 'settings.core.fields.cache_timeout',      column: 2, editable: true, suffix: 'ms' },
-                { key: 'failover_threshold', component: 'number', label: 'settings.core.fields.failover_threshold', column: 2, editable: true }
+                { key: 'failover_threshold',        component: 'number', label: 'settings.core.fields.failover_threshold',        column: 2, editable: true },
+                { key: 'collector_restart_minutes', component: 'number', label: 'settings.core.fields.collector_restart_minutes', column: 1, editable: true, suffix: 'min' }
               ]
             }]
           },
@@ -239,8 +242,9 @@ router.post('/core', authorize('admin'), async (req, res) => {
     const updates = req.body;
     const categoryMapping = {
       system_name: 'system', location: 'system', timezone: 'system', theme: 'system',
-      primary_source: 'data_collection', enable_failover: 'data_collection',
-      cache_timeout: 'data_collection', failover_threshold: 'data_collection',
+      enable_failover: 'data_collection', primary_source: 'data_collection', 
+      cache_timeout: 'data_collection', failover_threshold: 'data_collection',collector_restart_minutes: 'data_collection',
+      derive_home_load: 'data_collection',
       email_enabled: 'notifications', email_address: 'notifications',
       snapshots_days: 'retention', minutes_days: 'retention', hours_days: 'retention',
       contract_type: 'energy', fixed_price_ct_kwh: 'energy'

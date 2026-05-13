@@ -13,9 +13,16 @@
 //   getStatus() → { lastCollection, lastError, consecutiveErrors, ... }
 
 import db from './database.js';
+import capabilityRegistry from './capabilityRegistry.js';
+import settingsService from './system/services/settingsService.js';
+import { padName } from './utils/logger.js';
+import { localTimestamp } from './utils/localTimestamp.js';
+const PREFIX = padName('CollectorManager');
 
-const FALLBACK_INTERVAL = 30000; // 30 s — used when nothing else is configured
-const MAX_CONSECUTIVE_ERRORS = 5; // pause a collector after this many back-to-back failures
+const FALLBACK_INTERVAL                  = 30000; // 30 s — used when nothing else is configured
+const MAX_CONSECUTIVE_ERRORS             = 5;     // pause a collector after this many back-to-back failures
+const DERIVED_METRICS_INTERVAL           = 15000; // 15 s — derived load calculation cadence
+const DEFAULT_COLLECTOR_RESTART_MINUTES  = 30;    // fallback if system_settings not found
 
 class CollectorManager {
   constructor() {
@@ -31,10 +38,19 @@ class CollectorManager {
     //   nextRun:           Date|null,
     //   lastError:         string|null,
     //   consecutiveErrors: number,
-    //   paused:            boolean        // true after MAX_CONSECUTIVE_ERRORS
+    //   paused:            boolean,       // true after MAX_CONSECUTIVE_ERRORS
+    //   recoveryTimer:     Timeout|null,  // one-shot auto-restart timer
     // }
     this.schedules = new Map();
     this.isRunning = false;
+
+    // Derived metrics state
+    this._derivedTimer     = null;
+    this._derivedLastRun   = null;
+    this._derivedLastError = null;
+
+    // Resolved at start() from system_settings — cached for the session
+    this._collectorRestartMs = DEFAULT_COLLECTOR_RESTART_MINUTES * 60 * 1000;
   }
 
   /**
@@ -77,7 +93,6 @@ class CollectorManager {
   register(module) {
     const manifest = module.manifest;
     const loader='';
-    //console.log(`   [DEBUG] register() called: ${manifest?.id} | dataCollection=${manifest?.capabilities?.dataCollection} | collect=${typeof module.collect}`);
     if (!manifest?.capabilities?.dataCollection) {
       return; // Module doesn't do data collection — nothing to register
     }
@@ -100,7 +115,8 @@ class CollectorManager {
       nextRun:           null,
       lastError:         null,
       consecutiveErrors: 0,
-      paused:            false
+      paused:            false,
+      recoveryTimer:     null,
     });
 
     console.log(`     - Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
@@ -117,6 +133,9 @@ class CollectorManager {
       return;
     }
     this.isRunning = true;
+
+    // Resolve auto-restart period from system_settings
+    await this._resolveRestartInterval();
 
     // Phase 1 — resolve enabled state and interval for every module (DB reads,
     // fast and sequential so logs appear in a predictable order).
@@ -148,6 +167,20 @@ class CollectorManager {
         });
     }
 
+    // Arm derived metrics — only when explicitly enabled via core setting.
+    // Disabled by default: the current formula has known sign-convention issues
+    // with bidirectional flows. Users opt in via Settings → Core → Data Collection.
+    const dc = await settingsService.getCategory('data_collection');
+    if (dc?.derive_home_load === true || dc?.derive_home_load === '1' || dc?.derive_home_load === 1) {
+      this._derivedTimer = setTimeout(
+        () => this._runDerivedMetrics(),
+        DERIVED_METRICS_INTERVAL
+      );
+      console.log(`\x1b[37m   - Derived metrics armed (interval: ${DERIVED_METRICS_INTERVAL / 1000}s)\x1b[37m`);
+    } else {
+      console.log(`\x1b[37m   - Derived metrics: disabled (enable via Core Settings → Data Collection)\x1b[37m`);
+    }
+
     console.log('\x1b[32m   • all collectors fired (running in background)\n \x1b[37m');
   }
 
@@ -162,6 +195,17 @@ class CollectorManager {
         clearTimeout(entry.timer);
         entry.timer = null;
       }
+      // Cancel any pending auto-recovery timer
+      if (entry.recoveryTimer) {
+        clearTimeout(entry.recoveryTimer);
+        entry.recoveryTimer = null;
+      }
+    }
+
+    // Stop derived metrics timer
+    if (this._derivedTimer) {
+      clearTimeout(this._derivedTimer);
+      this._derivedTimer = null;
     }
 
     this.isRunning = false;
@@ -203,10 +247,14 @@ class CollectorManager {
       throw new Error(`CollectorManager: no collector registered as '${moduleId}'`);
     }
 
-    // Clear existing timer
+    // Clear existing timers
     if (entry.timer) {
       clearTimeout(entry.timer);
       entry.timer = null;
+    }
+    if (entry.recoveryTimer) {
+      clearTimeout(entry.recoveryTimer);
+      entry.recoveryTimer = null;
     }
 
     // Reset error state
@@ -227,6 +275,7 @@ class CollectorManager {
         this._armNext(moduleId);
       });
   }
+
   /**
    * Enable or disable a single collector at runtime.
    * Called by the settings route when a module is activated/deactivated.
@@ -241,10 +290,14 @@ class CollectorManager {
       throw new Error(`CollectorManager: no collector registered as '${moduleId}'`);
     }
 
-    // Clear any running timer regardless of direction
+    // Clear any running timers regardless of direction
     if (entry.timer) {
       clearTimeout(entry.timer);
       entry.timer = null;
+    }
+    if (entry.recoveryTimer) {
+      clearTimeout(entry.recoveryTimer);
+      entry.recoveryTimer = null;
     }
 
     entry.enabled = enabled;
@@ -328,8 +381,6 @@ class CollectorManager {
         this._checkPause(entry);
       }
 
-      //console.log(`   └ ${entry.name}: ${success ? '✅' : '⚠️'} (${elapsed}ms)`);
-
     } catch (error) {
       // collect() threw — hard failure
       entry.lastRun = new Date();
@@ -342,6 +393,8 @@ class CollectorManager {
 
   /**
    * Pause a collector if it has hit the consecutive error limit.
+   * Arms a one-shot recovery timer based on system_settings
+   * category='data_collection', setting_key='collector_restart_minutes'.
    */
   _checkPause(entry) {
     if (entry.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS && !entry.paused) {
@@ -350,11 +403,163 @@ class CollectorManager {
         clearTimeout(entry.timer);
         entry.timer = null;
       }
-      console.warn(`\x1b[93m   • ${entry.name}: paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors. Use restart('${entry.id}') to resume.  \x1b[37m`);
+
+      const restartMinutes = Math.round(this._collectorRestartMs / 60000);
+      console.warn(
+        `\x1b[93m   • ${entry.name}: paused after ${MAX_CONSECUTIVE_ERRORS} consecutive errors. ` +
+        `Auto-restart in ${restartMinutes}m.\x1b[37m`
+      );
+
+      // Cancel any existing recovery timer before arming a new one
+      if (entry.recoveryTimer) {
+        clearTimeout(entry.recoveryTimer);
+      }
+
+      entry.recoveryTimer = setTimeout(() => {
+        entry.recoveryTimer = null;
+        if (!this.isRunning) return;
+        console.log(`\x1b[32m   • ${entry.name}: auto-recovering after ${restartMinutes}m pause\x1b[37m`);
+        entry.consecutiveErrors = 0;
+        entry.paused            = false;
+        entry.lastError         = null;
+        this._runCollector(entry.id)
+          .then(() => this._armNext(entry.id))
+          .catch((err) => {
+            console.error(`\x1b[91m   ❌ ${entry.name}: auto-recovery failed — ${err.message}\x1b[37m`);
+            this._armNext(entry.id);
+          });
+      }, this._collectorRestartMs);
+    }
+  }
+
+  // ─── Derived Metrics ────────────────────────────────────────────────────────
+
+  /**
+   * Derives load_power and load_energy_today from capability registry readings.
+   * Writes a synthetic energy_snapshots row with source = 'wolffie-core'.
+   * Owns only load_power and load_energy_today — all other fields NULL.
+   *
+   * Sign conventions (canonical across all modules):
+   *   solar    always positive (production)
+   *   battery  positive = charging (absorbing power), negative = discharging (supplying power)
+   *   grid     positive = importing, negative = exporting
+   *
+   * load_power formula:
+   *   load = solar - battery + grid
+   *
+   *   Rationale:
+   *     - Solar produces power available to home               → +solar
+   *     - Battery charging consumes power (raises load)        → -battery when positive
+   *     - Battery discharging supplies power (lowers net load) → -battery when negative = +
+   *     - Grid import supplies power to home                   → +grid when positive
+   *     - Grid export removes surplus from home                → +grid when negative = -
+   *
+   * load_energy_today:
+   *   load_today = solar_today + (import_today - export_today) + (discharge_today - charge_today)
+   */
+  async _runDerivedMetrics() {
+    if (!this.isRunning) return;
+
+    try {
+      // ── Read from capability registry ────────────────────────────────────
+      const [solar, battery, grid] = await Promise.all([
+        capabilityRegistry.has('solar:read')   ? capabilityRegistry.get('solar:read')()   : null,
+        capabilityRegistry.has('battery:read') ? capabilityRegistry.get('battery:read')() : null,
+        capabilityRegistry.has('grid:read')    ? capabilityRegistry.get('grid:read')()    : null,
+      ]);
+
+      const solarPower   = solar?.power   ?? 0;
+      const batteryPower = battery?.power ?? 0;
+      const gridPower    = grid?.power    ?? 0;
+
+      // ── Derive live load ─────────────────────────────────────────────────
+      // battery positive = charging (consuming power) → subtract from load
+      // battery negative = discharging (supplying power) → subtract negative = add to load
+      const loadPower = Math.max(0, solarPower - batteryPower + gridPower);
+
+      // ── Derive daily load total ──────────────────────────────────────────
+      const solarToday     = solar?.energy_today      ?? 0;
+      const importToday    = grid?.import_today       ?? 0;
+      const exportToday    = grid?.export_today       ?? 0;
+      const chargeToday    = battery?.charge_today    ?? 0;
+      const dischargeToday = battery?.discharge_today ?? 0;
+
+      const loadEnergyToday = Math.max(0,
+        solarToday +
+        (importToday    - exportToday) +
+        (dischargeToday - chargeToday)
+      );
+
+      // ── Write synthetic snapshot ─────────────────────────────────────────
+      // All energy_snapshots rows use local time (CET/CEST without offset marker)
+      // to match the alphaess-cloud and homewizard collectors. Earlier versions
+      // wrote UTC here via .toISOString(); that put wolffie-core rows in different
+      // hour buckets than other sources, breaking the aggregator's strftime-based
+      // bucketing for all consumers downstream.
+      const localNow = localTimestamp();
+
+      await db.pool.query(
+        `INSERT INTO energy_snapshots (
+          timestamp, source, device_id,
+          load_power, load_energy_today
+        ) VALUES (?, 'wolffie-core', 'derived', ?, ?)
+        ON CONFLICT(timestamp, source) DO UPDATE SET
+          load_power        = excluded.load_power,
+          load_energy_today = excluded.load_energy_today`,
+        [localNow, Math.round(loadPower), loadEnergyToday]
+      );
+
+      this._derivedLastRun   = new Date();
+      this._derivedLastError = null;
+
+      console.log(
+        `   • ${PREFIX} – Load=${Math.round(loadPower)}W` +
+        ` (Solar=${solarPower}W Battery=${batteryPower}W Grid=${gridPower}W)` +
+        ` LoadToday=${loadEnergyToday.toFixed(3)}kWh`
+      );
+
+    } catch (err) {
+      this._derivedLastError = err.message;
+      console.error(`\x1b[31m   • ${PREFIX} derived metrics failed: ${err.message}\x1b[37m`);
+    }
+
+    // Re-arm — only if still running
+    if (this.isRunning) {
+      this._derivedTimer = setTimeout(
+        () => this._runDerivedMetrics(),
+        DERIVED_METRICS_INTERVAL
+      );
     }
   }
 
   // ─── Internal: interval resolution ──────────────────────────────
+
+  /**
+   * Resolve the auto-restart period from system_settings.
+   * category='data_collection', setting_key='collector_restart_minutes'
+   * Falls back to DEFAULT_COLLECTOR_RESTART_MINUTES if not found.
+   */
+  async _resolveRestartInterval() {
+    try {
+      const [rows] = await db.pool.query(
+        `SELECT setting_value FROM system_settings
+          WHERE category    = 'data_collection'
+            AND setting_key = 'collector_restart_minutes'
+          LIMIT 1`
+      );
+      if (rows.length > 0 && rows[0].setting_value) {
+        const minutes = Number(rows[0].setting_value);
+        if (minutes > 0) {
+          this._collectorRestartMs = minutes * 60 * 1000;
+          console.log(`\x1b[37m   - Collector auto-restart: ${minutes}m (from system_settings)\x1b[37m`);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn(`   - collector_restart_minutes lookup failed: ${err.message}, using default`);
+    }
+    console.log(`\x1b[37m   - Collector auto-restart: ${DEFAULT_COLLECTOR_RESTART_MINUTES}m (default)\x1b[37m`);
+  }
 
   /**
    * Resolve the effective poll interval for a module.
@@ -377,17 +582,13 @@ class CollectorManager {
       if (rows.length > 0 && rows[0].setting_value) {
         const dbInterval = Number(rows[0].setting_value);
         if (dbInterval > 0) {
-//          console.log(`   • ${moduleId}: using system_settings interval (${dbInterval}ms)`);
           return dbInterval;
         }
       }
     } catch (error) {
-      // system_settings table might not exist yet or query failed —
-      // fall through to manifest default silently
       console.log(`\x1b[91m   • ${moduleId}: system_settings lookup failed (${error.message}), using manifest default\x1b[37m `);
     }
 
-    //console.log(`\x1b[37m   • ${moduleId} - ${new Date().toISOString()} - using manifest default interval (${manifestDefault}ms)\x1b[37m `);
     return manifestDefault;
   }
 }
