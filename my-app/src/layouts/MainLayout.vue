@@ -10,7 +10,7 @@
             <img src="@/assets/wolffie.svg" alt="Wolffie Logo" class="w-8 h-8 drop-shadow-sm" />
             <span
               :class="[
-                'brand-wordmark text-3xl font-black tracking-tight uppercase transition-colors relative',
+                'brand-wordmark text-3xl font-black tracking-tight uppercase transition-colors relative hidden lg:inline',
                 isActive('/') ? 'brand-wordmark--active text-primary' : 'text-secondary-500 hover:text-primary'
               ]"
             >Wolffie</span>
