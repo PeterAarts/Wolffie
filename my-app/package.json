@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@bhplugin/vue3-datatable": "^2.0.2",
-    "@fortawesome/fontawesome-pro": "^7.2.0",
+    "@fortawesome/fontawesome-free": "^7.2.0",
     "@primevue/themes": "^4.5.4",
     "@tailwindcss/vite": "^4.1.18",
     "@vue-flow/core": "^1.48.1",
@@ -32,6 +32,6 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.3",
     "vite": "^7.3.0",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^0.19.8"
   }
 }
