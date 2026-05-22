@@ -171,26 +171,75 @@ class AggregatorService {
   async aggregateHours() {
     try {
       // Rolling 25-hour window to match the minute aggregation approach.
+      //
+      // Power flow model (AlphaESS: battery_power < 0 = charging):
+      //   solar_to_load    = MIN(pv, load)
+      //   battery_to_load  = MIN(MAX(load-pv,0), MAX(battery_power,0))
+      //   grid_to_load     = MAX(load - pv - battery_discharge, 0)
+      //   solar_to_battery = MIN(MAX(pv-load,0), MAX(-battery_power,0))  → stored negative
+      //   solar_to_grid    = MAX(MAX(pv-load,0) - MAX(-battery_power,0), 0) → stored negative
       const [result] = await db.pool.query(`
         INSERT INTO energy_hours (
           timestamp,
           battery_soc_avg, battery_power_avg,
-          pv_power_avg, grid_power_avg, load_power_avg
+          pv_power_avg, grid_power_avg, load_power_avg,
+          grid_import_kwh, grid_export_kwh,
+          solar_to_load_kwh, battery_to_load_kwh, grid_to_load_kwh, solar_to_grid_kwh
         )
         SELECT
-          strftime('%Y-%m-%d %H:00:00', timestamp) AS hour_timestamp,
-          AVG(battery_soc_avg), AVG(battery_power_avg),
-          AVG(pv_power_avg),    AVG(grid_power_avg),   AVG(load_power_avg)
+          strftime('%Y-%m-%d %H:00:00', timestamp)        AS hour_timestamp,
+          AVG(battery_soc_avg),
+          AVG(battery_power_avg),
+          AVG(pv_power_avg),
+          AVG(grid_power_avg),
+          AVG(load_power_avg),
+
+          -- raw grid import/export
+          ROUND(MAX(COALESCE(AVG(grid_power_avg),    0), 0) / 1000.0, 3),
+          ROUND(MIN(COALESCE(AVG(grid_power_avg),    0), 0) / 1000.0, 3),
+
+          -- solar → home
+          ROUND(MIN(
+            COALESCE(AVG(pv_power_avg),   0),
+            COALESCE(AVG(load_power_avg), 0)
+          ) / 1000.0, 3),
+
+          -- battery → home (discharging to cover load beyond solar)
+          ROUND(MIN(
+            MAX(COALESCE(AVG(load_power_avg), 0) - COALESCE(AVG(pv_power_avg), 0), 0),
+            MAX(COALESCE(AVG(battery_power_avg), 0), 0)
+          ) / 1000.0, 3),
+
+          -- grid → home (remaining load after solar + battery)
+          ROUND(MAX(
+            COALESCE(AVG(load_power_avg), 0)
+            - COALESCE(AVG(pv_power_avg), 0)
+            - MAX(COALESCE(AVG(battery_power_avg), 0), 0),
+            0
+          ) / 1000.0, 3),
+
+          -- solar → battery (surplus charging battery, stored negative for chart)
+          ROUND(-MIN(
+            MAX(COALESCE(AVG(pv_power_avg),   0) - COALESCE(AVG(load_power_avg), 0), 0),
+            MAX(-COALESCE(AVG(battery_power_avg), 0), 0)
+          ) / 1000.0, 3)
+
         FROM energy_minutes
         WHERE timestamp >= datetime('now', '-25 hours')
           AND timestamp <  strftime('%Y-%m-%d %H:00:00', datetime('now'))
         GROUP BY hour_timestamp
         ON CONFLICT(timestamp) DO UPDATE SET
-          battery_soc_avg   = excluded.battery_soc_avg,
-          battery_power_avg = excluded.battery_power_avg,
-          pv_power_avg      = excluded.pv_power_avg,
-          grid_power_avg    = excluded.grid_power_avg,
-          load_power_avg    = excluded.load_power_avg
+          battery_soc_avg      = excluded.battery_soc_avg,
+          battery_power_avg    = excluded.battery_power_avg,
+          pv_power_avg         = excluded.pv_power_avg,
+          grid_power_avg       = excluded.grid_power_avg,
+          load_power_avg       = excluded.load_power_avg,
+          grid_import_kwh      = excluded.grid_import_kwh,
+          grid_export_kwh      = excluded.grid_export_kwh,
+          solar_to_load_kwh    = excluded.solar_to_load_kwh,
+          battery_to_load_kwh  = excluded.battery_to_load_kwh,
+          grid_to_load_kwh     = excluded.grid_to_load_kwh,
+          solar_to_grid_kwh    = excluded.solar_to_grid_kwh
       `, []);
 
       if (result.affectedRows > 0)

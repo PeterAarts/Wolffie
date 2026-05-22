@@ -256,6 +256,33 @@ function _buildHealthBlock() {
   };
 }
 
+/**
+ * Fetch the most recent smart-eco strategy decision from strategy_decisions.
+ * Only returns a result when:
+ *   - strategy_id = 'smart-eco'
+ *   - evaluated_at is within the last 90 minutes (stale decisions are not useful)
+ *
+ * Returns:
+ *   { reason: string, evaluatedAt: string } | null
+ */
+async function _buildStrategyDecisionBlock() {
+  const [rows] = await db.pool.query(`
+    SELECT reason, evaluated_at
+    FROM   strategy_decisions
+    WHERE  strategy_id = 'smart-eco'
+      AND  evaluated_at >= datetime('now', '-90 minutes')
+    ORDER  BY evaluated_at DESC
+    LIMIT  1
+  `);
+
+  if (!rows || rows.length === 0) return null;
+
+  return {
+    reason:      rows[0].reason      ?? null,
+    evaluatedAt: rows[0].evaluated_at ?? null,
+  };
+}
+
 // ── GET /api/system/summary ────────────────────────────────────────────────
 
 router.get('/summary', async (req, res) => {
@@ -420,6 +447,14 @@ router.get('/summary', async (req, res) => {
       body:      '',
       constraint: null,
     };
+
+    // strategyDecision — latest smart-eco decision reason for dashboard display
+    try {
+      responseBody.strategyDecision = await _buildStrategyDecisionBlock();
+    } catch (err) {
+      console.error('[summary] strategyDecision failed:', err.message);
+      responseBody.strategyDecision = null;
+    }
 
     // health — derived from collectorManager.getSchedules()
     try {
@@ -919,4 +954,45 @@ router.get('/devices-daily', async (req, res) => {
     });
   }
 });
+// ── GET /api/system/hourly ────────────────────────────────────────────────
+//
+// Returns hourly aggregated self-consumption data for a given date.
+// Used by DashboardGraph.vue stacked bar chart.
+//
+// Query params:
+//   date  YYYY-MM-DD  (required)
+//
+// Response:
+//   { date, rows: [{ hour, solar_to_load_kwh, battery_to_load_kwh,
+//                    grid_to_load_kwh, solar_to_grid_kwh }, ...] }
+
+router.get('/hourly', async (req, res) => {
+  try {
+    const { date } = req.query;
+    if (!date) {
+      return res.status(400).json({ error: 'date parameter required (YYYY-MM-DD)' });
+    }
+
+    const [rows] = await db.pool.query(`
+      SELECT
+        CAST(strftime('%H', timestamp) AS INTEGER)  AS hour,
+        ROUND(COALESCE(solar_to_load_kwh,   0), 3) AS solar_to_load_kwh,
+        ROUND(COALESCE(battery_to_load_kwh, 0), 3) AS battery_to_load_kwh,
+        ROUND(COALESCE(grid_to_load_kwh,    0), 3) AS grid_to_load_kwh,
+        ROUND(COALESCE(solar_to_grid_kwh,   0), 3) AS solar_to_grid_kwh
+      FROM energy_hours
+      WHERE date(timestamp) = ?
+      ORDER BY hour ASC
+    `, [date]);
+
+    res.json({ date, rows });
+  } catch (error) {
+    console.error('✗ Error fetching hourly data:', error.message);
+    res.status(500).json({
+      error:   'Failed to fetch hourly data',
+      message: error.message,
+    });
+  }
+});
+
 export default router;
