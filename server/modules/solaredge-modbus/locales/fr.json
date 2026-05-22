@@ -1,0 +1,61 @@
+{
+  "modules": {
+    "solarEdgeModbus": {
+      "groups": {
+        "modbus": {
+          "title": "Configuration SolarEdge ModBus TCP"
+        }
+      },
+      "sections": {
+        "network": {
+          "title": "Paramètres Réseau",
+          "description": "Données réseau de votre onduleur SolarEdge SE3000H"
+        },
+        "protocol": {
+          "title": "Protocole Modbus",
+          "description": "Paramètres protocole SunSpec pour SolarEdge"
+        },
+        "deviceInfo": {
+          "title": "Informations sur l'appareil",
+          "description": "Lu via Modbus. Lancez le test de connexion pour remplir."
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Activer ModBus TCP"
+        },
+        "host": {
+          "label": "Adresse IP",
+          "placeholder": "ex. 192.168.1.100"
+        },
+        "port": {
+          "label": "Port"
+        },
+        "unit_id": {
+          "label": "Unit ID (Slave ID)"
+        },
+        "poll_interval": {
+          "label": "Intervalle d'Interrogation (ms)"
+        },
+        "timeout": {
+          "label": "Délai d'Attente (ms)"
+        },
+        "device_manufacturer": {
+          "label": "Fabricant"
+        },
+        "device_model": {
+          "label": "Modèle"
+        },
+        "device_version": {
+          "label": "Version du firmware"
+        },
+        "device_serial": {
+          "label": "Numéro de série"
+        }
+      },
+      "actions": {
+        "testConnection": "Tester la Connexion"
+      }
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "i18nKeys": true,
+  "groups": [
+    {
+      "title": "modules.alphaessCloud.groups.api.title",
+      "sections": [
+        {
+          "title": "modules.alphaessCloud.sections.credentials.title",
+          "fields": [
+            {
+              "key": "enabled",
+              "component": "switch",
+              "label": "modules.alphaessCloud.fields.enabled.label",
+              "cols": 12,
+              "default": true
+            },
+            {
+              "key": "app_id",
+              "component": "text",
+              "label": "modules.alphaessCloud.fields.app_id.label",
+              "cols": 4,
+              "required": true,
+              "placeholder": "modules.alphaessCloud.fields.app_id.placeholder"
+            },
+            {
+              "key": "app_secret",
+              "component": "password",
+              "label": "modules.alphaessCloud.fields.app_secret.label",
+              "cols": 4,
+              "required": true
+            },
+            {
+              "key": "system_sn",
+              "component": "text",
+              "label": "modules.alphaessCloud.fields.system_sn.label",
+              "cols": 6,
+              "required": true
+            }
+          ]
+        },
+        {
+          "title": "modules.alphaessCloud.sections.dataCollection.title",
+          "fields": [
+            {
+              "key": "poll_interval",
+              "component": "number",
+              "label": "modules.alphaessCloud.fields.poll_interval.label",
+              "cols": 2,
+              "suffix": " ms"
+            },
+            {
+              "key": "endpoint_url",
+              "component": "text",
+              "label": "modules.alphaessCloud.fields.endpoint_url.label",
+              "cols": 6,
+              "default": "https://openapi.alphaess.com/api"
+            }
+          ]
+        },
+        {
+          "title": "modules.alphaessCloud.sections.battery.title",
+          "fields": [
+            {
+              "key": "MinSoC ",
+              "component": "number",
+              "label": "modules.alphaessCloud.fields.min_soc.label",
+              "cols": 2,
+              "default": 30,
+              "suffix": " %",
+              "required": true
+            },
+            {
+              "key": "MaxSoC",
+              "component": "number",
+              "label": "modules.alphaessCloud.fields.max_soc.label",
+              "cols": 2,
+              "default": 98,
+              "suffix": " %",
+              "required": true
+            },
+            {
+              "key": "UPS",
+              "component": "boolean",
+              "label": "modules.alphaessCloud.fields.ups.label",
+              "cols": 2,
+              "default": true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

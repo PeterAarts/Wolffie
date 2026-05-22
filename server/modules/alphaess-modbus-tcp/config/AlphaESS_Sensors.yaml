@@ -1,0 +1,1434 @@
+# Definition of sensors
+    sensors:
+# Measurements other
+      - name: AlphaESS Inverter Grid Frequency
+        unique_id: AlphaESS_Inverter_Grid_Frequency
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x041C
+        data_type: int16
+        unit_of_measurement: Hz
+        device_class: frequency
+        state_class: measurement
+        scan_interval: 30
+        scale: 0.01
+        precision: 2                         
+
+      - name: AlphaESS Inverter Temperature 
+        unique_id: AlphaESS_Inverter_Temperature
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0435
+        data_type: int16
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1 # 0.01 for SMILE-B3/SMILE-B3-PLUS
+        precision: 0
+
+      - name: AlphaESS Inverter Work Mode
+        unique_id: AlphaESS_Inverter_Work_Mode
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0440
+        data_type: int16
+        state_class: measurement
+        scan_interval: 5
+        
+      - name: AlphaESS BMS Version
+        unique_id: AlphaESS_BMS_Version
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0115
+        data_type: int16
+        state_class: measurement
+        scan_interval: 60
+        
+      - name: AlphaESS LMU Version
+        unique_id: AlphaESS_LMU_Version
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0116
+        data_type: int16
+        state_class: measurement
+        scan_interval: 60
+        
+      - name: AlphaESS ISO Version
+        unique_id: AlphaESS_ISO_Version
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0117
+        data_type: int16
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS Inverter Version
+        unique_id: AlphaESS_Inverter_Version
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0640
+        data_type: string
+        count: 5
+        scan_interval: 60
+        
+      - name: AlphaESS Inverter ARM Version
+        unique_id: AlphaESS_Inverter_ARM_Version
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0645
+        data_type: string
+        count: 5
+        scan_interval: 60
+       
+      - name: AlphaESS EMS Version High
+        unique_id: AlphaESS_EMS_Version_High
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x074B
+        data_type: int16
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS EMS Version Middle
+        unique_id: AlphaESS_EMS_Version_Middle
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x074C
+        data_type: int16
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS EMS Version Low
+        unique_id: AlphaESS_EMS_Version_Low
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x074D
+        data_type: int16
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS System Time YYMM
+        unique_id: AlphaESS_System_Time_YYMM
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0740
+        data_type: int16
+        state_class: measurement
+        scan_interval: 5
+        
+      - name: AlphaESS System Time DDHH
+        unique_id: AlphaESS_System_Time_DDHH
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0741
+        data_type: int16
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS System Time MMSS
+        unique_id: AlphaESS_System_Time_MMSS
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0742
+        data_type: int16
+        state_class: measurement
+        scan_interval: 5
+
+      # Modbus Baud Rate 0 = 9600/1 = 115200/2 = 256000/3 = 19200
+      - name: AlphaESS Modbus Baud Rate
+        unique_id: AlphaESS_Modbus_Baud_Rate
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0810
+        data_type: uint16
+        state_class: measurement
+        scan_interval: 60
+        scale: 1
+
+      # IP Method 0 = DHCP/1 = Static
+      - name: AlphaESS IP Method
+        unique_id: AlphaESS_IP_Method
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0808
+        data_type: uint16
+        state_class: measurement
+        scan_interval: 60
+        scale: 1
+
+      - name: AlphaESS Local IP
+        unique_id: AlphaESS_Local_IP
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0809
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 60
+        scale: 1
+
+      - name: AlphaESS Subnet Mask
+        unique_id: AlphaESS_Subnet_Mask
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x080B
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 60
+        scale: 1
+
+      - name: AlphaESS Gateway
+        unique_id: AlphaESS_Gateway
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x080D
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 60
+        scale: 1
+
+# Measurements current power
+      # Power to/from GRID
+      - name: AlphaESS Power Grid
+        unique_id: AlphaESS_Power_Grid
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0021
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 1
+
+      - name: AlphaESS Power Phase A Grid
+        unique_id: AlphaESS_Power_Phase_A_Grid
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x001B
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Power Phase B Grid
+        unique_id: AlphaESS_Power_Phase_B_Grid
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x001D
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Power Phase C Grid
+        unique_id: AlphaESS_Power_Phase_C_Grid
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x001F
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Voltage Phase A Grid
+        unique_id: AlphaESS_Voltage_Phase_A_Grid
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0014
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      - name: AlphaESS Voltage Phase B Grid
+        unique_id: AlphaESS_Voltage_Phase_B_Grid
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0015
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      - name: AlphaESS Voltage Phase C Grid
+        unique_id: AlphaESS_Voltage_Phase_C_Grid
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0016
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      # Power to/from Battery
+      - name: AlphaESS Power Battery
+        unique_id: AlphaESS_Power_Battery
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0126
+        data_type: int16
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 1
+
+      # Power Inverter L1
+      - name: AlphaESS Power Inverter L1
+        unique_id: AlphaESS_Power_Inverter_L1
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0406
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      # Power Inverter L2
+      - name: AlphaESS Power Inverter L2
+        unique_id: AlphaESS_Power_Inverter_L2
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0408
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      # Power Inverter L3
+      - name: AlphaESS Power Inverter L3
+        unique_id: AlphaESS_Power_Inverter_L3
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x040A
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      # Power Inverter
+      - name: AlphaESS Power Inverter
+        unique_id: AlphaESS_Power_Inverter
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x040C
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      # Backup Power Inverter L1
+      - name: AlphaESS Backup Power Inverter L1
+        unique_id: AlphaESS_Backup_Power_Inverter_L1
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0414
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      # Backup Power Inverter L2
+      - name: AlphaESS  Backup Power Inverter L2
+        unique_id: AlphaESS_Backup_Power_Inverter_L2
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0416
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      # Backup Power Inverter L3
+      - name: AlphaESS Backup Power Inverter L3
+        unique_id: AlphaESS_Backup_Power_Inverter_L3
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0418
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      # Backup Power Inverter
+      - name: AlphaESS Backup Power Inverter
+        unique_id: AlphaESS_Backup_Power_Inverter
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x041A
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 5
+        scale: 1 # 0.1 for SMILE-B3/SMILE-B3-PLUS
+
+      # Active Power PV Meter
+      - name: AlphaESS Active Power PV Meter
+        unique_id: AlphaESS_Active_Power_PV_Meter
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x00A1
+        data_type: int32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 1
+
+      # Power of String 1
+      - name: AlphaESS PV1 Power
+        unique_id: AlphaESS_PV1_Power
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x041F
+        data_type: uint32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 1
+        
+      - name: AlphaESS PV1 Voltage 
+        unique_id: AlphaESS_PV1_Voltage
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x041D
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+
+      - name: AlphaESS PV1 Current 
+        unique_id: AlphaESS_PV1_Current
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x041E
+        data_type: int16
+        unit_of_measurement: A
+        device_class: current
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+      # Power of String 2
+      - name: AlphaESS PV2 Power
+        unique_id: AlphaESS_PV2_Power
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0423
+        data_type: uint32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 1
+        
+      - name: AlphaESS PV2 Voltage 
+        unique_id: AlphaESS_PV2_Voltage
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0421
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+        
+      - name: AlphaESS PV2 Current 
+        unique_id: AlphaESS_PV2_Current
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0422
+        data_type: int16
+        unit_of_measurement: A
+        device_class: current
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+      # Power of String 3
+      - name: AlphaESS PV3 Power
+        unique_id: AlphaESS_PV3_Power
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0427
+        data_type: uint32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 1
+
+      - name: AlphaESS PV3 Voltage 
+        unique_id: AlphaESS_PV3_Voltage
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0425
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+        
+      - name: AlphaESS PV3 Current 
+        unique_id: AlphaESS_PV3_Current
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0426
+        data_type: int16
+        unit_of_measurement: A
+        device_class: current
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+      # Power of String 4
+      - name: AlphaESS PV4 Power
+        unique_id: AlphaESS_PV4_Power
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x042B
+        data_type: uint32
+        unit_of_measurement: W
+        device_class: power
+        state_class: measurement
+        scan_interval: 1
+
+      - name: AlphaESS PV4 Voltage 
+        unique_id: AlphaESS_PV4_Voltage
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0429
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+        
+      - name: AlphaESS PV4 Current 
+        unique_id: AlphaESS_PV4_Current
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x042A
+        data_type: int16
+        unit_of_measurement: A
+        device_class: current
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+# Energy measurements statistic
+      # Total Energy Feed to Grid (Meter)
+      - name: AlphaESS Total Energy Feed to Grid (Meter)
+        unique_id: AlphaESS_Total_Energy_Feed_to_Grid_Meter
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0010
+        data_type: uint32
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+        scale: 0.01
+        precision: 2
+
+      # Total Energy Consumption from Grid (Meter)
+      - name: AlphaESS Total Energy Consumption from Grid (Meter)
+        unique_id: AlphaESS_Total_Energy_Consumption_from_Grid_Meter
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0012
+        data_type: uint32
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+        scale: 0.01
+        precision: 2
+
+      # Total Energy Feed to Grid (PV)
+      - name: AlphaESS Total Energy Feed to Grid (PV)
+        unique_id: AlphaESS_Total_Energy_Feed_to_Grid_PV
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0090
+        data_type: uint32
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+        scale: 0.01
+        precision: 2
+
+      # Total Energy Charge Battery
+      - name: AlphaESS Total Energy Charge Battery
+        unique_id: AlphaESS_Total_Energy_Charge_Battery
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0120
+        data_type: uint32
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+      # Total Energy Discharge Battery
+      - name: AlphaESS Total Energy Discharge Battery
+        unique_id: AlphaESS_Total_Energy_Discharge_Battery
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0122
+        data_type: uint32
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+      # Total Energy Charge Battery from Grid
+      - name: AlphaESS Total Energy Charge Battery from Grid
+        unique_id: AlphaESS_Total_Energy_Charge_Battery_from_Grid
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0124
+        data_type: uint32
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+      # Total Energy From PV
+      - name: AlphaESS Total Energy from PV
+        unique_id: AlphaESS_Total_Energy_from_PV
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x043E
+        data_type: uint32
+        unit_of_measurement: kWh
+        device_class: energy
+        state_class: total_increasing
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+# Warnings & Faults
+      # Inverter Warnings
+      - name: AlphaESS System Fault
+        unique_id: AlphaESS_System_Fault
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x08D4
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      # Inverter Warnings
+      - name: AlphaESS Inverter Warning 1
+        unique_id: AlphaESS_Inverter_Warning_1
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0436
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Inverter Warning 2
+        unique_id: AlphaESS_Inverter_Warning_2
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0438
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      # Inverter Faults
+      - name: AlphaESS Inverter Fault 1
+        unique_id: AlphaESS_Inverter_Fault_1
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x043A
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Inverter Fault 2
+        unique_id: AlphaESS_Inverter_Fault_2
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x043C
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      # Battery Warnings
+      - name: AlphaESS Battery Warning
+        unique_id: AlphaESS_Battery_Warning
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x011C
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 1 Warning
+        unique_id: AlphaESS_Battery_1_Warning
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x013D
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 2 Warning 
+        unique_id: AlphaESS_Battery_2_Warning
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x013F
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 3 Warning
+        unique_id: AlphaESS_Battery_3_Warning
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0141
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 4 Warning
+        unique_id: AlphaESS_Battery_4_Warning
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0143
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 5 Warning 
+        unique_id: AlphaESS_Battery_5_Warning
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0145
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 6 Warning
+        unique_id: AlphaESS_Battery_6_Warning
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0147
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      # Battery Faults
+      - name: AlphaESS Battery Fault
+        unique_id: AlphaESS_Battery_Fault
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x011E
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 1 Fault
+        unique_id: AlphaESS_Battery_1_Fault
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0131
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 2 Fault 
+        unique_id: AlphaESS_Battery_2_Fault
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0133
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 3 Fault
+        unique_id: AlphaESS_Battery_3_Fault
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0135
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 4 Fault
+        unique_id: AlphaESS_Battery_4_Fault
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0137
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 5 Fault 
+        unique_id: AlphaESS_Battery_5_Fault
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0139
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+      - name: AlphaESS Battery 6 Fault
+        unique_id: AlphaESS_Battery_6_Fault
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x013B
+        data_type: uint32
+        state_class: measurement
+        scan_interval: 5
+
+# Grid Safety details
+      # Grid Regulation
+      - name: AlphaESS Grid Regulation
+        unique_id: AlphaESS_Grid_Regulation
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1000
+        data_type: int16
+        state_class: measurement
+        scan_interval: 60
+
+      # Overvoltage Protection
+      - name: AlphaESS OvP L1
+        unique_id: AlphaESS_OvP_L1
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x100B
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+
+      - name: AlphaESS OvP L1 Time
+        unique_id: AlphaESS_OvP_L1_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x100C
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS OvP L2
+        unique_id: AlphaESS_OvP_L2
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x101B
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+
+      - name: AlphaESS OvP L2 Time
+        unique_id: AlphaESS_OvP_L2_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x101C
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS OvP L3
+        unique_id: AlphaESS_OvP_L3
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x101D
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+
+      - name: AlphaESS OvP L3 Time
+        unique_id: AlphaESS_OvP_L3_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x101E
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS OvP10
+        unique_id: AlphaESS_OvP10
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x100D
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+
+      - name: AlphaESS OvP10 Time
+        unique_id: AlphaESS_OvP10_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x100E
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      # Undervoltage Protection
+      - name: AlphaESS UvP L1
+        unique_id: AlphaESS_UvP_L1
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x100F
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+
+      - name: AlphaESS UvP L1 Time
+        unique_id: AlphaESS_UvP_L1_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1010
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS UvP L2
+        unique_id: AlphaESS_UvP_L2
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1011
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+
+      - name: AlphaESS UvP L2 Time
+        unique_id: AlphaESS_UvP_L2_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1012
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS UvP L3
+        unique_id: AlphaESS_UvP_L3
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x101F
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+
+      - name: AlphaESS UvP L3 Time
+        unique_id: AlphaESS_UvP_L3_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1020
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      # Overfrequency Protection
+      - name: AlphaESS OfP L1
+        unique_id: AlphaESS_OfP_L1
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1013
+        data_type: int16
+        unit_of_measurement: Hz
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.01
+
+      - name: AlphaESS OfP L1 Time
+        unique_id: AlphaESS_OfP_L1_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1014
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS OfP L2
+        unique_id: AlphaESS_OfP_L2
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1015
+        data_type: int16
+        unit_of_measurement: Hz
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.01
+
+      - name: AlphaESS OfP L2 Time
+        unique_id: AlphaESS_OfP_L2_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1016
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS OfP L3
+        unique_id: AlphaESS_OfP_L3
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1021
+        data_type: int16
+        unit_of_measurement: Hz
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.01
+
+      - name: AlphaESS OfP L3 Time
+        unique_id: AlphaESS_OfP_L3_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1022
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      # Underfrequency Protection
+      - name: AlphaESS UfP L1
+        unique_id: AlphaESS_UfP_L1
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1017
+        data_type: int16
+        unit_of_measurement: Hz
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.01
+
+      - name: AlphaESS UfP L1 Time
+        unique_id: AlphaESS_UfP_L1_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1018
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS UfP L2
+        unique_id: AlphaESS_UfP_L2
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1019
+        data_type: int16
+        unit_of_measurement: Hz
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.01
+
+      - name: AlphaESS UfP L2 Time
+        unique_id: AlphaESS_UfP_L2_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x101A
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS UfP L3
+        unique_id: AlphaESS_UfP_L3
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1023
+        data_type: int16
+        unit_of_measurement: Hz
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.01
+
+      - name: AlphaESS UfP L3 Time
+        unique_id: AlphaESS_UfP_L3_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x1024
+        data_type: int16
+        unit_of_measurement: ms
+        state_class: measurement
+        scan_interval: 60
+
+# Battery details
+      # SoC
+      - name: AlphaESS SoC Battery
+        unique_id: AlphaESS_SoC_Battery
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0102
+        data_type: int16
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        scan_interval: 10
+        scale: 0.1
+        precision: 1
+
+      # SoH
+      - name: AlphaESS SoH Battery
+        unique_id: AlphaESS_SoH_Battery
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x011B
+        data_type: int16
+        unit_of_measurement: "%"
+        device_class: battery
+        state_class: measurement
+        scan_interval: 10
+        scale: 0.1
+
+      - name: AlphaESS Battery Status
+        unique_id: AlphaESS_Battery_Status
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0103
+        data_type: int16
+        state_class: measurement
+        scan_interval: 60
+
+      - name: AlphaESS Battery Voltage 
+        unique_id: AlphaESS_Battery_Voltage
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0100
+        data_type: int16
+        unit_of_measurement: V
+        device_class: voltage
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+      - name: AlphaESS Battery Current 
+        unique_id: AlphaESS_Battery_Current
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0101
+        data_type: int16
+        unit_of_measurement: A
+        device_class: current
+        state_class: measurement
+        scan_interval: 60
+        scale: 0.1
+        precision: 2
+
+      - name: AlphaESS Battery Min Cell Temp 
+        unique_id: AlphaESS_Battery_Min_Cell_Temp
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x010D
+        data_type: uint16
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 10
+        scale: 0.1
+        precision: 1
+
+      - name: AlphaESS Battery Max Cell Temp
+        unique_id: AlphaESS_Battery_Max_Cell_Temp
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0110
+        data_type: uint16
+        unit_of_measurement: °C
+        device_class: temperature
+        state_class: measurement
+        scan_interval: 10
+        scale: 0.1
+        precision: 1
+
+      - name: AlphaESS Battery Max Charge Current
+        unique_id: AlphaESS_Battery_Max_Charge_Current
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0111
+        data_type: uint16
+        unit_of_measurement: A
+        device_class: current
+        state_class: measurement
+        scan_interval: 10
+        scale: 0.1
+        precision: 1
+
+      - name: AlphaESS Battery Max Discharge Current
+        unique_id: AlphaESS_Battery_Max_Discharge_Current
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0112
+        data_type: uint16
+        unit_of_measurement: A
+        device_class: current
+        state_class: measurement
+        scan_interval: 10
+        scale: 0.1
+        precision: 1
+        
+      - name: AlphaESS Battery Remaining Time
+        unique_id: AlphaESS_Battery_Remaining_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0127
+        data_type: int16
+        unit_of_measurement: min
+        state_class: measurement
+        scan_interval: 60
+
+# PV settings
+      # Feedrate into the grid (percentage of the installed PV-Power)
+      - name: AlphaESS Max Feed to Grid
+        unique_id: AlphaESS_Max_Feed_to_Grid
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0800
+        data_type: uint16
+        unit_of_measurement: "%"
+        state_class: measurement
+        scan_interval: 5
+
+      # PV Capacity Storage
+      - name: AlphaESS PV Capacity Storage
+        unique_id: AlphaESS_PV_Capacity_Storage
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0801
+        data_type: uint32
+        unit_of_measurement: W
+        state_class: measurement
+        scan_interval: 60
+
+      # PV Capacity of Grid Inverter
+      - name: AlphaESS PV Capacity of Grid Inverter
+        unique_id: AlphaESS_PV_Capacity_of_Grid_Inverter
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0803
+        data_type: uint32
+        unit_of_measurement: W
+        state_class: measurement
+        scan_interval: 60
+        
+# Grid meter
+      # Rate of Grid Meter
+      - name: AlphaESS CT Rate Grid Meter
+        unique_id: AlphaESS_CT_Rate_Grid_Meter
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0001
+        data_type: uint16
+        state_class: measurement
+        scan_interval: 60
+
+      # Rate of PV Meter
+      - name: AlphaESS CT Rate PV Meter
+        unique_id: AlphaESS_CT_Rate_PV_Meter
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0081
+        data_type: uint16
+        state_class: measurement
+        scan_interval: 60
+
+# Charging
+      # Time Period Control
+      - name: AlphaESS Charging Time Period Control
+        unique_id: AlphaESS_Charging_Time_Period_Control
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x084F
+        data_type: int16
+        state_class: measurement
+        scan_interval: 10
+
+      # Charging Cutoff SoC
+      - name: AlphaESS Charging Cutoff SoC
+        unique_id: AlphaESS_Charging_Cutoff_SoC
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0855
+        data_type: int16
+        unit_of_measurement: "%"
+        state_class: measurement
+        scan_interval: 10
+
+      # Charging Period 1 Start Hour
+      - name: AlphaESS Charging Period 1 Start Hour
+        unique_id: AlphaESS_Charging_Period_1_Start_Hour
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0856
+        data_type: int16
+        unit_of_measurement: h
+        state_class: measurement
+        scan_interval: 30
+
+      # Charging Period 1 Stop Hour
+      - name: AlphaESS Charging Period 1 Stop Hour
+        unique_id: AlphaESS_Charging_Period_1_Stop_Hour
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0857
+        data_type: int16
+        unit_of_measurement: h
+        state_class: measurement
+        scan_interval: 30
+
+      # Charging Period 2 Start Hour
+      - name: AlphaESS Charging Period 2 Start Hour
+        unique_id: AlphaESS_Charging_Period_2_Start_Hour
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0858
+        data_type: int16
+        unit_of_measurement: h
+        state_class: measurement
+        scan_interval: 30
+
+      # Charging Period 2 Stop Hour
+      - name: AlphaESS Charging Period 2 Stop Hour
+        unique_id: AlphaESS_Charging_Period_2_Stop_Hour
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0859
+        data_type: int16
+        unit_of_measurement: h
+        state_class: measurement
+        scan_interval: 30
+
+      # Charging Period 1 Start Minute
+      - name: AlphaESS Charging Period 1 Start Minute
+        unique_id: AlphaESS_Charging_Period_1_Start_Minute
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x085E
+        data_type: int16
+        unit_of_measurement: m
+        state_class: measurement
+        scan_interval: 30
+
+      # Charging Period 1 Stop Minute
+      - name: AlphaESS Charging Period 1 Stop Minute
+        unique_id: AlphaESS_Charging_Period_1_Stop_Minute
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x085F
+        data_type: int16
+        unit_of_measurement: m
+        state_class: measurement
+        scan_interval: 30
+
+      # Charging Period 2 Start Minute
+      - name: AlphaESS Charging Period 2 Start Minute
+        unique_id: AlphaESS_Charging_Period_2_Start_Minute
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0860
+        data_type: int16
+        unit_of_measurement: m
+        state_class: measurement
+        scan_interval: 30
+
+      # Charging Period 2 Stop Minute
+      - name: AlphaESS Charging Period 2 Stop Minute
+        unique_id: AlphaESS_Charging_Period_2_Stop_Minute
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0861
+        data_type: int16
+        unit_of_measurement: m
+        state_class: measurement
+        scan_interval: 30
+
+# Discharging
+      # Discharging Cutoff SoC
+      - name: AlphaESS Discharging Cutoff SoC
+        unique_id: AlphaESS_Discharging_Cutoff_SoC
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0850
+        data_type: int16
+        unit_of_measurement: "%"
+        state_class: measurement
+        scan_interval: 30
+
+      # Discharging Period 1 Start Hour
+      - name: AlphaESS Discharging Period 1 Start Hour
+        unique_id: AlphaESS_Discharging_Period_1_Start_Hour
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0851
+        data_type: int16
+        unit_of_measurement: h
+        state_class: measurement
+        scan_interval: 30
+
+      # Discharging Period 1 Stop Hour
+      - name: AlphaESS Discharging Period 1 Stop Hour
+        unique_id: AlphaESS_Discharging_Period_1_Stop_Hour
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0852
+        data_type: int16
+        unit_of_measurement: h
+        state_class: measurement
+        scan_interval: 30
+
+      # Discharging Period 2 Start Hour
+      - name: AlphaESS Discharging Period 2 Start Hour
+        unique_id: AlphaESS_Discharging_Period_2_Start_Hour
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0853
+        data_type: int16
+        unit_of_measurement: h
+        state_class: measurement
+        scan_interval: 30
+
+      # Discharging Period 2 Stop Hour
+      - name: AlphaESS Discharging Period 2 Stop Hour
+        unique_id: AlphaESS_Discharging_Period_2_Stop_Hour
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0854
+        data_type: int16
+        unit_of_measurement: h
+        state_class: measurement
+        scan_interval: 30
+
+      # Discharging Period 1 Start Minute
+      - name: AlphaESS Discharging Period 1 Start Minute
+        unique_id: AlphaESS_Discharging_Period_1_Start_Minute
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x085A
+        data_type: int16
+        unit_of_measurement: m
+        state_class: measurement
+        scan_interval: 30
+
+      # Discharging Period 1 Stop Minute
+      - name: AlphaESS Discharging Period 1 Stop Minute
+        unique_id: AlphaESS_Discharging_Period_1_Stop_Minute
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x085B
+        data_type: int16
+        unit_of_measurement: m
+        state_class: measurement
+        scan_interval: 30
+
+      # Discharging Period 2 Start Minute
+      - name: AlphaESS Discharging Period 2 Start Minute
+        unique_id: AlphaESS_Discharging_Period_2_Start_Minute
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x085C
+        data_type: int16
+        unit_of_measurement: m
+        state_class: measurement
+        scan_interval: 30
+
+      # Discharging Period 2 Stop Minute
+      - name: AlphaESS Discharging Period 2 Stop Minute
+        unique_id: AlphaESS_Discharging_Period_2_Stop_Minute
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x085D
+        data_type: int16
+        unit_of_measurement: m
+        state_class: measurement
+        scan_interval: 30
+
+# Dispatch
+      # Dispatch Start
+      - name: AlphaESS Dispatch Start
+        unique_id: AlphaESS_Dispatch_Start
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0880
+        data_type: int16
+        state_class: measurement
+        scan_interval: 5
+
+      # Dispatch Active Power (32000 Offset, < 32000 charge, > 32000 discharge)
+      - name: AlphaESS Dispatch Active Power
+        unique_id: AlphaESS_Dispatch_Active_Power
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0881
+        data_type: int32
+        unit_of_measurement: W
+        offset: -32000
+        state_class: measurement
+        scan_interval: 5
+
+      # Dispatch Reactive Power (32000 Offset, < 32000 charge, > 32000 discharge)
+      - name: AlphaESS Dispatch Reactive Power
+        unique_id: AlphaESS_Dispatch_Reactive_Power
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0883
+        data_type: int32
+        unit_of_measurement: W
+        offset: -32000
+        state_class: measurement
+        scan_interval: 5
+
+      # Dispatch Mode
+      - name: AlphaESS Dispatch Mode
+        unique_id: AlphaESS_Dispatch_Mode
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0885
+        data_type: int16
+        state_class: measurement
+        scan_interval: 5
+
+      # Dispatch SoC (0.392%/bit)
+      - name: AlphaESS Dispatch SoC
+        unique_id: AlphaESS_Dispatch_SoC
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0886
+        data_type: int16
+        unit_of_measurement: "%"
+        state_class: measurement
+        scan_interval: 5
+        scale: 0.392
+
+      # Dispatch Time
+      - name: AlphaESS Dispatch Time
+        unique_id: AlphaESS_Dispatch_Time
+        slave: !secret alphaess_modbus_slaveId
+        address: 0x0887
+        data_type: uint32
+        unit_of_measurement: s
+        state_class: measurement
+        scan_interval: 5

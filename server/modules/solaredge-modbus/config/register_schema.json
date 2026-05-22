@@ -1,0 +1,127 @@
+{
+  "name": "SolarEdge SE3000H SunSpec Map",
+  "blocks": {
+    "common": {
+      "address": 40001,
+      "length": 65,
+      "fields": [
+        {
+          "key": "manufacturer",
+          "offset": 4,
+          "length": 16,
+          "type": "string"
+        },
+        {
+          "key": "model",
+          "offset": 20,
+          "length": 16,
+          "type": "string"
+        },
+        {
+          "key": "version",
+          "offset": 44,
+          "length": 8,
+          "type": "string"
+        },
+        {
+          "key": "serial",
+          "offset": 52,
+          "length": 16,
+          "type": "string"
+        }
+      ]
+    },
+    "inverter": {
+      "address": 40070,
+      "length": 50,
+      "fields": [
+        {
+          "key": "current",
+          "offset": 1,
+          "type": "uint16",
+          "scale": "current_sf"
+        },
+        {
+          "key": "current_sf",
+          "offset": 6,
+          "type": "sunssf"
+        },
+        {
+          "key": "voltage_ln",
+          "offset": 13,
+          "type": "uint16",
+          "scale": "voltage_sf"
+        },
+        {
+          "key": "voltage_sf",
+          "offset": 19,
+          "type": "sunssf"
+        },
+        {
+          "key": "power_ac",
+          "offset": 21,
+          "type": "int16",
+          "scale": "power_sf",
+          "unit": "W"
+        },
+        {
+          "key": "power_sf",
+          "offset": 25,
+          "type": "sunssf"
+        },
+        {
+          "key": "energy_total",
+          "offset": 33,
+          "type": "uint32",
+          "scale": "energy_sf",
+          "unit": "Wh"
+        },
+        {
+          "key": "energy_sf",
+          "offset": 35,
+          "type": "sunssf"
+        },
+        {
+          "key": "temp_sink",
+          "offset": 36,
+          "type": "int16",
+          "scale": "temp_sf",
+          "unit": "C"
+        },
+        {
+          "offset": 40,
+          "type": "sunssf",
+          "key": "temp_sf"
+        },
+        {
+          "key": "status",
+          "offset": 41,
+          "type": "uint16"
+        }
+      ]
+    },
+    "controls": {
+      "address": 40231,
+      "length": 24,
+      "fields": [
+        {
+          "key": "model_id",
+          "offset": 0,
+          "type": "uint16"
+        },
+        {
+          "key": "power_limit_pct",
+          "offset": 2,
+          "type": "uint16",
+          "description": "0-10000 (10000 = 100%)"
+        },
+        {
+          "key": "power_limit_enable",
+          "offset": 6,
+          "type": "uint16",
+          "description": "1 = Enable Limit, 0 = Disable"
+        }
+      ]
+    }
+  }
+}

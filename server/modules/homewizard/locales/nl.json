@@ -1,0 +1,57 @@
+{
+  "modules": {
+    "homeWizard": {
+      "groups": {
+        "general": {
+          "title": "Algemene Instellingen"
+        },
+        "devices": {
+          "title": "Apparaten"
+        }
+      },
+      "sections": {
+        "deviceList": {
+          "title": "Apparatenlijst"
+        },
+        "statistics": {
+          "title": "Statistieken"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "HomeWizard Integratie Inschakelen",
+          "description": "Schakel gegevensverzameling van HomeWizard-apparaten in"
+        },
+        "poll_interval": {
+          "label": "Ophaalinterval (seconden)",
+          "description": "Hoe vaak gegevens van apparaten worden opgehaald"
+        },
+        "port": {
+          "label": "Poort"
+        },
+        "priority": {
+          "label": "Prioriteit"
+        }
+      },
+      "columns": {
+        "name": "Apparaatnaam",
+        "ip_address": "IP-adres",
+        "product_type": "Type",
+        "enabled": "Ingeschakeld"
+      },
+      "actions": {
+        "discoverDevices": "Apparaten Ontdekken",
+        "edit": "Bewerken",
+        "delete": "Verwijderen"
+      },
+      "confirms": {
+        "discover": "Dit scant je lokale netwerk op HomeWizard-apparaten. Doorgaan?",
+        "deleteDevice": "Weet je zeker dat je dit apparaat wilt verwijderen?"
+      },
+      "stats": {
+        "totalDevices": "Totaal Apparaten",
+        "totalPower": "Totaal Vermogen"
+      }
+    }
+  }
+}

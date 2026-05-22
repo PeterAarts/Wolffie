@@ -1,0 +1,68 @@
+{
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": {
+          "title": "Price Settings"
+        },
+        "fetchSettings": {
+          "title": "Fetch Settings"
+        },
+        "collectorStatus": {
+          "title": "Collector Status"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Enable Day-Ahead Prices",
+          "description": "Activate daily electricity price fetching"
+        },
+        "bidding_zone": {
+          "label": "Bidding Zone",
+          "description": "Select the electricity bidding zone for your region"
+        },
+        "country_code": {
+          "label": "Country Code",
+          "description": "Two-letter country code (optional)",
+          "placeholder": "NL"
+        },
+        "fetch_days": {
+          "label": "Days to Fetch",
+          "description": "How many days of historical prices to fetch per run"
+        },
+        "fetch_interval_hours": {
+          "label": "Fetch Interval (hours)",
+          "description": "How often prices are re-fetched. Default: 4 hours"
+        },
+        "retry_max": {
+          "label": "Max Retries",
+          "description": "Maximum retry attempts when tomorrow's prices are missing"
+        }
+      },
+      "status": {
+        "lastFetch": "Last Fetch",
+        "lastFetchRecords": "Records Fetched",
+        "status": "Status",
+        "retrying": "Retry Active",
+        "retryCount": "Retry Attempts"
+      },
+      "biddingZones": {
+        "NL": "Netherlands (NL)",
+        "DE": "Germany (DE)",
+        "DELU": "Germany-Luxembourg (DE-LU)",
+        "BE": "Belgium (BE)",
+        "FR": "France (FR)",
+        "CH": "Switzerland (CH)",
+        "AT": "Austria (AT)",
+        "DK1": "Denmark West (DK1)",
+        "DK2": "Denmark East (DK2)",
+        "NO1": "Norway 1 (NO1)",
+        "NO2": "Norway 2 (NO2)",
+        "SE1": "Sweden 1 (SE1)",
+        "SE2": "Sweden 2 (SE2)",
+        "SE3": "Sweden 3 (SE3)",
+        "SE4": "Sweden 4 (SE4)"
+      }
+    }
+  }
+}

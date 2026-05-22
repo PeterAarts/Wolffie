@@ -1,0 +1,93 @@
+{
+  "id": "homewizard",
+  "name": "HomeWizard Energy",
+  "version": "1.0.8",
+  "description": "HomeWizard P1 Meter and Energy Socket integration",
+  "author": "wolffie",
+  "type": "data-collector",
+
+  "capabilities": {
+    "dataCollection": true,
+    "api": true,
+    "ui": true,
+    "discovery": true
+  },
+
+  "collector": {
+    "enabled": true,
+    "interval": 10000,
+    "priority": 5,
+    "description": "Collects data from HomeWizard devices every 10 seconds"
+  },
+  "services": [
+    { "type": "smartdevice:read", "priority": 10 },
+    { "type": "smartdevice:status" , "priority": 10 },
+    { "type": "smartdevice:write", "priority": 10 },
+    { "type": "smartdevice:p1", "priority": 10 }
+  ],
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/homewizard",
+    "description": "HomeWizard device management and data endpoints"
+  },
+
+  "settings": {
+    "component": "HomeWizardSettings",
+    "schema": "settings_schema.json"
+  },
+
+  "dependencies": {
+    "node": ">=18.0.0",
+    "axios": "^1.0.0"
+  },
+
+  "config": {
+    "required": [],
+    "optional": ["poll_interval", "discovery_enabled"]
+  },
+
+  "changelog": [
+    {
+      "version": "1.0.8",
+      "date": "2026-05-04",
+      "author": "wolffie",
+      "changes": [
+        "Fixed grid:read capability returning lifetime cumulative kWh for import_today/export_today",
+        "grid:read now reads daily delta values from most recent energy_snapshots row instead of calling live P1 device",
+        "Prevents loadEnergyToday calculation in collectorManager from using 16000+ kWh lifetime totals"
+      ]
+    },
+    {
+      "version": "1.0.7",
+      "date": "2026-04-20",
+      "author": "wolffie",
+      "changes": [
+        "Added grid:read capability (priority 15) — authoritative grid power source over AlphaESS",
+        "P1 meter sign convention aligned: positive = importing, negative = exporting"
+      ]
+    },
+    {
+      "version": "1.0.1",
+      "date": "2026-04-10",
+      "author": "wolffie",
+      "changes": [
+        "Fixed boolean binding error when saving device to SQLite",
+        "addDevice now fetches live device info (serial, product_type, product_name, firmware_version) after insert",
+        "getDailyStats and getDailyHistory rewritten for SQLite compatibility",
+        "Edit and delete row actions now use correct REST endpoints with {id} resolution",
+        "Locale files extended with port and priority field labels"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-01-09",
+      "author": "wolffie",
+      "changes": [
+        "Initial release",
+        "P1 Meter and Energy Socket data collection",
+        "Network discovery support",
+        "Device management via settings UI"
+      ]
+    }
+  ]
+}

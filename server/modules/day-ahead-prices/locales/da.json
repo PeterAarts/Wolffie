@@ -1,0 +1,68 @@
+{
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": {
+          "title": "Prisindstillinger"
+        },
+        "fetchSettings": {
+          "title": "Hentningsindstillinger"
+        },
+        "collectorStatus": {
+          "title": "Samlerens Status"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Aktiver Day-Ahead Priser",
+          "description": "Aktivér daglig hentning af elpriser"
+        },
+        "bidding_zone": {
+          "label": "Budzone",
+          "description": "Vælg elbudzone for dit område"
+        },
+        "country_code": {
+          "label": "Landekode",
+          "description": "Totegns landekode (valgfri)",
+          "placeholder": "DK"
+        },
+        "fetch_days": {
+          "label": "Dage at Hente",
+          "description": "Hvor mange dages historiske priser der hentes per kørsel"
+        },
+        "fetch_interval_hours": {
+          "label": "Hentningsinterval (timer)",
+          "description": "Hvor ofte priser genhentes. Standard: 4 timer"
+        },
+        "retry_max": {
+          "label": "Maks. Genforsøg",
+          "description": "Maksimalt antal forsøg ved manglende morgendagens priser"
+        }
+      },
+      "status": {
+        "lastFetch": "Seneste Hentning",
+        "lastFetchRecords": "Hentede Records",
+        "status": "Status",
+        "retrying": "Genforsøg Aktiv",
+        "retryCount": "Genforsøg"
+      },
+      "biddingZones": {
+        "NL": "Holland (NL)",
+        "DE": "Tyskland (DE)",
+        "DELU": "Tyskland-Luxembourg (DE-LU)",
+        "BE": "Belgien (BE)",
+        "FR": "Frankrig (FR)",
+        "CH": "Schweiz (CH)",
+        "AT": "Østrig (AT)",
+        "DK1": "Danmark Vest (DK1)",
+        "DK2": "Danmark Øst (DK2)",
+        "NO1": "Norge 1 (NO1)",
+        "NO2": "Norge 2 (NO2)",
+        "SE1": "Sverige 1 (SE1)",
+        "SE2": "Sverige 2 (SE2)",
+        "SE3": "Sverige 3 (SE3)",
+        "SE4": "Sverige 4 (SE4)"
+      }
+    }
+  }
+}

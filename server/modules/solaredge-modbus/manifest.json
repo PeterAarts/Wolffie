@@ -1,0 +1,80 @@
+{
+  "id": "solaredge-modbus",
+  "name": "SolarEdge-Modbus",
+  "version": "1.2.7",
+  "description": "Local Modbus TCP integration for SolarEdge HD-Wave inverters",
+  "author": "Wolffie",
+  "type": "data-collector",
+
+  "capabilities": {
+    "dataCollection": true,
+    "api": true,
+    "ui": true
+  },
+
+  "services": [
+    { "type": "solar:read",    "priority": 15 },
+    { "type": "solar:curtail", "priority": 15 },
+    { "type": "grid:read",     "priority": 6  }
+  ],
+
+  "collector": {
+    "enabled": true,
+    "interval": 20000,
+    "priority": 6,
+    "description": "Collects real-time power data every 20 seconds via Modbus TCP"
+  },
+
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/solaredge-modbus",
+    "description": "SolarEdge Modbus API endpoints"
+  },
+
+  "config": {
+    "required": ["host"],
+    "optional": ["port", "unit_id"]
+  },
+
+  "changelog": [
+    {
+      "version": "1.2.7",
+      "date": "2026-05-12",
+      "author": "Wolffie",
+      "changes": [
+        "Registered as authoritative solar:read source (priority 15) over AlphaESS",
+        "AC-coupled topology confirmed: SolarEdge feeds AlphaESS EPS port, not DC-coupled",
+        "solar_power from SolarEdge AC output used as the canonical solar value"
+      ]
+    },
+    {
+      "version": "1.2.0",
+      "date": "2026-03-01",
+      "author": "Wolffie",
+      "changes": [
+        "Added solar:curtail capability — stops SolarEdge export during negative price slots",
+        "Added grid:read capability at priority 6 (fallback behind HomeWizard P1)"
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "date": "2026-01-01",
+      "author": "Wolffie",
+      "changes": [
+        "Fixed solar forecast timezone bug: slot_datetime keys aligned to local time (CET/CEST)",
+        "Timestamps written in local time to match all other collectors"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2025-10-01",
+      "author": "Wolffie",
+      "changes": [
+        "Initial release — SolarEdge HD-Wave SE3000H Modbus TCP integration",
+        "SunSpec-compliant register map (base address 40000)",
+        "AC power, DC power, lifetime energy, cabinet temperature reads",
+        "Collector interval 20 seconds"
+      ]
+    }
+  ]
+}

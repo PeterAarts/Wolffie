@@ -1,0 +1,57 @@
+{
+  "modules": {
+    "alphaessModbusTcp": {
+      "groups": {
+        "modbus": {
+          "title": "ModBus TCP Konfiguration"
+        }
+      },
+      "sections": {
+        "network": {
+          "title": "Netværksindstillinger",
+          "description": "Netværksoplysninger for din AlphaESS inverter"
+        },
+        "protocol": {
+          "title": "Modbus Protokol",
+          "description": "Specifikke protokolindstillinger for AlphaESS"
+        },
+        "battery": {
+          "title": "Batteriindstillinger"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Aktiver ModBus TCP"
+        },
+        "host": {
+          "label": "IP-adresse",
+          "placeholder": "192.168.1.158"
+        },
+        "port": {
+          "label": "Port"
+        },
+        "unit_id": {
+          "label": "Unit ID (Slave ID)"
+        },
+        "poll_interval": {
+          "label": "Forespørgselsinterval (ms)"
+        },
+        "timeout": {
+          "label": "Timeout (ms)"
+        },
+        "min_soc": {
+          "label": "Minimum SoC"
+        },
+        "max_soc": {
+          "label": "Maksimum SoC"
+        },
+        "ups": {
+          "label": "Brug UPS Reserve"
+        }
+      },
+      "actions": {
+        "testConnection": "Test Forbindelse"
+      }
+    }
+  }
+}

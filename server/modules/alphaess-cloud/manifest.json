@@ -1,0 +1,84 @@
+{
+  "id": "alphaess-cloud",
+  "name": "AlphaESS Cloud API",
+  "version": "1.0.10",
+  "description": "AlphaESS Cloud API integration for remote data collection",
+  "author": "Wolffie",
+  "type": "data-collector",
+  
+  "capabilities": {
+    "dataCollection": true,
+    "api": true,
+    "ui": true
+  },
+  "services": [
+    { "type": "battery:read",              "priority": 15 },
+    { "type": "battery:status",            "priority": 15 },
+    { "type": "battery:charge-from-grid",  "priority": 15 },
+    { "type": "battery:discharge-to-grid", "priority": 15 },
+    { "type": "battery:stop",              "priority": 15 },
+    { "type": "solar:read",                "priority": 15 },
+    { "type": "grid:read",                 "priority": 15 },
+    { "type": "home:read",                 "priority": 15  }
+  ],
+
+  "collector": {
+    "enabled": true,
+    "interval": 120000,
+    "priority": 1,
+    "description": "Collects data from AlphaESS Cloud API every 2 minutes"
+  },
+
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/alphaess-cloud",
+    "description": "AlphaESS Cloud API endpoints"
+  },
+
+  "settings": {
+    "component": "AlphaESSCloudSettings",
+    "schema": "settings_schema.json"
+  },
+
+  "dependencies": {
+    "node": ">=18.0.0"
+  },
+
+  "config": {
+    "required": ["app_id", "app_secret", "system_sn"],
+    "optional": ["endpoint_url", "poll_interval"]
+  },
+
+  "changelog": [
+    {
+      "version": "1.0.9",
+      "date": "2026-05-12",
+      "author": "Wolffie",
+      "changes": [
+        "Serves as automatic failover when AlphaESS ModBus TCP is unreachable",
+        "All capabilities registered at priority 5 — lower than ModBus TCP (10) so failover is seamless",
+        "grid:status capability intentionally NOT implemented — Cloud API does not expose inverter operating mode (INV_WORK_MODE register 0x0440). Grid outage detection requires ModBus TCP."
+      ]
+    },
+    {
+      "version": "1.0.5",
+      "date": "2026-03-01",
+      "author": "Wolffie",
+      "changes": [
+        "NULL for unowned/unavailable fields instead of 0 to prevent AVG() dilution in aggregation",
+        "Timestamps written in local time (CET/CEST) to match all other collectors"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2025-10-01",
+      "author": "Wolffie",
+      "changes": [
+        "Initial release — AlphaESS Cloud API integration",
+        "Collects battery, solar, grid and load data every 2 minutes",
+        "Provides battery:read, solar:read, grid:read, home:read and battery control capabilities",
+        "Cloud API requires app_id, app_secret and system_sn credentials"
+      ]
+    }
+  ]
+}

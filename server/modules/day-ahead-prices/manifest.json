@@ -1,0 +1,92 @@
+{
+  "id": "day-ahead-prices",
+  "name": "Day-Ahead Electricity Prices",
+  "version": "1.1.6",
+  "description": "Hourly electricity prices from Energy Charts API (Fraunhofer ISE) - No registration required!",
+  "type": "collector",
+  "author": "WattsOn",
+  "enabled": true,
+
+  "capabilities": {
+    "dataCollection": true,
+    "api": true
+  },
+
+  "services": [
+    { "type": "grid:pricing", "priority": 10 }
+  ],
+
+  "schedules": [
+    {
+      "name": "daily_prices",
+      "cron": "0 14 * * *",
+      "description": "Fetch day-ahead prices at 14:00 (after publication)"
+    }
+  ],
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "settings": {
+    "schema": "settings_schema.json"
+  },
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/day-ahead-prices",
+    "file": "routes/index.js"
+  },
+  "collector": {
+    "service": "services/collector.js",
+    "enabled": true,
+    "interval": 3600000,
+    "scheduled": true
+  },
+  "database": {
+    "tables": [
+      "day_ahead_prices"
+    ]
+  },
+  "api": {
+    "provider": "Energy Charts (Fraunhofer ISE)",
+    "authentication": "None - Free API",
+    "documentation": "https://api.energy-charts.info/",
+    "advantages": [
+      "No API token required",
+      "No registration needed",
+      "Simple JSON format",
+      "Reliable data source"
+    ]
+  },
+
+  "changelog": [
+    {
+      "version": "1.1.6",
+      "date": "2026-05-12",
+      "author": "WattsOn",
+      "changes": [
+        "Price data used by SmartEco strategy for negative price detection and curtailment logic",
+        "grid:pricing capability consumed by strategy engine for 96-slot day plan generation"
+      ]
+    },
+    {
+      "version": "1.1.0",
+      "date": "2026-03-01",
+      "author": "WattsOn",
+      "changes": [
+        "Added negative price handling: signals CURTAIL_SOLAR when price <= 0 and battery full",
+        "Prices now exposed via grid:pricing capability for cross-module consumption",
+        "Daily fetch scheduled at 14:00 after ENTSO-E publication window"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2026-01-01",
+      "author": "WattsOn",
+      "changes": [
+        "Initial release — day-ahead prices from Fraunhofer ISE Energy Charts API",
+        "No API token or registration required",
+        "Hourly prices stored in day_ahead_prices table",
+        "Collector runs every hour, full daily fetch at 14:00"
+      ]
+    }
+  ]
+}

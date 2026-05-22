@@ -1,0 +1,107 @@
+{
+  "id": "alphaess-modbus-tcp",
+  "name": "AlphaESS ModBus TCP",
+  "version": "1.1.0",
+  "description": "AlphaESS inverter communication via ModBus TCP/IP",
+  "author": "Wolffie",
+  "type": "data-collector",
+
+  "capabilities": {
+    "dataCollection": true,
+    "api": true,
+    "ui": true
+  },
+
+  "services": [
+    { "type": "battery:read",              "priority": 10 },
+    { "type": "battery:status",            "priority": 10 },
+    { "type": "battery:charge-from-grid",  "priority": 10 },
+    { "type": "battery:discharge-to-grid", "priority": 10 },
+    { "type": "battery:stop",              "priority": 10 },
+    { "type": "solar:read",                "priority": 5 },
+    { "type": "grid:read",                 "priority": 10 },
+    { "type": "grid:status",               "priority": 10 },
+    { "type": "home:read",                 "priority": 5  }
+  ],
+
+  "collector": {
+    "enabled": true,
+    "interval": 10000,
+    "priority": 10,
+    "description": "Collects real-time data via ModBus TCP every 10 seconds"
+  },
+
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/alphaess-modbus-tcp",
+    "description": "ModBus TCP configuration and diagnostics"
+  },
+
+  "settings": {
+    "component": "AlphaESSModbusTCPSettings",
+    "schema": "settings_schema.json"
+  },
+
+  "dependencies": {
+    "node": ">=18.0.0",
+    "modbus-serial": "^8.0.0"
+  },
+
+  "config": {
+    "required": ["ip_address", "port", "slave_id"],
+    "optional": ["timeout", "poll_interval"]
+  },
+
+  "changelog": [
+    {
+      "version": "1.1.0",
+      "date": "2026-05-12",
+      "author": "Wolffie",
+      "changes": [
+        "Added readInverterMode() to api.js — reads register 0x0440 (INV_WORK_MODE)",
+        "Grid outage detection: raises error alert when inverter switches to UPS/Backup mode",
+        "Grid recovery detection: auto-resolves alert when grid returns to Online",
+        "Both outage and recovery transitions logged to system_events (category: SAFETY)",
+        "Registered grid:status capability — returns { gridConnected, mode }",
+        "alertService.js migrated to SQLite: DATE_SUB → datetime(), INSERT IGNORE → INSERT OR IGNORE, NOW() → datetime('now')"
+      ]
+    },
+    {
+      "version": "1.0.14",
+      "date": "2026-01-01",
+      "author": "Wolffie",
+      "changes": [
+        "Timestamps written in local time (CET/CEST) to match all other collectors",
+        "load_power and load_energy_today removed — now derived by wolffie-core collectorManager"
+      ]
+    },
+    {
+      "version": "1.0.13",
+      "date": "2025-12-01",
+      "author": "Wolffie",
+      "changes": [
+        "NULL for unowned/unavailable fields instead of 0 to prevent AVG() dilution in aggregation"
+      ]
+    },
+    {
+      "version": "1.0.12",
+      "date": "2025-11-01",
+      "author": "Wolffie",
+      "changes": [
+        "Daily energy counters derived via midnight baseline stored in system_settings",
+        "Baseline bootstrapped automatically on first run"
+      ]
+    },
+    {
+      "version": "1.0.0",
+      "date": "2025-10-01",
+      "author": "Wolffie",
+      "changes": [
+        "Initial release — AlphaESS SMILE G3-T10 ModBus TCP collector",
+        "Battery, grid, solar and system register reads",
+        "Dispatch control: charge, discharge, stop, timed sessions",
+        "Failover to AlphaESS Cloud API when ModBus unavailable"
+      ]
+    }
+  ]
+}

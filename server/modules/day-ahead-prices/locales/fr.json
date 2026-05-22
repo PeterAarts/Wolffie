@@ -1,0 +1,68 @@
+{
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": {
+          "title": "Paramètres de Prix"
+        },
+        "fetchSettings": {
+          "title": "Paramètres de Collecte"
+        },
+        "collectorStatus": {
+          "title": "Statut du Collecteur"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Activer les Prix J+1",
+          "description": "Activer la récupération quotidienne des prix de l'électricité"
+        },
+        "bidding_zone": {
+          "label": "Zone d'Enchères",
+          "description": "Sélectionnez la zone d'enchères électriques pour votre région"
+        },
+        "country_code": {
+          "label": "Code Pays",
+          "description": "Code pays à deux lettres (optionnel)",
+          "placeholder": "FR"
+        },
+        "fetch_days": {
+          "label": "Jours à Récupérer",
+          "description": "Combien de jours de prix historiques récupérer par exécution"
+        },
+        "fetch_interval_hours": {
+          "label": "Intervalle de Récupération (h)",
+          "description": "À quelle fréquence les prix sont re-récupérés. Défaut : 4 heures"
+        },
+        "retry_max": {
+          "label": "Max. Tentatives",
+          "description": "Nombre maximum de tentatives si les prix de demain sont manquants"
+        }
+      },
+      "status": {
+        "lastFetch": "Dernière Récupération",
+        "lastFetchRecords": "Enregistrements Récupérés",
+        "status": "Statut",
+        "retrying": "Nouvelle Tentative Active",
+        "retryCount": "Tentatives"
+      },
+      "biddingZones": {
+        "NL": "Pays-Bas (NL)",
+        "DE": "Allemagne (DE)",
+        "DELU": "Allemagne-Luxembourg (DE-LU)",
+        "BE": "Belgique (BE)",
+        "FR": "France (FR)",
+        "CH": "Suisse (CH)",
+        "AT": "Autriche (AT)",
+        "DK1": "Danemark Ouest (DK1)",
+        "DK2": "Danemark Est (DK2)",
+        "NO1": "Norvège 1 (NO1)",
+        "NO2": "Norvège 2 (NO2)",
+        "SE1": "Suède 1 (SE1)",
+        "SE2": "Suède 2 (SE2)",
+        "SE3": "Suède 3 (SE3)",
+        "SE4": "Suède 4 (SE4)"
+      }
+    }
+  }
+}

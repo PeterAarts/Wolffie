@@ -1,0 +1,70 @@
+{
+  "modules": {
+    "alphaessModbusTcp": {
+      "groups": {
+        "modbus": {
+          "title": "ModBus TCP Configuration"
+        }
+      },
+      "sections": {
+        "network": {
+          "title": "Network Settings",
+          "description": "The network details of your AlphaESS inverter"
+        },
+        "protocol": {
+          "title": "Modbus Protocol",
+          "description": "Specific protocol settings for AlphaESS"
+        },
+        "battery": {
+          "title": "Battery Settings"
+        },
+        "grid":{
+          "title": "Grid selector",
+          "description":"The network details of your AlphaESS inverter"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Enable ModBus TCP"
+        },
+        "host": {
+          "label": "IP Address",
+          "placeholder": "192.168.1.158"
+        },
+        "port": {
+          "label": "Port"
+        },
+        "unit_id": {
+          "label": "Unit ID (Slave ID)"
+        },
+        "poll_interval": {
+          "label": "Poll Interval (ms)"
+        },
+        "timeout": {
+          "label": "Timeout (ms)"
+        },
+        "min_soc": {
+          "label": "Minimum SoC"
+        },
+        "max_soc": {
+          "label": "Maximum SoC"
+        },
+        "ups": {
+          "label": "Use UPS Reserve"
+        },
+        "grid_power_source":{
+            "label":"select grid source",
+            "description":"select the source for power",
+            "options":{
+              "internal":"internal",
+              "homewizardP1":"P1-meter",
+              "none":"none"
+            }
+          }
+      },
+      "actions": {
+        "testConnection": "Test Connection"
+      }
+    }
+  }
+}

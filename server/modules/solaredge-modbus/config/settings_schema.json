@@ -1,0 +1,109 @@
+{
+  "i18nKeys": true,
+  "groups": [
+    {
+      "title": "modules.solarEdgeModbus.groups.modbus.title",
+      "sections": [
+        {
+          "title": "modules.solarEdgeModbus.sections.network.title",
+          "description": "modules.solarEdgeModbus.sections.network.description",
+          "fields": [
+            {
+              "key": "host",
+              "component": "text",
+              "label": "modules.solarEdgeModbus.fields.host.label",
+              "cols": 3,
+              "placeholder": "modules.solarEdgeModbus.fields.host.placeholder",
+              "required": true
+            },
+            {
+              "key": "port",
+              "component": "number",
+              "label": "modules.solarEdgeModbus.fields.port.label",
+              "cols": 3,
+              "default": 1502,
+              "required": true
+            },
+            {
+              "key": "enabled",
+              "component": "boolean",
+              "label": "modules.solarEdgeModbus.fields.enabled.label",
+              "cols": 2
+            }
+          ]
+        },
+        {
+          "title": "modules.solarEdgeModbus.sections.protocol.title",
+          "description": "modules.solarEdgeModbus.sections.protocol.description",
+          "fields": [
+            {
+              "key": "unit_id",
+              "component": "number",
+              "label": "modules.solarEdgeModbus.fields.unit_id.label",
+              "cols": 2,
+              "default": 1,
+              "required": true
+            },
+            {
+              "key": "poll_interval",
+              "component": "number",
+              "label": "modules.solarEdgeModbus.fields.poll_interval.label",
+              "cols": 2,
+              "default": 10000,
+              "suffix": " ms"
+            },
+            {
+              "key": "timeout",
+              "component": "number",
+              "label": "modules.solarEdgeModbus.fields.timeout.label",
+              "cols": 2,
+              "default": 5000,
+              "suffix": " ms"
+            }
+          ]
+        },
+        {
+          "title": "modules.solarEdgeModbus.sections.deviceInfo.title",
+          "component": "info-panel",
+          "endpoint": "/settings/module/solaredge-modbus",
+          "dataPath": "values",
+          "items": [
+            {
+              "field": "device_manufacturer",
+              "label": "modules.solarEdgeModbus.fields.device_manufacturer.label",
+              "icon": "",
+              "cols": 6
+            },
+            {
+              "field": "device_model",
+              "label": "modules.solarEdgeModbus.fields.device_model.label",
+              "icon": "",
+              "cols": 6
+            },
+            {
+              "field": "device_version",
+              "label": "modules.solarEdgeModbus.fields.device_version.label",
+              "icon": "",
+              "cols": 6
+            },
+            {
+              "field": "device_serial",
+              "label": "modules.solarEdgeModbus.fields.device_serial.label",
+              "icon": "",
+              "cols": 6
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "test_modbus",
+      "label": "modules.solarEdgeModbus.actions.testConnection",
+      "icon": "fa-refresh",
+      "endpoint": "/solaredge-modbus/test",
+      "sendValues": false
+    }
+  ]
+}

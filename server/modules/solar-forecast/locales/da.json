@@ -1,0 +1,60 @@
+{
+  "modules": {
+    "solarForecast": {
+      "groups": {
+        "panel": {
+          "title": "Solpanel Konfiguration"
+        },
+        "fetch": {
+          "title": "Hentningsindstillinger"
+        },
+        "status": {
+          "title": "Samlerens Status"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Aktiver Solprognose",
+          "description": "Aktiver hentning af solenergipronoser"
+        },
+        "kwp": {
+          "label": "Systemeffekt (kWp)",
+          "description": "Samlet kapacitet af dine solpaneler i kilowatt-peak",
+          "placeholder": "3.56"
+        },
+        "tilt": {
+          "label": "Hældningsvinkel (°)",
+          "description": "Panelernes hældningsvinkel (0 = flad, 90 = lodret)"
+        },
+        "latitude": {
+          "label": "Breddegrad",
+          "description": "Breddegrad for din placering",
+          "placeholder": "51.34674556"
+        },
+        "longitude": {
+          "label": "Længdegrad",
+          "description": "Længdegrad for din placering",
+          "placeholder": "3.7426737"
+        },
+        "azimuth": {
+          "label": "Azimut (°)",
+          "description": "Panelretning: 0=Syd, 90=Vest, 180=Nord, 270=Øst"
+        },
+        "fetch_interval_hours": {
+          "label": "Hentningsinterval (timer)",
+          "description": "Hvor ofte prognosen genhentes. API-grænse: 12 anmodninger/time"
+        },
+        "forecast_days": {
+          "label": "Prognosedage",
+          "description": "Hvor mange dages historisk nøjagtighed der spores til sammenligning"
+        }
+      },
+      "status": {
+        "lastFetch": "Seneste Hentning",
+        "lastFetchRecords": "Hentede Prognosedage",
+        "status": "Status",
+        "avgAccuracy": "Gennemsnitlig Nøjagtighed"
+      }
+    }
+  }
+}
