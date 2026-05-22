@@ -99,6 +99,15 @@ export const useRealtimeStore = defineStore('realtime', () => {
     degradedSources:    [],
   });
 
+  // Dashboard v3 — 14-day rolling averages for ring reference scales
+  const averages = ref({
+    avg_solar_14d: null,
+    avg_load_14d:  null,
+  });
+
+  // Dashboard v3 — latest smart-eco strategy decision
+  const strategyDecision = ref(null); // { reason, evaluatedAt } | null
+
   // ============================================
   // COMPUTED VALUES
   // ============================================
@@ -301,8 +310,10 @@ async function fetchSummary() {
         if (data.dayPlan)   dayPlan.value       = data.dayPlan;
         if (data.forecast)  forecast.value      = data.forecast;
         if (data.advisory)  advisory.value      = data.advisory;
-        if (data.health)    healthInfo.value    = data.health;
-        if (data._meta)     dashboardMeta.value = data._meta;
+        if (data.health)    healthInfo.value        = data.health;
+        if (data._meta)     dashboardMeta.value     = data._meta;
+        if (data.averages)  averages.value          = data.averages;
+        if (data.strategyDecision !== undefined) strategyDecision.value = data.strategyDecision;
       }
     } catch (err) {
       console.error('❌ Failed to fetch summary data:', err);
@@ -555,6 +566,8 @@ async function fetchSummary() {
     advisory,
     healthInfo,
     dashboardMeta,
+    averages,
+    strategyDecision,
     
     initialize,
     manualRefresh,

@@ -3,82 +3,103 @@
     <!-- ── Left: hero + chart ──────────────────────────────────────────────── -->
     <div class="hero-card lg:col-span-3 p-6 lg:p-10 overflow-y-auto bg-secondary-50" >
 
-      <!-- Hero row: mobile = heroes on row 1, badges on row 2; desktop = heroes left, badges pushed right -->
-      <div class="flex flex-col gap-6 lg:flex-row lg:gap-4 lg:items-start">
+      <!-- Three rings: Solar · Home · Battery SoC -->
+      <div class="flex items-start justify-around gap-4 mb-2">
 
-        <!-- Heroes: total consumed + battery SoC -->
-        <div class="flex justify-between gap-6 lg:justify-start lg:gap-10">
-
-          <!-- Total consumed -->
-          <div class="shrink-0">
-            <div class="mb-2">
-              <span class="text-xs font-medium lowercase tracking-widest text-secondary-500">
-                {{ t('dashboard.totalConsumed') }}
-              </span>
-            </div>
-            <div class="hero-value font-bold leading-none tracking-tighter">
-              {{ parseFloat(realtimeStore.summaryData.today_load || 0).toFixed(2) }}
-              <span class="text-base font-medium ml-2 tracking-normal text-secondary-500">kWh</span>
+        <!-- Solar ring — always amber, fills to forecast -->
+        <div class="flex flex-col items-center gap-2">
+          <div class="relative" :style="{ width: ringSz + 'px', height: ringSz + 'px' }">
+            <svg :width="ringSz" :height="ringSz" :viewBox="`0 0 ${ringSz} ${ringSz}`">
+              <circle :cx="rC" :cy="rC" :r="rR" fill="none" stroke="currentColor" class="text-secondary-200" :stroke-width="rSW"/>
+              <circle :cx="rC" :cy="rC" :r="rR" fill="none" stroke="#f59e0b" :stroke-width="rSW"
+                      stroke-linecap="round" :stroke-dasharray="rCirc" :stroke-dashoffset="solarOuterOffset"
+                      :transform="`rotate(-90 ${rC} ${rC})`" class="transition-all duration-700"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class="font-bold leading-none tracking-tight" :style="{ fontSize: rNumSz + 'px' }">{{ todaySolar.toFixed(1) }}</span>
+              <span class="text-[11px] text-secondary-500 mt-0.5">kWh</span>
             </div>
           </div>
-
-          <!-- Battery state of charge -->
-          <div class="shrink-0">
-            <div class="mb-2">
-              <span class="text-xs font-medium lowercase tracking-widest text-secondary-500">
-                {{ t('control.battery') }}
-              </span>
-            </div>
-            <div class="hero-value font-bold leading-none tracking-tighter">
-              {{ currentBatterySOC }}
-              <span class="text-base font-medium ml-2 tracking-normal text-secondary-500">%</span>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- Summary badges -->
-        <div class="flex gap-4 lg:gap-6 lg:ml-auto">
-          <div class="flex-1 p-4 bg-white rounded-md">
-            <div class="text-2xl font-bold text-primary">
-              {{ parseFloat(realtimeStore.summaryData.today_pv_gen || 0).toFixed(1) }}
-              <span class="text-sm font-medium"> kWh</span>
-            </div>
-            <div class="text-xs lowercase tracking-wider text-secondary-500 mt-1">{{ t('dashboard.produced') }}</div>
-          </div>
-          <div class="flex-1 p-4 bg-white rounded-md">
-            <div class="text-2xl font-bold text-primary">
-              {{ parseFloat(realtimeStore.summaryData.today_grid_export || 0).toFixed(1) }}
-              <span class="text-sm font-medium"> kWh</span>
-            </div>
-            <div class="text-xs lowercase tracking-wider text-secondary-500 mt-1">{{ t('dashboard.exported') }}</div>
-          </div>
-          <div class="flex-1 p-4 bg-white rounded-md">
-            <div class="text-2xl font-bold text-primary">
-              {{ parseFloat(realtimeStore.summaryData.today_battery_charge || 0).toFixed(1) }}
-              <span class="text-sm font-medium"> kWh</span>
-            </div>
-            <div class="text-xs lowercase tracking-wider text-secondary-500 mt-1">{{ t('dashboard.batteryLabel') }}</div>
+          <div class="text-sm font-semibold text-primary">{{ t('control.solar') }}</div>
+          <div class="text-xs text-secondary-500">
+            <template v-if="solarScale !== null">
+              {{ solarScaleLabel }} {{ solarScale.toFixed(1) }} kWh
+              <span v-if="solarOverAvg" class="text-amber-600 font-medium"> ↑ +{{ solarOver.toFixed(1) }}</span>
+            </template>
+            <template v-else>no forecast yet</template>
           </div>
         </div>
 
-      </div>
+        <!-- Home ring — always blue, fills to avg consumption -->
+        <div class="flex flex-col items-center gap-2">
+          <div class="relative" :style="{ width: ringSz + 'px', height: ringSz + 'px' }">
+            <svg :width="ringSz" :height="ringSz" :viewBox="`0 0 ${ringSz} ${ringSz}`">
+              <circle :cx="rC" :cy="rC" :r="rR" fill="none" stroke="currentColor" class="text-secondary-200" :stroke-width="rSW"/>
+              <circle :cx="rC" :cy="rC" :r="rR" fill="none" stroke="#3b82f6" :stroke-width="rSW"
+                      stroke-linecap="round" :stroke-dasharray="rCirc" :stroke-dashoffset="loadOuterOffset"
+                      :transform="`rotate(-90 ${rC} ${rC})`" class="transition-all duration-700"/>
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class="font-bold leading-none tracking-tight" :style="{ fontSize: rNumSz + 'px' }">{{ todayLoad.toFixed(1) }}</span>
+              <span class="text-[11px] text-secondary-500 mt-0.5">kWh</span>
+            </div>
+          </div>
+          <div class="text-sm font-semibold text-primary">{{ t('dashboard.home') }}</div>
+          <div class="text-xs text-secondary-500">
+            <template v-if="avgLoad !== null">
+              avg {{ avgLoad.toFixed(1) }} kWh
+              <span v-if="loadOverAvg" class="text-blue-500 font-medium"> ↑ +{{ loadOver.toFixed(1) }}</span>
+            </template>
+            <template v-else>no avg yet</template>
+          </div>
+        </div>
+
+        <!-- Battery SoC ring — always green -->
+        <div class="flex flex-col items-center gap-3">
+            <!-- Ring -->
+            <div class="relative shrink-0" :style="{ width: ringSz + 'px', height: ringSz + 'px' }">
+                <svg :width="ringSz" :height="ringSz" :viewBox="`0 0 ${ringSz} ${ringSz}`">
+                    <circle :cx="rC" :cy="rC" :r="rR" fill="none" stroke="currentColor" class="text-secondary-200" :stroke-width="rSW"/>
+                    <circle :cx="rC" :cy="rC" :r="rR" fill="none" stroke="#10b981" :stroke-width="rSW"
+                            stroke-linecap="round" :stroke-dasharray="rCirc" :stroke-dashoffset="battOffset"
+                            :transform="`rotate(-90 ${rC} ${rC})`" class="transition-all duration-700"/>
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span class="font-bold leading-none tracking-tight" :style="{ fontSize: rNumSz + 'px' }">{{ currentBatterySOC }}%</span>
+                    <span class="text-[11px] text-secondary-500 mt-0.5">SoC</span>
+                </div>
+                <div class="flex flex-col items-center gap-3">
+                    <span class="text-sm font-semibold text-primary">{{ t('dashboard.batteryLabel') }}</span>
+                    <span class="text-xs text-secondary-500">{{ battStatusText }}</span>
+                </div>
+                <!-- Strategy text to the right of the ring -->
+                <div v-if="strategyDecision" class="battery-strategy-inline justify-center mt-2">
+                    <span>{{ strategyDecision.reason }}</span>
+                </div>
+            </div>
+        </div>
+        </div>
+ 
 
       <!-- Date nav + both charts (desktop only) -->
-      <div class="hidden lg:block mt-6 mb-6">
+      <div class=" mt-6 mb-6">
         <div class="date-nav mb-4">
           <button class="date-btn" @click="goToPrevDay"><i class="ph-light ph-caret-left"></i></button>
           <span class="date-label">{{ selectedDateLabel }}</span>
           <button class="date-btn" :class="{ disabled: isToday }" @click="goToNextDay"><i class="ph-light ph-caret-right"></i></button>
         </div>
-
         <EnergyFlowGraph
           :period="graphPeriod"
           :date="graphDate"
           :auto-update="isToday"
-          :height="'300px'"
-          :granularity="5"
+          :height="'200px'"
+          :granularity="10"
         />
+        <!--<DashboardGraph
+          :date="graphDate"
+          :auto-update="isToday"
+          height="200px"
+        /> -->
 
       </div>
 
@@ -107,12 +128,9 @@
                 <div v-else class="flow-track-placeholder"></div>
               </div>
               <div class="flex-1 min-w-0">
-                <div class="text-base font-bold text-primary">{{ t('control.battery') }} </div>
+                <div class="text-base font-bold text-primary">{{ t('control.battery') }}</div>
                 <div class="text-xs lowercase tracking-wider text-secondary-500 mt-0.5">{{ t('energy.batteryCharge') }}: {{ parseFloat(realtimeStore.summaryData.today_battery_charge || 0).toFixed(2) }} kWh</div>
                 <div class="text-xs lowercase tracking-wider text-secondary-500">{{ t('energy.batteryDischarge') }}: {{ parseFloat(realtimeStore.summaryData.today_battery_discharge || 0).toFixed(2) }} kWh</div>
-                <!--<div v-if="strategyStore.targetBufferSoc" class="text-xs font-bold text-blue-600 mt-1">
-                  {{ t('dashboard.targetBuffer') }}: {{ parseFloat(strategyStore.formattedTargetBuffer || 0).toFixed(2) }} kWh
-                </div>-->
               </div>
               <div class="text-right shrink-0">
                 <div class="text-3xl font-bold leading-none text-primary">{{ currentBatteryPower }} W</div>
@@ -207,7 +225,7 @@
                 <div class="text-base font-bold text-primary">{{ t('dashboard.home') }}</div>
               </div>
               <button @click="toggleSocketsList" class="w-8 h-8 flex items-center justify-center rounded-md text-secondary-500 hover:bg-secondary-200 transition-colors">
-                <i class="ph-fill ph-xmark text-lg"></i>
+                <i class="ph-light ph-x text-lg"></i>
               </button>
             </div>
             <div class="flex-1 overflow-y-auto">
@@ -231,7 +249,8 @@ import apiClient from '@/services/api';
 // Components
 import EnergyFlowGraph      from '@/components/common/EnergyFlowGraph.vue';
 import SmartDeviceFlowGraph from '@/components/common/SmartDeviceFlowGraph.vue';
-import SmartDeviceList    from '@/components/SmartDeviceList.vue';
+import SmartDeviceList      from '@/components/SmartDeviceList.vue';
+import DashboardGraph       from '@/components/common/DashboardGraph.vue';
 
 const router = useRouter();
 const realtimeStore = useRealtimeStore();
@@ -239,6 +258,90 @@ const strategyStore = useStrategyStore();
 const { t, formatLocaleEnergy, formatLocalePower } = useLocale();
 
 console.log('Dashboard step 1 loaded');
+
+// ── Ring computeds (v3 addition) ───────────────────────────────────────────
+const ringSz     = ref(150);
+const updateRingSize = () => { ringSz.value = window.innerWidth >= 1024 ? 180 : 100; };
+const rC         = computed(() => ringSz.value / 2);
+const rSW        = computed(() => Math.round(ringSz.value * 0.11));
+const rR         = computed(() => rC.value - rSW.value);
+const rCirc      = computed(() => 2 * Math.PI * rR.value);
+const rNumSz     = computed(() => Math.round(ringSz.value * 0.2));
+
+// Solar ring scale: today's forecast (preferred) → 14-day average → null
+const solarForecast = computed(() => {
+  const kwh = realtimeStore.forecast?.[0]?.expectedKwh;
+  return kwh !== null && kwh !== undefined ? parseFloat(kwh) : null;
+});
+const solarScale    = computed(() => solarForecast.value ?? realtimeStore.averages?.avg_solar_14d ?? null);
+const solarScaleLabel = computed(() => solarForecast.value !== null ? 'forecast' : 'avg');
+
+const avgLoad    = computed(() => realtimeStore.averages?.avg_load_14d  ?? null);
+const todaySolar = computed(() => parseFloat(realtimeStore.summaryData.today_pv_gen) || 0);
+const todayLoad  = computed(() => parseFloat(realtimeStore.summaryData.today_load)   || 0);
+
+function _ringOuter(value, avg, circ) {
+  const scale = avg !== null && avg > 0 ? avg : 10;
+  return circ.value * (1 - Math.min(value / scale, 1));
+}
+function _ringInner(value, avg, circ) {
+  if (!avg || avg <= 0) return circ.value;
+  return circ.value * (1 - Math.min((value - avg) / avg, 1));
+}
+
+const solarOverAvg     = computed(() => solarScale.value !== null && todaySolar.value > solarScale.value);
+const solarOver        = computed(() => solarOverAvg.value ? todaySolar.value - (solarScale.value ?? 0) : 0);
+const solarOuterOffset = computed(() => _ringOuter(todaySolar.value, solarScale.value, rCirc));
+const solarInnerOffset = computed(() => _ringInner(todaySolar.value, solarScale.value, rInnerCirc));
+const loadOverAvg      = computed(() => avgLoad.value !== null && todayLoad.value > avgLoad.value);
+const loadOver         = computed(() => loadOverAvg.value ? todayLoad.value - (avgLoad.value ?? 0) : 0);
+const loadOuterOffset  = computed(() => _ringOuter(todayLoad.value, avgLoad.value, rCirc));
+const loadInnerOffset  = computed(() => _ringInner(todayLoad.value, avgLoad.value, rInnerCirc));
+
+const battOffset = computed(() => rCirc.value * (1 - (realtimeStore.realtimeData?.batterySOC || 0) / 100));
+const battRingColor = computed(() => {
+  const soc   = realtimeStore.realtimeData?.batterySOC || 0;
+  const b     = realtimeStore.realtimeData?.components?.battery_1;
+  const power = b ? (b.currentIn || 0) - (b.currentOut || 0) : 0;
+  if (power < -50) return '#10b981';
+  if (soc >= 95)   return '#10b981';
+  if (soc <= 20)   return '#f43f5e';
+  if (power > 50)  return '#f59e0b';
+  return '#10b981';
+});
+// ── Strategy decision ─────────────────────────────────────────────────────
+const strategyDecision = computed(() => realtimeStore.strategyDecision);
+const decisionAge = computed(() => {
+  const d = strategyDecision.value;
+  if (!d?.evaluatedAt) return '';
+  const evaluated = new Date(d.evaluatedAt);
+  const diffMin   = Math.round((Date.now() - evaluated.getTime()) / 60000);
+  if (diffMin < 2)  return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  return `${Math.round(diffMin / 60)}h ago`;
+});
+
+// Shorten reason to first sentence — split on '. ' not on decimal points
+const strategyDecisionShort = computed(() => {
+  const reason = strategyDecision.value?.reason;
+  if (!reason) return '';
+  // Split on '. ' followed by capital letter to avoid splitting on decimals like "6.0"
+  const match = reason.match(/^(.*?\.\s)(?=[A-Z])/);
+  const first = match ? match[1].trim() : reason.split('. ')[0];
+  return first.length > 80 ? first.slice(0, 77) + '…' : first;
+});
+
+const battStatusText = computed(() => {
+  const b     = realtimeStore.realtimeData?.components?.battery_1;
+  const power = b ? (b.currentIn || 0) - (b.currentOut || 0) : 0;
+  const absW  = Math.abs(power);
+  const fmt   = absW >= 1000 ? `${(absW / 1000).toFixed(2)} kW` : `${Math.round(absW)} W`;
+  if (power < -50) return `${t('status.charging')} · ${fmt}`;
+  if (power > 50)  return `${t('status.discharging')} · ${fmt}`;
+  const soc = realtimeStore.realtimeData?.batterySOC || 0;
+  return soc >= 95 ? 'Full' : soc <= 5 ? 'Empty' : t('status.idle');
+});
+// ── End ring computeds ────────────────────────────────────────────────────;
 // PERIOD LOGIC: EXACTLY AS PER YOUR CODE
 const periods = [
   { value: 'day',   label: t('dashboard.periodDay')   },
@@ -430,17 +533,25 @@ onMounted(() => {
   updateCurrentTime();
   timeInterval = setInterval(updateCurrentTime, 1000);
   strategyStore.fetchActive();
+  updateRingSize();
+  window.addEventListener('resize', updateRingSize);
 });
 
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval);
+  window.removeEventListener('resize', updateRingSize);
   // stopPolling() removed — polling ownership belongs to App.vue
 });
 </script>
 
 <style lang="css" scoped>
-/* Hero value font size — too large for Tailwind's scale */
-.hero-value           { font-size: 4rem; }
+/* Strategy text inline to the right of the battery ring */
+.battery-strategy-inline {
+  gap: 0.3rem;
+  font-size: 11px;
+  color: var(--color-text-secondary, #6b7280);
+  line-height: 1.45;
+}
 @media (max-width: 768px) {
   .hero-value         { font-size: 3rem; }
   .hero-card          { height: auto; }
