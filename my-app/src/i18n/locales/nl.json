@@ -51,7 +51,14 @@
     "sourceModbus": "Lokale ModBus",
     "targetBuffer": "Doelbuffer",
     "home": "Thuis",
-    "clickForDetails": "klik voor details"
+    "clickForDetails": "klik voor details",
+    "showChart": "Grafiek tonen",
+    "hideChart": "Grafiek verbergen",
+    "forecastToday": "Vandaag",
+    "forecastTomorrow": "Morgen",
+    "planAhead": "Plan vooruit",
+    "noAdvisory": "Geen actief advies. Het systeem zal begeleiding tonen wanneer deze beschikbaar is",
+    "pending": "in afwachting" 
   },
   "cards": {
     "homeSolar": "Thuis & Zonne-energie",
@@ -137,7 +144,7 @@
     "connectionSuccess": "Verbinding geslaagd",
     "connectionFailed": "Verbinding mislukt",
     "collectors": "Collectors",
-    "savedDetail": "Instellingen bijgewerkt",    
+    "savedDetail": "Instellingen bijgewerkt",
     "modulesTab": {
       "install": "Module installeren",
       "install_desc": "Upload een .zip-pakket met een manifest.json om een nieuwe module te installeren.",
@@ -346,6 +353,7 @@
     "normalRestored": "Normale werking hersteld",
     "dischargeBlocked": "Batterijontlading geblokkeerd",
     "strategyUpdated": "Strategie bijgewerkt",
+    "batteryDepletionWarning": "Batterij bereikt minimum ({pct}%) om {time} — stroom van net",
     "strategy": {
       "smartEco": {
         "name": "Slim Eco",

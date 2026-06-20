@@ -51,7 +51,9 @@
     "sourceModbus": "Lokaler ModBus",
     "targetBuffer": "Zielpuffer",
     "home": "Zuhause",
-    "clickForDetails": "für Details klicken"
+    "clickForDetails": "für Details klicken",
+    "showChart": "Grafik anzeigen",
+    "hideChart": "Grafik ausblenden"
   },
   "cards": {
     "homeSolar": "Haus & Solar",
@@ -344,6 +346,7 @@
     "normalRestored": "Normalbetrieb wiederhergestellt",
     "dischargeBlocked": "Batterieentladung gesperrt",
     "strategyUpdated": "Strategie aktualisiert",
+    "batteryDepletionWarning": "Batterie erreicht Minimum ({pct}%) um {time} — Netzstrom aktiv",
     "strategy": {
       "smartEco": {
         "name": "Smart Eco",

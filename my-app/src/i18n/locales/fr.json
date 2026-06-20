@@ -51,7 +51,9 @@
     "sourceModbus": "ModBus local",
     "targetBuffer": "Tampon cible",
     "home": "Domicile",
-    "clickForDetails": "cliquer pour les détails"
+    "clickForDetails": "cliquer pour les détails",
+    "showChart": "Afficher le graphique",
+    "hideChart": "Masquer le graphique"
   },
   "cards": {
     "homeSolar": "Maison & Solaire",
@@ -313,6 +315,8 @@
     "normalRestored": "Fonctionnement normal rétabli",
     "dischargeBlocked": "Décharge de la batterie bloquée",
     "strategyUpdated": "Stratégie mise à jour",
+    "batteryDepletionWarning": "Batterie au minimum ({pct}%) à {time} — alimentation réseau",
+    "batteryFullWarning": "Batterie pleine ({pct}%) à {time} — arrêt de la charge",
     "strategy": {
       "smartEco": {
         "name": "Smart Éco",

@@ -2,8 +2,7 @@
   <div class="app-section flex flex-col overflow-hidden font-sans bg-white text-primary">
 
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
-    <header class="app-header-outer bg-secondary-100 z-40 shrink-0">
-      <div class="app-header grid items-center p-2 bg-secondary-100 w-full max-w-[1400px] mx-auto">
+    <header class="app-header grid items-center p-2 bg-white z-40 shrink-0 bg-secondary-100">
 
       <div class="flex items-center gap-3">
         <div class="flex items-center gap-3">
@@ -94,7 +93,6 @@
           </div>
         </div>
       </div>
-      </div>
     </header>
 
     <!-- ── Profile drawer ──────────────────────────────────────────────────── -->
@@ -162,14 +160,12 @@
     </AppDrawer>
 
     <!-- ── Body ────────────────────────────────────────────────────────────── -->
-    <main class="flex-1 overflow-y-auto bg-secondary-50 inner-canvas">
-      <div class="w-full max-w-[1400px] mx-auto">
-        <router-view v-slot="{ Component }">
-          <transition name="fade" mode="out-in">
-            <component :is="Component" :key="$route.fullPath" />
-          </transition>
-        </router-view>
-      </div>
+    <main class="flex-1 overflow-y-auto bg-white inner-canvas">
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" :key="$route.fullPath" />
+        </transition>
+      </router-view>
     </main>
 
   </div>
@@ -329,7 +325,6 @@ onUnmounted(() => {
 /* ── Header ─────────────────────────────────────────────────────────────── */
 /* Grid keeps the center nav anchored regardless of side widths.
    1fr | auto | 1fr — left and right expand symmetrically, center is content-sized. */
-.app-header-outer           { width: 100%; }
 .app-header                 { height: 4rem; padding: 0 1.5rem; grid-template-columns: 1fr auto 1fr; gap: 1rem; }
 
 /* Icon nav buttons in the header — circular tap targets, underline when active. */
@@ -364,7 +359,7 @@ onUnmounted(() => {
 .canvas                     { min-height : calc(100vh - 2rem);}
 
 /* ── User menu ───────────────────────────────────────────────────────────── */
-.user-menu-btn              { gap: 0.5rem; padding: 0.5rem 0.5rem; border-radius:var(--radius-xl)}
+.user-menu-btn              { gap: 0.5rem; padding: 0.5rem 0.5rem; border-radius:var(--radius-sm)}
 .user-avatar                { width: 1.5rem; height: 1.5rem; border-radius:var(--radius-lg)}
 .user-dropdown              { top: 3rem; right: 0; width: 11rem; }
 .dropdown-inner             { padding: 0.375rem; }
