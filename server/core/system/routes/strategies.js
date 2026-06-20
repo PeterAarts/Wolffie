@@ -67,7 +67,7 @@ router.get('/day-plan', async (req, res) => {
 router.post('/day-plan/regenerate', async (req, res) => {
   try {
     const date = req.body?.date ?? null;
-    await strategyManager.regenerateDayPlan(date);
+    await strategyManager.regenerateDayPlan(date, 'api');
     const dayPlan = await strategyManager.getDayPlan(date);
     res.json({ success: true, date: date ?? new Date().toISOString().slice(0, 10), plan: dayPlan });
   } catch (e) {
@@ -216,7 +216,7 @@ router.get('/effectiveness', async (req, res) => {
       ORDER BY sd.evaluated_at DESC
       LIMIT 200
     `, [days]);
-
+    
     const decisionLog = decisionRows.map(row => {
       const ctx = typeof row.context === 'string'
         ? JSON.parse(row.context) : (row.context ?? {});

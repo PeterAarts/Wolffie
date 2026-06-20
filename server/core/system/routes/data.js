@@ -818,19 +818,9 @@ router.get('/devices-list', async (req, res) => {
 
 // ── GET /api/system/events ─────────────────────────────────────────────────
 
-router.get('/events', async (req, res) => {
-  try {
-    const [rows] = await db.pool.query(`
-      SELECT e.*, u.username
-      FROM events e
-      LEFT JOIN users u ON e.userId = u.id
-      ORDER BY e.timestamp DESC
-      LIMIT 100
-    `);
-    res.json(rows);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+// Replace the existing GET /api/system/events handler with:
+router.get('/events', (_req, res) => {
+  res.redirect(307, '/api/events');
 });
 // ── GET /api/system/devices/chart ─────────────────────────────────────────
 //

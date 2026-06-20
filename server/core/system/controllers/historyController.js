@@ -297,7 +297,7 @@ class HistoryController {
 
   formatStats(s) {
     return Object.fromEntries(
-      Object.entries(s).map(([k, v]) => [k, parseFloat(parseFloat(v).toFixed(2))])
+      Object.entries(s).map(([k, v]) => [k, v != null ? parseFloat(parseFloat(v).toFixed(2)) : 0])
     );
   }
 }

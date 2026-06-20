@@ -7,7 +7,9 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "init-db": "node scripts/init-database.js"
+    "init-db": "node scripts/init-database.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "wolffie",
@@ -25,7 +27,7 @@
     "@serialport/parser-readline": "^13.0.0",
     "axios": "^1.13.2",
     "bcrypt": "^6.0.0",
-    "better-sqlite3": "^9.4.3",
+    "better-sqlite3": "^12.11.1",
     "chalk": "^5.6.2",
     "cors": "^2.8.5",
     "date-fns": "^4.1.0",
@@ -43,6 +45,7 @@
     "ws": "^8.18.3"
   },
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.11",
+    "vitest": "^3.2.6"
   }
 }

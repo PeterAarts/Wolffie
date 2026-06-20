@@ -47,14 +47,118 @@ class SmartEcoStrategy {
    */
   _getProfile(config) {
     const p = config.nightlyProfile ?? {};
+
+    // Guard: an hourly profile that's missing, wrong-length, or all zeros
+    // (e.g. aggregator ran against broken load data) would make the SoC
+    // simulation model a house that consumes nothing. Fall back to a flat
+    // 300W baseline in that case. The caller can detect the fallback via
+    // `source === 'fallback'` and replace it with a history-derived profile.
+    let hourly = p.hourlyLoadProfile;
+    let source = 'config';
+    const hourlySum = Array.isArray(hourly)
+      ? hourly.reduce((s, w) => s + (Number(w) || 0), 0)
+      : 0;
+    if (!Array.isArray(hourly) || hourly.length !== 24 || hourlySum < 24) {
+      hourly = Array(24).fill(300);
+      source = 'fallback';
+    }
+
     return {
       morningKwhNeeded:       p.morningKwhNeeded       ?? 3.0,
       solarStartHour:         p.solarStartHour         ?? 9,
       solarTotalKwh:          p.solarTotalKwh          ?? 0,
-      forecastAccuracyFactor: p.forecastAccuracyFactor ?? 0.7,
+      forecastAccuracyFactor: p.forecastAccuracyFactor ?? 1.5,
       dailyAvgLoadKwh:        p.dailyAvgLoadKwh        ?? 5.0,
-      hourlyLoadProfile:      p.hourlyLoadProfile      ?? Array(24).fill(300),
+      hourlyLoadProfile:      hourly,
+      hourlyLoadProfileSource: source,
     };
+  }
+
+  /**
+   * Compute an hourly load profile (24 × watts) from recent history.
+   *
+   * `load_power` in `energy_snapshots` is 100% NULL in this deployment — no
+   * collector writes that column directly. Each source writes only the
+   * fields it owns and NULL for the rest:
+   *   • alphaess-modbus-tcp → battery_power, grid_power
+   *   • solaredge-modbus    → solar_power
+   *   • homewizard          → voltage/current/frequency only
+   * So no single row has all three power components populated.
+   *
+   * We derive load by bucketing all rows per hour-of-day, taking AVG of each
+   * column separately (SQL's AVG ignores NULL — so each average reflects the
+   * source that owns that column), then applying the load formula on the
+   * bucket averages:
+   *
+   *     load = max(0, avg_solar + avg_battery + avg_grid)
+   *
+   * Sign convention in this hardware (verified empirically on 2026-06-09):
+   *   • solar_power   > 0 when producing
+   *   • battery_power > 0 when DISCHARGING   (note: opposite of "charging-positive")
+   *   • grid_power    > 0 when IMPORTING
+   * Under this convention the formula above is consistent: discharging
+   * battery and grid import both add to load; solar adds to load too, since
+   * any solar produced must be going somewhere (load, battery, or export).
+   * If battery is charging or grid is exporting their values are negative
+   * and the sum can be < 0, which we clamp to 0 (impossible "negative load").
+   *
+   * Hours with fewer than 5 contributing rows are treated as unreliable and
+   * the whole profile is rejected — better to fall back to the flat 300W
+   * than mislead the simulation with a half-baked profile.
+   *
+   * Returns a 24-element array of watts, or null on failure / insufficient
+   * data.
+   *
+   * This is a stopgap. The long-term solution is for aggregatorService to
+   * write `nightlyProfile.hourlyLoadProfile` correctly; once it does, the
+   * `source === 'fallback'` branch in generateFullDayPlan stops firing and
+   * this helper is never called.
+   */
+  async _loadHourlyProfileFromHistory(daysBack = 14) {
+    try {
+      const { default: db } = await import('../database.js');
+
+      // Bucket by local hour-of-day, average each column independently across
+      // whichever sources contributed. AVG() ignores NULL in SQLite, so each
+      // average reflects only the source that owns that column.
+      const [rows] = await db.pool.query(
+        `SELECT
+           CAST(strftime('%H', timestamp) AS INTEGER) AS hour,
+           AVG(solar_power)   AS avg_solar,
+           AVG(battery_power) AS avg_battery,
+           AVG(grid_power)    AS avg_grid,
+           COUNT(*)           AS samples
+         FROM energy_snapshots
+         WHERE timestamp >= datetime('now', '-' || ? || ' days')
+         GROUP BY hour`,
+        [daysBack]
+      );
+
+      if (!rows || rows.length < 24) {
+        return null;
+      }
+
+      const profile = Array(24).fill(null);
+      for (const r of rows) {
+        if (Number(r.samples) < 5) continue;
+
+        const s = parseFloat(r.avg_solar)   || 0;
+        const b = parseFloat(r.avg_battery) || 0;
+        const g = parseFloat(r.avg_grid)    || 0;
+        const load = Math.max(0, s + b + g);
+
+        profile[Number(r.hour)] = Math.round(load);
+      }
+
+      if (profile.some(v => v === null)) {
+        return null;
+      }
+
+      return profile;
+    } catch (e) {
+      console.warn(`   • Strategy-Manager          - SmartEco _loadHourlyProfileFromHistory failed: ${e.message}`);
+      return null;
+    }
   }
 
   /**
@@ -102,6 +206,21 @@ class SmartEcoStrategy {
         return t && t >= fromMs && t < toMs;
       })
       .reduce((sum, f) => sum + (f.watts ?? 0) * slotHours / 1000, 0); // W → kWh
+  }
+
+  /**
+   * Remaining solar kWh from forecast entries that are still in the future.
+   * Replaces the static profile.solarTotalKwh for decisions that should
+   * adapt as the day progresses (charge limit, strong-solar detection).
+   * Each forecast entry represents 1 hour at the given wattage.
+   */
+  _remainingSolarKwh(solarForecast, fromMs = Date.now()) {
+    return solarForecast
+      .filter(f => {
+        const t = f.datetime ? new Date(f.datetime).getTime() : null;
+        return t && t >= fromMs;
+      })
+      .reduce((sum, f) => sum + (f.watts ?? 0) / 1000, 0);
   }
 
   /**
@@ -209,9 +328,10 @@ class SmartEcoStrategy {
     const minKwh     = (minSocPct / 100) * batteryCapacityKwh;
     const usableKwh  = currentKwh - minKwh;
 
-    // Apply forecast accuracy factor to solar estimate
-    const adjustedSolarKwh = profile.solarTotalKwh * profile.forecastAccuracyFactor;
-    const isStrongSolar    = adjustedSolarKwh >= solarSurplusThresholdKwh;
+    // Remaining solar from now onward — adapts as the day progresses
+    const remainingSolarKwh = this._remainingSolarKwh(solarForecast);
+    const adjustedSolarKwh  = remainingSolarKwh * profile.forecastAccuracyFactor;
+    const isStrongSolar     = adjustedSolarKwh >= solarSurplusThresholdKwh;
 
     // How many kWh are needed from NOW until solar starts producing?
     const hoursUntilSolar = hour < profile.solarStartHour
@@ -437,7 +557,9 @@ class SmartEcoStrategy {
   // simSocKwh math which also assumes 100% efficiency. PR 2 may add losses
   // uniformly to both the SoC trajectory and the new flow fields.
   //
-  // v1.5 fix: SOLAR_CURTAIL trigger now uses `simSocKwh >= effectiveCapacity`
+  // v1.6 fix: charge limit only constrains grid charging, not solar.
+  // Solar always charges to full physical capacity. SOLAR_CURTAIL only
+  // fires when battery is truly full (>= batteryCapacityKwh - 0.1).
   // (matching SOLAR_SURPLUS precondition) instead of `simSocPct >= 99`.
   // On strong-solar days where chargeLimitSoC < 99, the previous condition
   // never fired and the simulator would silently model export at negative
@@ -465,14 +587,44 @@ class SmartEcoStrategy {
 
     const profile = this._getProfile(config);
 
+    // If _getProfile returned the flat 300W fallback (config didn't have a
+    // usable hourlyLoadProfile), try to derive one from the last 14 days of
+    // snapshots. The result is a better starting point for the SoC simulation
+    // and reflects the user's actual consumption pattern instead of a guess.
+    if (profile.hourlyLoadProfileSource === 'fallback') {
+      const historicProfile = await this._loadHourlyProfileFromHistory(14);
+      if (historicProfile) {
+        profile.hourlyLoadProfile = historicProfile;
+        profile.hourlyLoadProfileSource = 'history-14d';
+      }
+    }
+
+    // Unconditional diagnostic: which profile is the simulation using, and
+    // what's the daily average? If this line never appears in the log, the
+    // day plan code path isn't actually running.
+    {
+      const avgW = Math.round(
+        profile.hourlyLoadProfile.reduce((s, w) => s + w, 0) / 24
+      );
+      console.log(
+        `   • Strategy-Manager          - SmartEco day plan: ` +
+        `load profile source=${profile.hourlyLoadProfileSource}, avg=${avgW}W/h`
+      );
+      console.log(
+        `   • Strategy-Manager          - hourly load W: ` +
+        `[${profile.hourlyLoadProfile.map((w, i) => `${i}:${w}`).join(', ')}]`
+      );
+    }
+
     // Physical constants
     const minKwh          = (minSocPct / 100) * batteryCapacityKwh;
     const slotHours       = 0.25;
     const chargeKwPerSlot = (chargePowerWatts / 1000) * slotHours;
 
-    // Solar forecast strength for this window
-    const adjustedSolarKwh = profile.solarTotalKwh * profile.forecastAccuracyFactor;
-    const isStrongSolar    = adjustedSolarKwh >= solarSurplusThresholdKwh;
+    // Solar forecast strength — remaining solar within the plan window
+    const remainingSolarKwh = this._remainingSolarKwh(solarForecast, windowStart.getTime());
+    const adjustedSolarKwh  = remainingSolarKwh * profile.forecastAccuracyFactor;
+    const isStrongSolar     = adjustedSolarKwh >= solarSurplusThresholdKwh;
 
     // Charge limit for the day plan simulation
     // If strong solar, cap simulated charging at targetSoC to model realistic behaviour
@@ -481,20 +633,27 @@ class SmartEcoStrategy {
       : 100;
     const chargeLimitKwh = (chargeLimitSoC / 100) * batteryCapacityKwh;
 
-    // ── Index prices by 15-min datetime key (YYYY-MM-DDTHH:MM) ───────────────
+    // ── Local datetime key helpers ────────────────────────────────────────────
+    // All slot/price/solar keys MUST be in local time. Source datetimes vary
+    // (DB: "2026-06-10 21:45:00" local; pricing handler: ISO/UTC strings), so
+    // parse with new Date() and re-key via getHours()/getMinutes() — both
+    // formats then land on the same local key.
+    const _pad2 = n => String(n).padStart(2, '0');
+
+    const _localHourKey = (d) =>
+      `${d.getFullYear()}-${_pad2(d.getMonth() + 1)}-${_pad2(d.getDate())}T${_pad2(d.getHours())}`;
+
+    // Same idea but at 15-min resolution — used for slot/price matching.
+    const _localSlotKey = (d) =>
+      `${_localHourKey(d)}:${_pad2(d.getMinutes())}`;
+
+    // ── Index prices by 15-min LOCAL datetime key (YYYY-MM-DDTHH:MM) ─────────
     const priceBySlot = {};
     for (const p of prices) {
-      if (p.datetime) priceBySlot[p.datetime.slice(0, 16)] = p.price;
+      if (!p.datetime) continue;
+      const d = new Date(p.datetime);
+      if (!isNaN(d)) priceBySlot[_localSlotKey(d)] = p.price;
     }
-
-    // ── Index solar forecast by LOCAL hour key ────────────────────────────────
-    const _localHourKey = (d) => {
-      const yyyy = d.getFullYear();
-      const mm   = String(d.getMonth() + 1).padStart(2, '0');
-      const dd   = String(d.getDate()).padStart(2, '0');
-      const hh   = String(d.getHours()).padStart(2, '0');
-      return `${yyyy}-${mm}-${dd}T${hh}`;
-    };
 
     const solarByHour = {};
     for (const f of solarForecast) {
@@ -507,6 +666,7 @@ class SmartEcoStrategy {
         solarByHour[_localHourKey(base)] = f.watts ?? 0;
       }
     }
+
 
     // ── Pre-compute per-slot solar lookahead budget ───────────────────────────
     const solarLookaheadKwh = {};
@@ -522,9 +682,28 @@ class SmartEcoStrategy {
       }
       solarLookaheadKwh[i] = solarAhead;
     }
-
+    console.log(
+      `   • Strategy-Manager        - SmartEco day plan: ` +
+      `solar in window: ${remainingSolarKwh.toFixed(2)} kWh raw, ` +
+      `×${profile.forecastAccuracyFactor} = ${adjustedSolarKwh.toFixed(2)} kWh adjusted, ` +
+      `isStrongSolar=${isStrongSolar}, chargeLimitSoC=${chargeLimitSoC}%`
+    );
     // ── SoC simulation — starts from current real SoC ─────────────────────────
     let simSocKwh = ((currentSoc ?? 50) / 100) * batteryCapacityKwh;
+
+    // Parallel "unconstrained" trajectory: same load/solar inputs, but charging
+    // is capped at physical capacity instead of the charge limit. This is what
+    // the user-facing chart plots, because it answers "when will SoC reach
+    // 100%" — the planning question. The constrained `simSocKwh` above is
+    // retained for action decisions and the grid-flow ledger.
+    let simSocKwhUnconstrained = simSocKwh;
+
+    // Track the first slot where unconstrained SoC reaches ≥99%, and the
+    // cumulative solar surplus from that point forward (the "dishwasher
+    // budget" — kWh that would otherwise be exported).
+    let socFullSlotIndex      = -1;
+    let surplusAfterFullKwh   = 0;
+    let socFloorSlotIndex     = -1;
 
     const plan = [];
 
@@ -532,11 +711,11 @@ class SmartEcoStrategy {
       const slotTime = new Date(windowStart.getTime() + i * 15 * 60 * 1000);
       const hour     = slotTime.getHours();
       const minute   = slotTime.getMinutes();
-      const datetime = slotTime.toISOString().slice(0, 16);
+      const datetime = _localSlotKey(slotTime);
       const hourKey  = _localHourKey(slotTime);
 
       const price  = priceBySlot[datetime] ?? null;
-      const solarW = solarByHour[hourKey]  ?? 0;
+      const solarW = (solarByHour[hourKey] ?? 0) * (profile.forecastAccuracyFactor || 2.0);
 
       // ── Per-slot energy flows (kWh) ─────────────────────────────────────────
       const loadKwh         = (profile.hourlyLoadProfile[hour] ?? 300) * slotHours / 1000;
@@ -544,9 +723,8 @@ class SmartEcoStrategy {
       const netLoadKwh      = Math.max(0, loadKwh - solarKwh);
       const solarSurplusKwh = Math.max(0, solarKwh - loadKwh);
 
-      // Battery room respects charge limit
-      const effectiveCapacity = Math.min(batteryCapacityKwh, chargeLimitKwh);
-      const batteryRoomKwh    = effectiveCapacity - simSocKwh;
+      // Solar always charges to full physical capacity — charge limit only gates grid charging
+      const batteryRoomKwh    = batteryCapacityKwh - simSocKwh;
       const solarChargeKwh    = Math.min(solarSurplusKwh, Math.max(0, batteryRoomKwh));
       const projectedSocKwh   = simSocKwh - netLoadKwh + solarChargeKwh;
 
@@ -583,40 +761,38 @@ class SmartEcoStrategy {
         const batteryFull   = simSocPct >= 99;
 
         if (isNegative) {
-          // v1.5 fix: trigger curtailment when battery is at the *charge limit*,
-          // not at 99% SoC. On strong-solar days chargeLimitSoC can be 80% or
-          // lower; the old `batteryFull` check (line below, kept for the reason
-          // string) never fired and the simulator silently modeled export at
-          // negative prices.
-          const atChargeLimit = simSocKwh >= effectiveCapacity - 0.1;
+          // Curtail only when battery is truly full — charge limit doesn't restrict solar
+          const atFullCapacity = simSocKwh >= batteryCapacityKwh - 0.1;
 
-          if (atChargeLimit && solarW > 50) {
-            // ── Negative price + battery at charge limit + solar generating → curtail
+          if (atFullCapacity && solarW > 50) {
+            // ── Negative price + battery full + solar generating → curtail
             action = 'SOLAR_CURTAIL';
-            const limitDesc = batteryFull
-              ? `battery full (${simSocPct.toFixed(0)}%)`
-              : `battery at charge limit (${chargeLimitSoC}%)`;
-            reason = `Negative price (${price.toFixed(1)}ct) and ${limitDesc}. Solar curtailed to stop grid export.`;
+            reason = `Negative price (${price.toFixed(1)}ct) and battery full (${simSocPct.toFixed(0)}%). Solar curtailed to stop grid export.`;
             alert  = 'negative_price_curtail';
-            simSocKwh = effectiveCapacity; // pinned at charge limit, not capacity
+            // Curtailment clips solar to load — no grid export.
+            // If load > solar, battery still covers the deficit (drains).
+            const curtailDeficitKwh = Math.max(0, loadKwh - solarKwh);
+            simSocKwh = Math.max(minKwh, simSocKwhBefore - curtailDeficitKwh);
           } else {
             // ── Negative price + battery has room → IDLE, solar fills battery ───
             action = 'IDLE';
             reason = `Negative price (${price.toFixed(1)}ct) — solar charging battery (${simSocPct.toFixed(0)}%). No grid charging.`;
             alert  = 'negative_price';
-            simSocKwh = Math.min(effectiveCapacity, Math.max(minKwh, projectedSocKwh));
+            // Solar charges battery to full physical capacity.
+            simSocKwh = Math.min(batteryCapacityKwh, Math.max(minKwh, projectedSocKwh));
           }
 
         } else if (projectedSocKwh < minKwh && !isStrongSolar) {
           // ── SoC would breach floor AND solar is weak: charge from grid ────────
           // Only charge from grid in winter / weak solar conditions.
           // When solar is strong, the battery will fill naturally — don't interfere.
-          const chargeKwh = Math.min(chargeKwPerSlot, effectiveCapacity - projectedSocKwh);
+          // Charge limit applies here — don't grid-charge above the limit.
+          const chargeKwh = Math.min(chargeKwPerSlot, chargeLimitKwh - projectedSocKwh);
           action = 'CHARGE_FROM_GRID';
           watts  = chargePowerWatts;
           reason = `Projected SoC would drop to ${((projectedSocKwh / batteryCapacityKwh) * 100).toFixed(0)}% ` +
                    `(weak solar day). Charging ${chargeKwh.toFixed(2)} kWh at ${price.toFixed(1)}ct.`;
-          simSocKwh = Math.min(effectiveCapacity, projectedSocKwh + chargeKwh);
+          simSocKwh = Math.min(chargeLimitKwh, projectedSocKwh + chargeKwh);
 
         } else if (isPeak && aboveFloor && solarIsComing && solarIsImminent && aboveSocMin && headroomKwh > 0.5) {
           // ── Peak price + solar incoming: discharge only to make room ─────────
@@ -632,19 +808,23 @@ class SmartEcoStrategy {
                      `${solarAhead.toFixed(2)} kWh solar in next ${dischargeLookaheadHours}h — discharging ${dischargeKwh.toFixed(2)} kWh to make room.`;
             simSocKwh = Math.max(minKwh, projectedSocKwh - dischargeKwh);
           } else {
-            simSocKwh = Math.min(effectiveCapacity, Math.max(minKwh, projectedSocKwh));
+            simSocKwh = Math.min(batteryCapacityKwh, Math.max(minKwh, projectedSocKwh));
           }
 
-        } else if (solarSurplusKwh > 0 && simSocKwh >= effectiveCapacity - 0.1) {
-          // ── Solar surplus, battery at charge limit ────────────────────────────
+        } else if (solarSurplusKwh > 0 && simSocKwh >= batteryCapacityKwh - 0.1) {
+          // ── Solar surplus, battery full ────────────────────────────────────────
           action = 'SOLAR_SURPLUS';
           watts  = solarW;
-          reason = `${(solarW / 1000).toFixed(1)} kW solar surplus — battery at charge limit (${chargeLimitSoC}%), energy exported or used directly.`;
-          simSocKwh = effectiveCapacity;
+          reason = `${(solarW / 1000).toFixed(1)} kW solar surplus — battery full (${simSocPct.toFixed(0)}%), energy exported or used directly.`;
+          // Battery can't absorb (full); surplus is exported.
+          // SoC stays where it is.
+          simSocKwh = simSocKwhBefore;
 
         } else {
           // ── Normal self-consumption ─────────────────────────────────────────
-          simSocKwh = Math.min(effectiveCapacity, Math.max(minKwh, projectedSocKwh));
+          // Ceiling is physical capacity; the charge limit only constrains
+          // charging (already applied in solarChargeKwh above).
+          simSocKwh = Math.min(batteryCapacityKwh, Math.max(minKwh, projectedSocKwh));
         }
 
       } else {
@@ -653,6 +833,35 @@ class SmartEcoStrategy {
 
       // Hard clamp
       simSocKwh = Math.max(0, Math.min(batteryCapacityKwh, simSocKwh));
+
+      // ── Unconstrained trajectory ────────────────────────────────────────────
+      // Same load/solar inputs, ceiling is physical capacity (no charge limit).
+      // This drives the user-facing prediction chart.
+      const roomUnconstrainedKwh = batteryCapacityKwh - simSocKwhUnconstrained;
+      const solarChargeUnconstrainedKwh = Math.min(solarSurplusKwh, Math.max(0, roomUnconstrainedKwh));
+      simSocKwhUnconstrained = Math.max(0, Math.min(
+        batteryCapacityKwh,
+        simSocKwhUnconstrained - netLoadKwh + solarChargeUnconstrainedKwh
+      ));
+
+      const simSocPctUnconstrained = Math.round((simSocKwhUnconstrained / batteryCapacityKwh) * 100);
+
+      // First slot where unconstrained SoC hits the floor — grid takes over
+      if (socFloorSlotIndex < 0 && simSocPctUnconstrained <= minSocPct) {
+        socFloorSlotIndex = i;
+      }
+
+      // First slot to reach ≥99% in the unconstrained trajectory: that's when
+      // free solar capacity starts flowing — the actionable insight.
+      if (socFullSlotIndex < 0 && simSocPctUnconstrained >= 99) {
+        socFullSlotIndex = i;
+      }
+      // After the battery is "full", accumulate the surplus that would have
+      // gone to charging if there were room — i.e. solar minus what fit.
+      if (socFullSlotIndex >= 0) {
+        const unabsorbedKwh = solarSurplusKwh - solarChargeUnconstrainedKwh;
+        if (unabsorbedKwh > 0) surplusAfterFullKwh += unabsorbedKwh;
+      }
 
       // ── v1.5: Per-slot grid-flow ledger ─────────────────────────────────────
       // Energy ledger: solar + gridImport = load + socDelta + gridExport
@@ -693,6 +902,7 @@ class SmartEcoStrategy {
         priceCtKwh:     price,
         solarForecastW: solarW,
         simSocPct:      Math.round((simSocKwh / batteryCapacityKwh) * 100),
+        simSocPctUnconstrained,
         // v1.5: per-slot energy flows in kWh (3 decimals)
         simLoadKwh:        Math.round(loadKwh        * 1000) / 1000,
         simSolarKwh:       Math.round(solarKwh       * 1000) / 1000,
@@ -700,6 +910,22 @@ class SmartEcoStrategy {
         simGridExportKwh:  Math.round(simGridExportKwh * 1000) / 1000,
         alert,
       });
+    }
+
+    // ── Stamp the "battery full" marker on the relevant slot ─────────────────
+    // Frontend can scan for isSocFullSlot to render the "100% reached at"
+    // annotation, and read simSurplusAfterFullKwh as the high-load budget.
+    if (socFullSlotIndex >= 0) {
+      plan[socFullSlotIndex].isSocFullSlot          = true;
+      plan[socFullSlotIndex].simSurplusAfterFullKwh = Math.round(surplusAfterFullKwh * 100) / 100;
+    }
+
+    // ── Stamp the "battery at floor" marker on the relevant slot ────────────
+    // Frontend renders a persistent warning when SoC hits the floor and the
+    // house switches to grid power.
+    if (socFloorSlotIndex >= 0) {
+      plan[socFloorSlotIndex].isSocFloorSlot = true;
+      plan[socFloorSlotIndex].socFloorPct    = minSocPct;
     }
 
     return plan;

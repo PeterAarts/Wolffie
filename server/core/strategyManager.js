@@ -14,6 +14,7 @@ import db           from './database.js';
 import registry     from './capabilityRegistry.js';
 import settings     from './system/services/settingsService.js';
 import alertService from './system/services/alertService.js';
+import eventLog     from './system/services/eventLogService.js';
 
 import smartEcoStrategy    from './strategies/SmartEcoStrategy.js';
 import pureSolarStrategy   from './strategies/PureSolarStrategy.js';
@@ -204,7 +205,8 @@ class StrategyManager {
   //   ON DUPLICATE KEY UPDATE = VALUES() →  ON CONFLICT(plan_date, strategy_id)
   //                                         DO UPDATE SET = excluded.
 
-  async regenerateDayPlan() {
+async regenerateDayPlan(date = null, source = 'timer') {
+    console.log(`   • ${PREFIX} - Day plan regeneration triggered by: ${source}`);
     const _now    = new Date();
     const planDate = `${_now.getFullYear()}-` +
       `${String(_now.getMonth() + 1).padStart(2, '0')}-` +
@@ -219,6 +221,11 @@ class StrategyManager {
     }
 
     const context = await this._buildContext();
+
+    if (context.soc === null || context.soc === undefined) {
+      console.warn(`   • ${PREFIX} - Skipping day plan regen — battery SoC unavailable`);
+      return;
+    }
 
     if (!context.prices?.length) {
       const [existing] = await db.pool.query(
@@ -280,11 +287,11 @@ class StrategyManager {
           s => s.hour === nowHour && Math.abs(s.minute - nowMin) < 15
         );
         if (currentSlot) {
-          const drift = Math.abs(currentSlot.projectedSoc - context.soc);
+          const drift = Math.abs(currentSlot.simSocPct - context.soc);
           if (drift > 5) {
-            console.warn(`   • ${PREFIX} - SoC Drift: Plan expects ${currentSlot.projectedSoc}%, Reality is ${context.soc}%. Regenerating...`);
-            await this.regenerateDayPlan();
-            return this._evaluate();
+            console.warn(`   • ${PREFIX} - SoC Drift: Plan expects ${currentSlot.simSocPct}%, Reality is ${context.soc}%. Regenerating...`);
+            await this.regenerateDayPlan('soc-drift');
+            return;
           }
         }
       }
@@ -317,7 +324,7 @@ class StrategyManager {
       }
 
       if (autoExecute && decision.action !== 'IDLE') {
-        await this._execute(decision, decisionId);
+        await this._execute(decision, decisionId, activeId);
       }
 
     } catch (e) {
@@ -325,7 +332,7 @@ class StrategyManager {
     }
   }
 
-  async _execute(decision, decisionId) {
+  async _execute(decision, decisionId, activeId) {
     const capabilityMap = {
       'CHARGE_FROM_GRID':  'battery:charge-from-grid',
       'DISCHARGE_TO_GRID': 'battery:discharge-to-grid',
@@ -341,18 +348,37 @@ class StrategyManager {
       return;
     }
 
+    const origin = `strategy:${activeId}`;
+
     try {
       const result = await handler({
         watts:         decision.power         ?? 2000,
         targetSOC:     decision.targetSoc     ?? 100,
         minimumSOC:    decision.minimumSoc    ?? 20,
         durationHours: decision.durationHours ?? 1,
+        origin,
       });
 
       await db.pool.query(
         'UPDATE strategy_decisions SET executed = 1, result = ? WHERE id = ?',
         [JSON.stringify(result), decisionId]
       );
+
+      // Log dispatch event — resolve any prior active dispatch first
+      const eventName = decision.action === 'STOP' ? 'dispatch_stopped'
+                      : decision.action === 'CHARGE_FROM_GRID' ? 'charge_started'
+                      : 'discharge_started';
+
+      await eventLog.resolveByCategory('dispatch');
+
+      if (decision.action !== 'STOP') {
+        await eventLog.log(origin, 'dispatch', eventName, 'notice',
+          `${decision.action} executed: ${decision.reason?.slice(0, 120) ?? ''}`,
+          { watts: decision.power, action: decision.action, decisionId });
+      } else {
+        await eventLog.log(origin, 'dispatch', eventName, 'info',
+          'Dispatch stopped by strategy — returning to self-consumption');
+      }
 
       console.log(`   • ${PREFIX} - Executed '${decision.action}' via '${capType}'`);
     } catch (e) {
@@ -361,6 +387,10 @@ class StrategyManager {
         'UPDATE strategy_decisions SET executed = 0, result = ? WHERE id = ?',
         [JSON.stringify({ error: e.message }), decisionId]
       );
+
+      await eventLog.log(origin, 'dispatch', `${decision.action.toLowerCase()}_failed`, 'error',
+        `Strategy dispatch failed: ${e.message}`,
+        { action: decision.action, decisionId });
     }
   }
 
@@ -582,8 +612,9 @@ class StrategyManager {
           } else {
             console.log(`   • ${PREFIX} - Curtailment PENDING — ${Math.round(elapsedMin)}/${PENDING_MINUTES} min elapsed`);
           }
-        }
 
+
+        }
       } else if (this._curtailState === 'CURTAILED') {
         if (shouldRestore) {
           await this._curtailSolar(false);

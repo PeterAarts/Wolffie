@@ -84,6 +84,16 @@ const schemas = {
 
   // ── Grid pricing ───────────────────────────────────────────────────────────
   'grid:pricing': null,     // passthrough — no normalization
+  'battery:charge-from-grid': { success: null, command: null },
+  'battery:discharge-to-grid': { success: null, command: null },
+  'battery:stop': { success: null, mode: null },
+  'battery:set-charge-limit': { success: null, chargeLimitPct: null },
+  'grid:status': { gridConnected: null, mode: null },
+  'solar:curtail': null,  // passthrough
+  'smartdevice:read':   null,   // passthrough — define shape later
+  'smartdevice:status': null,
+  'smartdevice:write':  null,
+  'smartdevice:p1':     null,
 };
 
 /**

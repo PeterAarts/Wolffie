@@ -40,6 +40,7 @@ class AggregatorService {
       grid:    find('grid:read'),
       home:    find('home:read'),
     };
+    this._lastEventPruneDate = null;
   }
 
   start() {
@@ -92,8 +93,18 @@ class AggregatorService {
       if (this.lastNightlyProfileDate !== today && hour >= 2) {
         await this.calculateNightlyProfile();
         this.lastNightlyProfileDate = today;
+        
       }
-
+      // Event log pruning: once per day, after hour 3
+      if (this._lastEventPruneDate !== today && hour >= 3) {
+        try {
+          const { default: eventLogService } = await import('./eventLogService.js');
+          await eventLogService.prune();
+        } catch (err) {
+          console.error(`   • ${PREFIX} — event log prune failed: ${err.message}`);
+        }
+        this._lastEventPruneDate = today;
+      }
     } catch (error) {
       console.error(`   - {${PREFIX}} error:`, error.message);
     }

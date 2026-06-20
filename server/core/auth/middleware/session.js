@@ -119,11 +119,15 @@ class SqliteStore extends session.Store {
 // ── Session middleware ────────────────────────────────────────────────────────
 
 export function createSessionMiddleware() {
+  if (!process.env.SESSION_SECRET) {
+    console.error('FATAL: SESSION_SECRET not set — refusing to start');
+    process.exit(1);
+  }
   const store = new SqliteStore();
 
   return session({
-    key:              'wattson_session_id',
-    secret:           process.env.SESSION_SECRET || 'wattson-energy-monitor-change-in-production',
+    name:              'wolffie_session_id',
+    secret:           process.env.SESSION_SECRET ,
     store,
     resave:           false,  // Niet opslaan als sessie niet gewijzigd is
     saveUninitialized:false,  // Geen sessie aanmaken tot er iets opgeslagen wordt

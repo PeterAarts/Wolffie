@@ -151,7 +151,7 @@ router.post('/module/:moduleId', authorize('admin'), async (req, res) => {
  */
 router.get('/core', authorize('admin'), async (req, res) => {
   try {
-    const coreCategories = ['system', 'data_collection', 'retention', 'notifications', 'energy'];
+    const coreCategories = ['system', 'data_collection', 'retention', 'notifications', 'energy', 'ui'];
     let values = {};
 
     for (const cat of coreCategories) {
@@ -247,7 +247,8 @@ router.post('/core', authorize('admin'), async (req, res) => {
       derive_home_load: 'data_collection',
       email_enabled: 'notifications', email_address: 'notifications',
       snapshots_days: 'retention', minutes_days: 'retention', hours_days: 'retention',
-      contract_type: 'energy', fixed_price_ct_kwh: 'energy'
+      contract_type: 'energy', fixed_price_ct_kwh: 'energy',
+       dashboard_panel_view: 'ui'
     };
 
     for (const [key, value] of Object.entries(updates)) {
@@ -430,6 +431,51 @@ router.put('/day-ahead-chart', async (req, res) => {
     });
 
     res.json({ success: true, green_below: gb, red_above: ra });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/settings/ui/dashboard-panel-view
+ * Returns the user's preferred dashboard right-panel view ('list' | 'flow')
+ * No admin required — UI preference, any authenticated user.
+ */
+router.get('/ui/dashboard-panel-view', async (req, res) => {
+  try {
+    const settings = await settingsService.getCategory('ui');
+    res.json({
+      success: true,
+      value: settings.dashboard_panel_view ?? 'list',
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+ 
+/**
+ * PUT /api/settings/ui/dashboard-panel-view
+ * Body: { value: 'list' | 'flow' }
+ * Upserts the preference row — works even if row doesn't exist yet.
+ */
+router.put('/ui/dashboard-panel-view', async (req, res) => {
+  try {
+    const { value } = req.body;
+    if (!['list', 'flow'].includes(value)) {
+      return res.status(400).json({ success: false, error: "value must be 'list' or 'flow'" });
+    }
+ 
+    const changedBy = req.user?.username ?? 'ui';
+    await settingsService.upsert('ui', 'dashboard_panel_view', value, {
+      changedBy,
+      reason:      'User toggled dashboard panel view',
+      valueType:   'string',
+      editable:    1,
+      visible:     1,
+      description: 'Dashboard right-panel component preference: list or flow',
+    });
+ 
+    res.json({ success: true, value });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

@@ -1,4 +1,4 @@
-// core/capabilityRouter.js
+// core/system/routes/capability.js
 //
 // Unified API surface for all capability-based operations.
 // The frontend always calls these endpoints — it never calls module-specific
@@ -16,6 +16,7 @@
 import express from 'express';
 import registry from '../../capabilityRegistry.js';
 import { normalize } from '../../capabilitySchemas.js';
+import eventLog from '../services/eventLogService.js';
 
 const router = express.Router();
 
@@ -87,26 +88,100 @@ router.get('/battery/status', (req, res) =>
  * Start a timed charge-from-grid session.
  * Body: { watts: number, targetSOC: number, durationHours: number }
  */
-router.post('/battery/charge-from-grid', (req, res) =>
-  dispatch('battery:charge-from-grid', req, res)
-);
+router.post('/battery/charge-from-grid', async (req, res) => {
+  const type = 'battery:charge-from-grid';
+  const handler = registry.get(type);
+  if (!handler) {
+    return res.status(503).json({
+      error: 'capability_unavailable', capability: type,
+      message: `No module currently provides '${type}'. Enable the required module in Settings.`,
+    });
+  }
+
+  try {
+    const raw    = await handler(req.body, req);
+    const result = normalize(type, raw);
+
+    // Resolve any prior active dispatch events, then log the new one
+    await eventLog.resolveByCategory('dispatch');
+    await eventLog.log('manual:api', 'dispatch', 'charge_started', 'notice',
+      `Grid charging started at ${req.body.watts ?? '?'}W (target ${req.body.targetSOC ?? '?'}%, ${req.body.durationHours ?? '?'}h)`,
+      { watts: req.body.watts, targetSOC: req.body.targetSOC, durationHours: req.body.durationHours });
+
+    res.json(result ?? { success: true });
+  } catch (e) {
+    console.error(`[CapabilityRouter] Error executing '${type}':`, e.message);
+    await eventLog.log('manual:api', 'dispatch', 'charge_failed', 'error',
+      `Grid charge failed: ${e.message}`, { watts: req.body.watts });
+    res.status(500).json({ error: 'capability_error', capability: type, message: e.message });
+  }
+});
 
 /**
  * POST /api/capability/battery/discharge-to-grid
  * Start a timed discharge-to-grid session.
  * Body: { watts: number, minimumSOC: number, durationHours: number }
  */
-router.post('/battery/discharge-to-grid', (req, res) =>
-  dispatch('battery:discharge-to-grid', req, res)
-);
+router.post('/battery/discharge-to-grid', async (req, res) => {
+  const type = 'battery:discharge-to-grid';
+  const handler = registry.get(type);
+  if (!handler) {
+    return res.status(503).json({
+      error: 'capability_unavailable', capability: type,
+      message: `No module currently provides '${type}'. Enable the required module in Settings.`,
+    });
+  }
+
+  try {
+    const raw    = await handler(req.body, req);
+    const result = normalize(type, raw);
+
+    await eventLog.resolveByCategory('dispatch');
+    await eventLog.log('manual:api', 'dispatch', 'discharge_started', 'notice',
+      `Discharge started at ${req.body.watts ?? '?'}W (min SoC ${req.body.minimumSOC ?? '?'}%, ${req.body.durationHours ?? '?'}h)`,
+      { watts: req.body.watts, minimumSOC: req.body.minimumSOC, durationHours: req.body.durationHours });
+
+    res.json(result ?? { success: true });
+  } catch (e) {
+    console.error(`[CapabilityRouter] Error executing '${type}':`, e.message);
+    await eventLog.log('manual:api', 'dispatch', 'discharge_failed', 'error',
+      `Discharge failed: ${e.message}`, { watts: req.body.watts });
+    res.status(500).json({ error: 'capability_error', capability: type, message: e.message });
+  }
+});
 
 /**
  * POST /api/capability/battery/stop
  * Cancel active dispatch and return inverter to Self-Consumption mode.
  */
-router.post('/battery/stop', (req, res) =>
-  dispatch('battery:stop', req, res)
-);
+router.post('/battery/stop', async (req, res) => {
+  const type = 'battery:stop';
+  const handler = registry.get(type);
+  if (!handler) {
+    return res.status(503).json({
+      error: 'capability_unavailable', capability: type,
+      message: `No module currently provides '${type}'. Enable the required module in Settings.`,
+    });
+  }
+
+  try {
+    const raw    = await handler(req.body, req);
+    const result = normalize(type, raw);
+
+    // Resolve all active dispatch events — dispatch is over
+    const resolved = await eventLog.resolveByCategory('dispatch');
+    await eventLog.log('manual:api', 'dispatch', 'dispatch_stopped', 'info',
+      `Dispatch stopped — inverter returned to self-consumption`,
+      { resolvedEvents: resolved });
+
+    res.json(result ?? { success: true });
+  } catch (e) {
+    console.error(`[CapabilityRouter] Error executing '${type}':`, e.message);
+    await eventLog.log('manual:api', 'dispatch', 'stop_failed', 'error',
+      `Dispatch stop failed: ${e.message}`);
+    res.status(500).json({ error: 'capability_error', capability: type, message: e.message });
+  }
+});
 
 // ─── Solar ─────────────────────────────────────────────────────────────────
 
