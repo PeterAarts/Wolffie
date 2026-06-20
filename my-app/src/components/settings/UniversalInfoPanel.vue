@@ -1,6 +1,6 @@
 <!-- src/components/settings/UniversalInfoPanel.vue -->
 <template>
-  <div class="grid bg-secondary-100 p-4 gap-4 fields-container">
+  <div class="bg-secondary-50 p-4 gap-4 groups-container">
     <div 
       v-for="item in displayItems" 
       :key="item.label"
@@ -26,7 +26,7 @@
         />
 
         <!-- Boolean Icon Template -->
-        <div v-else-if="item.template.type === 'boolean-icon'" class="info-value">
+        <div v-else-if="item.template.type === 'boolean-icon'" class="boolean-value">
           <i
             :class="`pi ${getBoolValue(item) ? item.template.trueIcon : item.template.falseIcon}`"
             :style="{ color: getBoolValue(item) ? item.template.trueColor : item.template.falseColor }"
@@ -104,6 +104,12 @@ watch(() => props.messagesReady, (ready) => {
 });
 const labelKey = ref(0);
 
+// Resolve dot-notation field paths (e.g. "apiInfo.provider" → obj.apiInfo.provider)
+function resolveField(obj, path) {
+  if (!path || !obj) return undefined;
+  return path.split('.').reduce((acc, key) => acc?.[key], obj);
+}
+
 const data = ref({});
 const loading = ref(false);
 let refreshInterval = null;
@@ -116,7 +122,7 @@ const displayItems = computed(() => {
 
   return panelConfig.value.items.map(item => ({
     ...item,
-    value: item.value !== undefined ? item.value : data.value[item.field]
+    value: item.value !== undefined ? item.value : resolveField(data.value, item.field)
   }));
 });
 
@@ -159,8 +165,9 @@ function getColClass(item) {
 // Get value from item
 function getValue(item) {
   if (item.value !== undefined) return item.value;
-  if (item.field && data.value[item.field] !== undefined) {
-    return data.value[item.field];
+  if (item.field) {
+    const resolved = resolveField(data.value, item.field);
+    if (resolved !== undefined) return resolved;
   }
   return '-';
 }
@@ -255,16 +262,8 @@ defineExpose({
 </script>
 
 <style scoped>
-.universal-info-panel {
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 8px;
-}
-.info-grid {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: 1rem;
-}
+.universal-info-panel         { padding: 1rem;background: #f9fafb;border-radius: 8px;}
+.info-grid                    { display: grid;grid-template-columns: repeat(12, 1fr);gap: 1rem;}
 .col-1  { grid-column: span 1; }
 .col-2  { grid-column: span 2; }
 .col-3  { grid-column: span 3; }
@@ -274,72 +273,15 @@ defineExpose({
 /* Fallback: no cols specified = full width */
 .info-item:not([class*="col-"]) { grid-column: span 12; }
 
-.info-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
-}
-
-.info-icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  flex-shrink: 0;
-}
-
-.info-icon i {
-  font-size: 1.2rem;
-  color: #6b7280;
-}
-
-.info-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1;
-}
-
-.info-label {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-.info-value {
-    font-size: 0.875rem;
-    background-color: var(--color-secondary-50);
-    padding: 0.4375rem 0.75rem;
-
-}
-
-.info-value-full {
-  width: 100%;
-}
-
-.info-link {
-  color: #3b82f6;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-}
-
-.info-link:hover {
-  text-decoration: underline;
-}
-
-.refresh-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  justify-content: center;
-  padding: 0.5rem;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-}
+.info-item                    { display: flex;align-items: flex-start;gap: 0.75rem;}
+.info-icon                    { width: 36px;height: 36px;display: flex;align-items: center;justify-content: center;background: white;border-radius: 6px;border: 1px solid var(--color-secondary-200 );flex-shrink: 0;}
+.info-icon i                  { font-size: 1.2rem;color: var(--color-secondary-400 );}
+.info-content                 { display: flex;flex-direction: column;gap: 0.25rem;flex: 1;margin-bottom: 0.5rem;}
+.info-label                   { font-size: 0.875rem;color: var(--color-secondary-400 );font-weight: 500;}
+.info-value                   { font-size: 0.75rem;background-color: var(--color-secondary-50);padding: 0.4375rem 0.75rem;}
+.boolean-value                { font-size: 1.2rem;font-weight: 900;padding: 0.4375rem 0.75rem;}
+.info-value-full              { width: 100%;}
+.info-link                    { color: var(--color-primary);text-decoration: none;display: inline-flex;align-items: center;}
+.info-link:hover              { text-decoration: underline;}
+.refresh-indicator            { display: flex;align-items: center;gap: 0.5rem;justify-content: center;padding: 0.5rem;background: white;border-radius: 6px;border: 1px solid var(--color-secondary-200 );}
 </style>

@@ -101,7 +101,7 @@ const currentSlotIndex = computed(() => {
 const labels = computed(()    => slots.value.map(s => `${String(s.hour).padStart(2,'0')}:${String(s.minute).padStart(2,'0')}`) );
 const priceData = computed(() => slots.value.map(s => s.priceCtKwh ?? null));
 const solarData = computed(() => slots.value.map(s => (s.solarForecastW ?? 0) / 1000)  ); // W → kW
-const socData = computed(()   => slots.value.map(s => s.simSocPct ?? null) );
+const socData = computed(() => slots.value.map(s => s.simSocPctUnconstrained ?? s.simSocPct ?? null));
 const priceColors = computed(() => {
   const valid = priceData.value.filter(p => p !== null);
   if (!valid.length) return slots.value.map(() => '#e5e7eb');

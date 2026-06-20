@@ -66,14 +66,14 @@
             @click="resolve(alert.id)"
             :title="t('alerts.confirm')"
           >
-            <i class="ph-light" :class="executing === alert.id ? 'ph-spinner-third ph-spin' : 'ph-bolt-lightning'"></i>
+            <i class="ph-light" :class="executing === alert.id ? 'ph-circle-notch ph-spin' : 'ph-lightning'"></i>
           </button>
           <button
             class="ad-btn ad-btn--ghost"
             @click="dismiss(alert.id)"
             :title="t('alerts.dismiss')"
           >
-            <i class="ph-light ph-xmark"></i>
+            <i class="ph-light ph-x"></i>
           </button>
         </div>
       </div>
@@ -111,7 +111,7 @@
             @click="reResolve(alert.id)"
             :title="t('alerts.reResolve')"
           >
-            <i class="ph-light ph-rotate-right"></i>
+            <i class="ph-light ph-arrow-clockwise"></i>
           </button>
         </div>
       </div>
@@ -199,9 +199,9 @@ function severityClass(severity) {
 
 function severityIcon(severity) {
   switch (severity) {
-    case 'error':   return 'ph-circle-exclamation';
-    case 'warning': return 'ph-triangle-exclamation';
-    default:        return 'ph-circle-info';
+    case 'error':   return 'ph-warning-circle';
+    case 'warning': return 'ph-warning';
+    default:        return 'ph-info';
   }
 }
 
@@ -218,47 +218,13 @@ function formatDate(iso) {
 
 <style scoped>
 /* ── Bell button ───────────────────────────────────────────────────────── */
-.alert-bell {
-  position: relative;
-  display: flex; align-items: center; justify-content: center;
-  width: 2rem; height: 2rem;
-  background: none; border: none; cursor: pointer;
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-sm);
-  transition: color 0.12s, background 0.12s;
-}
-.alert-bell:hover        { color: var(--color-text-primary); background: var(--color-secondary-200); }
-.alert-bell__badge {
-  position: absolute; top: 2px; right: 2px;
-  min-width: 1rem; height: 1rem;
-  background: #ef4444; color: #fff;
-  font-size: 0.6rem; font-weight: 700;
-  border-radius: 999px;
-  display: flex; align-items: center; justify-content: center;
-  padding: 0 3px;
-  line-height: 1;
-}
+.alert-bell       { position: relative;display: flex; align-items: center; justify-content: center;width: 2rem; height: 2rem;background: none; border: none; cursor: pointer;color: var(--color-text-secondary);border-radius: var(--radius-sm);transition: color 0.12s, background 0.12s;}
+.alert-bell:hover { color: var(--color-text-primary); background: var(--color-secondary-200); }
+.alert-bell__badge{ position: absolute; top: 2px; right: 2px;min-width: 1rem; height: 1rem;background: #ef4444; color: #fff;font-size: 0.6rem; font-weight: 700;border-radius: 999px;display: flex; align-items: center; justify-content: center;padding: 0 3px;line-height: 1;}
 
 /* ── Tabs ──────────────────────────────────────────────────────────────── */
-.ad-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--color-secondary-200);
-  margin: 0 -1.25rem;
-  padding: 0 1.25rem;
-  gap: 0;
-  flex-shrink: 0;
-}
-.ad-tab {
-  display: flex; align-items: center;
-  padding: 0.625rem 0.875rem;
-  font-size: 0.8125rem; font-weight: 500;
-  color: var(--color-text-secondary);
-  background: none; border: none;
-  border-bottom: 2px solid transparent;
-  cursor: pointer;
-  transition: color 0.12s, border-color 0.12s;
-  white-space: nowrap;
-}
+.ad-tabs          { display: flex;border-bottom: 1px solid var(--color-secondary-200);margin: 0 -1.25rem;padding: 0 1.25rem;gap: 0;flex-shrink: 0;}
+.ad-tab           { display: flex; align-items: center;padding: 0.625rem 0.875rem;font-size: 0.8125rem; font-weight: 500;color: var(--color-text-secondary);background: none; border: none;border-bottom: 2px solid transparent;cursor: pointer;transition: color 0.12s, border-color 0.12s;white-space: nowrap;}
 .ad-tab:hover          { color: var(--color-text-primary); }
 .ad-tab--active        { color: var(--color-text-primary); border-bottom-color: var(--color-primary); }
 .ad-tab__count {
@@ -296,17 +262,13 @@ function formatDate(iso) {
   transition: background 0.1s;
 }
 .ad-item:hover            { background: var(--color-secondary-50); }
-.ad-item--resolved        { opacity: 0.65; }
+.ad-item--resolved        { opacity: 0.95; }
 .ad-item--resolved:hover  { opacity: 1; }
-.ad-item--warning         { border-left-color: #f59e0b; }
-.ad-item--error           { border-left-color: #ef4444; }
-.ad-item--info            { border-left-color: #3b82f6; }
+.ad-item--warning         { border-left-color: #e9ac43; }
+.ad-item--error           { border-left-color: #791616; }
+.ad-item--info            { border-left-color: #5594f8; }
 
-.ad-item__icon {
-  font-size: 0.9rem;
-  margin-top: 0.15rem;
-  flex-shrink: 0;
-}
+.ad-item__icon            {font-size: 0.9rem;margin-top: 0.15rem;flex-shrink: 0;}
 .ad-item--warning .ad-item__icon { color: #f59e0b; }
 .ad-item--error   .ad-item__icon { color: #ef4444; }
 .ad-item--info    .ad-item__icon { color: #3b82f6; }

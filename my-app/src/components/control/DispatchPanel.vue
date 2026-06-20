@@ -189,7 +189,7 @@ async function doCharge() {
   ask(t('control.confirmCharge', { watts, targetSOC, durationHours }), async () => {
     charging.value = true;
     try {
-      await apiClient.post('/alphaess-modbus-tcp/charge', { watts, targetSOC, durationHours });
+      await apiClient.post('/capability/battery/charge-from-grid', { watts, targetSOC, durationHours });
       setStartedAt();
       toast.add({ severity: 'success', summary: t('control.chargingStarted'), detail: `${watts} W → ${targetSOC}%` });
       await loadStatus();
@@ -206,7 +206,7 @@ async function doDischarge() {
   ask(t('control.confirmDischarge', { watts, minimumSOC, durationHours }), async () => {
     discharging.value = true;
     try {
-      await apiClient.post('/alphaess-modbus-tcp/discharge', { watts, minimumSOC, durationHours });
+      await apiClient.post('/capability/battery/discharge-to-grid', { watts, minimumSOC, durationHours });
       setStartedAt();
       toast.add({ severity: 'success', summary: t('control.dischargingStarted'), detail: `${watts} W, min ${minimumSOC}%` });
       await loadStatus();
@@ -221,7 +221,7 @@ async function doDischarge() {
 async function doStop() {
   stopping.value = true;
   try {
-    await apiClient.post('/alphaess-modbus-tcp/stop');
+    await apiClient.post('/capability/battery/stop');
     clearStartedAt();
     toast.add({ severity: 'success', summary: t('control.dispatchStopped') });
     await loadStatus();
@@ -237,7 +237,7 @@ async function loadStatus() {
     // apiClient interceptor unwraps response.data, so the result is the
     // payload directly — not { data: payload }. Destructuring as { data }
     // would give undefined; receive it directly instead.
-    const payload = await apiClient.get('/alphaess-modbus-tcp/dispatch-status');
+    const payload = await apiClient.get('/capability/battery/status');
     const d = payload?.data ?? payload;   // handle both wrapped and unwrapped
     status.value = {
       active:           d.active      || false,

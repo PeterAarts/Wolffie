@@ -4,22 +4,22 @@
     <div v-if="showStats && !loading && !error && stats" class="stats-overview mb-8 ml-auto">
       <div class="stat-card solar">
         <span class="label"><span class="tt-dot"></span>Solar</span>
-        <span class="value">{{ stats.pv_generation.toFixed(1) }} <small>kWh</small></span>
+        <span class="value">{{ (stats.pv_generation ?? 0).toFixed(1) }} <small>kWh</small></span>
       </div>
       <div class="stat-card home">
         <span class="label"><span class="tt-dot"></span>Home</span>
-        <span class="value">{{ stats.load_consumption.toFixed(1) }} <small>kWh</small></span>
+        <span class="value">{{ (stats.load_consumption ?? 0).toFixed(1) }} <small>kWh</small></span>
       </div>
       <div class="stat-card grid">
         <span class="label"><span class="tt-dot"></span>Grid</span>
         <span class="value">
-          {{ stats.grid_import.toFixed(1) }} <small>Import</small> / {{ stats.grid_export.toFixed(1) }} <small>export</small>
+          {{ (stats.grid_import ?? 0).toFixed(1) }} <small>Import</small> / {{ (stats.grid_export ?? 0).toFixed(1) }} <small>export</small>
         </span>
       </div>
       <div class="stat-card battery">
         <span class="label"><span class="tt-dot"></span>Battery</span>
         <span class="value">
-          {{ stats.battery_charge.toFixed(1) }} <small>Charge</small> / {{ stats.battery_discharge.toFixed(1) }} <small>Discharge</small>
+          {{ (stats.battery_charge ?? 0).toFixed(1) }} <small>Charge</small> / {{ (stats.battery_discharge ?? 0).toFixed(1) }} <small>Discharge</small>
         </span>
       </div>
     </div>
@@ -51,9 +51,11 @@ const { t, currentLanguage } = useLocale();
 const props = defineProps({
   period: { type: String, default: 'today' },
   date: { type: String, default: () => new Date().toISOString().split('T')[0] },
-  granularity: { type: Number, default: 1 },
+  granularity: { type: Number, default: 15 },
   height: { type: String, default: '200px' },
-  showStats: { type: Boolean, default: false }
+  showStats: { type: Boolean, default: false },
+  // 'line' (default, desktop) or 'bar' (mobile stacked bars + SoC line)
+  mode: { type: String, default: 'line' }
 });
 
 const emit = defineEmits(['data-loaded']);
@@ -170,7 +172,7 @@ const renderChart = () => {
   });
 
   chartInstance.value = new Chart(ctx, {
-    type: 'line',
+    type: (!isRangeData && props.mode === 'bar') ? 'bar' : 'line',
     data: {
       labels,
       datasets: isRangeData ? [
@@ -240,7 +242,75 @@ const renderChart = () => {
           borderWidth: 2,
           yAxisID: 'y'
         }
+      ] : props.mode === 'bar' ? [
+        // ── Mobile stacked bar mode ──────────────────────────────────────
+        {
+          label: 'Solar',
+          data: chartData.value.map(d => d.solar ?? null),
+          backgroundColor: '#f59e0b',
+          stack: 'pos',
+          yAxisID: 'y',
+          borderRadius: 1,
+          borderSkipped: false,
+        },
+        {
+          label: 'Battery discharge',
+          data: chartData.value.map(d => {
+            const p = d.battery_power || 0;
+            return p > 0 ? p : 0;
+          }),
+          backgroundColor: 'rgba(16,185,129,0.7)',
+          stack: 'pos',
+          yAxisID: 'y',
+          borderRadius: 1,
+          borderSkipped: false,
+        },
+        {
+          label: 'Home',
+          data: chartData.value.map(d => d.home ? -d.home : null),
+          backgroundColor: '#3b82f6',
+          stack: 'neg',
+          yAxisID: 'y',
+          borderRadius: 1,
+          borderSkipped: false,
+        },
+        {
+          label: 'Grid',
+          data: chartData.value.map(d => d.grid ? -d.grid : null),
+          backgroundColor: '#ef4444',
+          stack: 'neg',
+          yAxisID: 'y',
+          borderRadius: 1,
+          borderSkipped: false,
+        },
+        {
+          label: 'Battery charge',
+          data: chartData.value.map(d => {
+            const p = d.battery_power || 0;
+            return p < 0 ? p : 0;
+          }),
+          backgroundColor: 'rgba(16,185,129,0.4)',
+          stack: 'neg',
+          yAxisID: 'y',
+          borderRadius: 1,
+          borderSkipped: false,
+        },
+        {
+          // SoC always a line, even in bar mode
+          label: 'SoC',
+          data: chartData.value.map(d => d.battery_soc || 0),
+          type: 'line',
+          borderColor: 'rgba(107,114,128,1)',
+          fill: false,
+          yAxisID: 'y1',
+          borderDash: [6, 3],
+          tension: 0.4,
+          pointRadius: 0,
+          borderWidth: 1.5,
+          pointHoverRadius: 4,
+        },
       ] : [
+        // ── Desktop line mode (original) ─────────────────────────────────
         {
           label: 'SoC',
           data: chartData.value.map(d => d.battery_soc || 0),
@@ -470,7 +540,7 @@ const renderChart = () => {
   });
 };
 
-watch(() => [props.period, props.date, props.granularity], loadData);
+watch(() => [props.period, props.date, props.granularity, props.mode], loadData);
 
 onMounted(loadData);
 

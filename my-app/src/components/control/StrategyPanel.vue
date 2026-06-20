@@ -38,6 +38,14 @@
           <i class="ph-light ph-sun-bright mr-1.5"></i>
           {{ t('control.totalSolarForecast') }}: <strong>{{ totalSolarKwh.toFixed(1) }} kWh</strong>
         </div>
+        <!-- Battery depletion warning — persistent while predicted SoC at floor -->
+        <div class="battery-depletion-warning" v-if="batteryDepletionSlot">
+          <i class="ph-light ph-battery-warning mr-1.5"></i>
+          {{ t('control.batteryDepletionWarning', {
+            time: slotToTime(batteryDepletionSlot.slot),
+            pct: batteryDepletionSlot.socFloorPct ?? 20
+          }) }}
+        </div>
         <!-- Blocks + ruler — inset matches chart inner area so ticks align -->
         <div class="timeline-wrap">
           <div class="timeline-inset"
@@ -547,12 +555,23 @@ const dayPlanSlots = computed(() => {
   return plan.map((s, i) => ({ ...s, slot: s.slot ?? i }));
 });
 
-// Total solar forecast for the plan window (W per 15-min slot → kWh)
+// Remaining solar forecast — only future slots from current position onward
 const totalSolarKwh = computed(() => {
   const slots = strategyStore.dayPlan;
   if (!Array.isArray(slots) || !slots.length) return 0;
-  const totalW = slots.reduce((sum, s) => sum + (s.solarForecastW ?? 0), 0);
-  return totalW * 0.25 / 1000; // 15-min slots → hours
+  const nowSlot = currentSlotIndex.value;
+  const futureW = slots
+    .filter((s, i) => (s.slot ?? i) >= nowSlot)
+    .reduce((sum, s) => sum + (s.solarForecastW ?? 0), 0);
+  return futureW * 0.25 / 1000;
+});
+
+// Battery depletion: first future slot where predicted SoC hits the floor
+const batteryDepletionSlot = computed(() => {
+  const slots = strategyStore.dayPlan;
+  if (!Array.isArray(slots)) return null;
+  const nowSlot = currentSlotIndex.value;
+  return slots.find(s => s.isSocFloorSlot && (s.slot ?? 0) >= nowSlot) ?? null;
 });
 
 // Current slot index — used to mark past blocks as dimmed
@@ -1118,6 +1137,7 @@ onUnmounted(() => {
 /* ── Solar forecast total ───────────────────────────────────────────────── */
 .solar-forecast-total   { font-size: 0.8125rem; color: var(--color-text-secondary); padding: 0.375rem 0 0; display: flex; align-items: center; gap: 0.25rem; }
 .solar-forecast-total strong { color: var(--color-text-primary); }
+.battery-depletion-warning { font-size: 0.8125rem; color: #dc2626; padding: 0.375rem 0 0; display: flex; align-items: center; gap: 0.25rem; }
 
 /* ── Quick actions ─────────────────────────────────────────────────────── */
 .quick-actions          { display: flex; align-items: center; gap: 0.75rem;flex-wrap: wrap; padding-top: 0.875rem;border-top: 1px solid #f3f4f6;}
