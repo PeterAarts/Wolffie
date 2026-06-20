@@ -25,14 +25,14 @@
           </div>
           <div class="me-4">
             <div class="">
-              <div v-if="activeModuleId === 'core'">
+              <div v-if="activeModuleId === 'modules'">
+                <ModulesTab />
+              </div>
+              <div v-else-if="activeModuleId === 'core'">
                 <CoreSettings />
               </div>
               <div v-else-if="activeModuleId === 'users'">
                 <UserSettings />
-              </div>
-              <div v-else-if="activeModuleId === 'modules'">
-                <ModulesTab />
               </div>
   <!--           <div v-else>
                 <UniversalSettingsPanel :key="activeModuleId" :module-id="activeModuleId" />
@@ -57,13 +57,14 @@ import '@/assets/styles/control.css';
 
 const { t } = useI18n();
 
-const activeModuleId = ref('core');
+const activeModuleId = ref('modules');
 const settingsModules = ref([]);
 
 const staticMenu = [
-  { id: 'core', label: t('settings.general'), icon: 'ph-light ph-server' },
-  { id: 'users', label: t('settings.usermanagement'), icon: 'ph-light ph-users-gear' },
   { id: 'modules', label: t('modulesTab.install'), icon: 'ph-light ph-puzzle-piece' },
+  { id: 'core', label: t('settings.general'), icon: 'ph-light ph-server' },
+  { id: 'users', label: t('settings.usermanagement'), icon: 'ph-light ph-users-gear' }
+
 ];
 
 const activeLabel = computed(() => {

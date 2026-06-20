@@ -1,147 +1,93 @@
 <template>
-  <div class="lg:grid lg:grid-cols-5 lg:gap-6 lg:p-6 p-1 overflow-hidden text-primary">
+  <div class="lg:grid lg:grid-cols-4 lg:gap-6 lg:p-6 p-1 overflow-hidden text-primary">
     <!-- ── Left: hero + chart ──────────────────────────────────────────────── -->
-    <div class="hero-card lg:col-span-3  overflow-hidden " >
+    <div class="hero-card lg:col-span-3 p-6 lg:p-10 overflow-hidden bg-secondary-50" >
 
-      <!-- Five vertical bars: Solar · Home · Battery | Export · Import
-           All 5 columns are identical in structure. A thin separator sits
-           between battery and export. The net label spans cols 4-5 below. -->
-      <div class="mb-2 border border-secondary-100 rounded-xl p-6 bg-white">
+      <!-- Five vertical bars: Solar · Home · Battery · Export · Import -->
+      <div class="flex items-end gap-0 mb-2">
 
-        <!-- Row 1 — value labels -->
-        <div class="grid grid-cols-5 mb-2">
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ todaySolar.toFixed(1) }}<span class="text-xs text-secondary-400 font-normal ml-0.5">kWh</span></span>
-          </div>
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ todayLoad.toFixed(1) }}<span class="text-xs text-secondary-400 font-normal ml-0.5">kWh</span></span>
-          </div>
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ currentBatterySOC }}<span class="text-xs text-secondary-400 font-normal ml-0.5">%</span></span>
-          </div>
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ gridExportKwh.toFixed(1) }}<span class="text-xs text-secondary-400 font-normal ml-0.5">kWh</span></span>
-          </div>
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ gridImportKwh.toFixed(1) }}<span class="text-xs text-secondary-400 font-normal ml-0.5">kWh</span></span>
-          </div>
-        </div>
+        <!-- Main three: solar, home, battery — scale relative to each other -->
+        <div class="flex items-end flex-1 justify-around">
 
-        <!-- Row 2 — bars (fixed height, all identical) -->
-        <div class="grid grid-cols-5 items-end gap-x-3" style="height: 80px;">
-          <div class="flex justify-center items-end h-full">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: solarBarPct + '%' }"></div></div>
-          </div>
-          <div class="flex justify-center items-end h-full">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: homeBarPct + '%' }"></div></div>
-          </div>
-          <!-- Battery + separator: relative wrapper so separator can be absolute -->
-          <div class="flex justify-center items-end h-full relative">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: currentBatterySOC + '%' }"></div></div>
-            <div class="absolute right-0 top-2 bottom-2 w-px bg-secondary-200"></div>
-          </div>
-          <div class="flex justify-center items-end h-full">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: exportBarPct + '%' }"></div></div>
-          </div>
-          <div class="flex justify-center items-end h-full">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: importBarPct + '%' }"></div></div>
-          </div>
-        </div>
-
-        <!-- Row 3 — labels -->
-        <div class="grid grid-cols-5 mt-2">
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">{{ t('control.solar') }}</div>
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">{{ t('dashboard.home') }}</div>
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">{{ t('dashboard.batteryLabel') }}</div>
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">export</div>
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">import</div>
-        </div>
-
-        <!-- Row 4 — sub-labels (avg / status) -->
-        <div class="grid grid-cols-5 mt-1">
-          <div class="text-center text-[10px] text-secondary-400 leading-tight">
-            <template v-if="solarScale !== null">{{ solarScaleLabel }} {{ solarScale.toFixed(1) }}<span v-if="solarOverAvg"> ↑+{{ solarOver.toFixed(1) }}</span></template>
-            <template v-else>no forecast</template>
-          </div>
-          <div class="text-center text-[10px] text-secondary-400 leading-tight">
-            <template v-if="avgLoad !== null">avg {{ avgLoad.toFixed(1) }}<span v-if="loadOverAvg"> ↑+{{ loadOver.toFixed(1) }}</span></template>
-            <template v-else>no avg yet</template>
-          </div>
-          <div class="text-center text-[10px] text-secondary-400 leading-tight"><!-- {{ battStatusText }} --></div>
-          <div class="text-center text-[10px] text-secondary-400 leading-tight">
-            <template v-if="avgGridExport !== null">avg {{ avgGridExport.toFixed(1) }}</template>
-            <template v-else>&nbsp;</template>
-          </div>
-          <div class="text-center text-[10px] text-secondary-400 leading-tight">
-            <template v-if="avgGridImport !== null">avg {{ avgGridImport.toFixed(1) }}</template>
-            <template v-else>&nbsp;</template>
-          </div>
-        </div>
-
-        <!-- Row 5 — net label spanning export+import columns -->
-        <div class="grid grid-cols-5 mt-1">
-          <div class="col-span-3"></div>
-          <div class="col-span-2 text-center text-[11px] text-secondary-400 whitespace-nowrap">
-            Net <span class="font-medium text-primary">{{ gridNetLabel }}</span> {{ gridNetDirection }}
-          </div>
-        </div>
-
-      </div>
-      <!-- ── Forecast + Plan ahead ──────────────────────────────────────── -->
-      <div class="mt-2 border border-secondary-100 rounded-xl grid grid-cols-3 p-6 bg-white lg:mt-4">
-
-        <!-- Forecast strip: today / tomorrow -->
-        <div class="flex items-center gap-8 mb-6">
-          <div v-for="(day, idx) in forecastDisplay" :key="day.date || idx"
-               class="text-center min-w-[60px]">
-            <div class="text-[11px] font-medium lowercase tracking-widest text-secondary-500 mb-2">
-              {{ formatForecastLabel(day.date, idx) }}
+          <!-- Solar -->
+          <div class="flex flex-col items-center gap-2">
+            <div class="text-base font-medium tracking-tight">{{ todaySolar.toFixed(1) }} <span class="text-xs text-secondary-400 font-normal">kWh</span></div>
+            <div class="bar-track">
+              <div class="bar-fill" :style="{ height: solarBarPct + '%' }"></div>
             </div>
-            <div class="flex justify-center mb-1">
-              <i :class="forecastIconClass(day)" class="text-3xl"></i>
-            </div>
-            <div class="text-base font-bold tracking-tight"
-                 :class="day.expectedKwh === null ? 'text-secondary-400' : ''">
-              <template v-if="day.expectedKwh !== null">
-                {{ Math.round(day.expectedKwh) }}<span class="text-xs font-medium text-secondary-400 ml-0.5">kWh</span>
+            <div class="text-[10px] font-medium uppercase tracking-widest text-secondary-400">{{ t('control.solar') }}</div>
+            <div class="text-[10px] text-secondary-400 text-center">
+              <template v-if="solarScale !== null">
+                {{ solarScaleLabel }} {{ solarScale.toFixed(1) }}<span v-if="solarOverAvg"> ↑+{{ solarOver.toFixed(1) }}</span>
               </template>
-              <template v-else>—</template>
+              <template v-else>no forecast yet</template>
             </div>
           </div>
+
+          <!-- Home -->
+          <div class="flex flex-col items-center gap-2">
+            <div class="text-base font-medium tracking-tight">{{ todayLoad.toFixed(1) }} <span class="text-xs text-secondary-400 font-normal">kWh</span></div>
+            <div class="bar-track">
+              <div class="bar-fill" :style="{ height: homeBarPct + '%' }"></div>
+            </div>
+            <div class="text-[10px] font-medium uppercase tracking-widest text-secondary-400">{{ t('dashboard.home') }}</div>
+            <div class="text-[10px] text-secondary-400 text-center">
+              <template v-if="avgLoad !== null">avg {{ avgLoad.toFixed(1) }} kWh<span v-if="loadOverAvg"> ↑+{{ loadOver.toFixed(1) }}</span></template>
+              <template v-else>no avg yet</template>
+            </div>
+          </div>
+
+          <!-- Battery -->
+          <div class="flex flex-col items-center gap-2">
+            <div class="text-base font-medium tracking-tight">{{ currentBatterySOC }}<span class="text-xs text-secondary-400 font-normal">%</span></div>
+            <div class="bar-track">
+              <div class="bar-fill" :style="{ height: currentBatterySOC + '%' }"></div>
+            </div>
+            <div class="text-[10px] font-medium uppercase tracking-widest text-secondary-400">{{ t('dashboard.batteryLabel') }}</div>
+            <div class="text-[10px] text-secondary-400 text-center">{{ battStatusText }}</div>
+          </div>
+
         </div>
 
-        <!-- Plan ahead -->
-        <div class="grid col-span-2 gap-4">
-          <div class="text-[11px] font-bold lowercase tracking-widest text-secondary-500 mb-3 flex items-center justify-between">
-            <span>{{ t('dashboard.planAhead') }}</span>
-            <span v-if="isAdvisoryStub"
-                  class="text-[10px] text-secondary-400 bg-secondary-100 px-2 py-0.5 rounded font-normal tracking-normal">
-              {{ t('dashboard.pending') }}
-            </span>
-          </div>
-          <div v-if="!isAdvisoryStub"
-               class="advisory-callout p-4 rounded-xl text-sm leading-relaxed"
-               :class="advisoryCalloutClass">
-            <div v-if="advisory.headline" class="font-semibold mb-1">{{ advisory.headline }}</div>
-            <div>{{ advisory.body }}</div>
-            <div v-if="advisory.constraint" class="mt-3 pt-3 border-t border-current/10 font-medium">
-              {{ advisory.constraint }}
+        <!-- Separator -->
+        <div class="w-px bg-secondary-200 mx-4 self-center" style="height: 80px; margin-bottom: 42px;"></div>
+
+        <!-- Grid pair: export + import + net label -->
+        <div class="flex items-end gap-3">
+
+          <!-- Export -->
+          <div class="flex flex-col items-center gap-2">
+            <div class="text-base font-medium tracking-tight">{{ gridExportKwh.toFixed(1) }} <span class="text-xs text-secondary-400 font-normal">kWh</span></div>
+            <div class="bar-track">
+              <div class="bar-fill" :style="{ height: exportBarPct + '%' }"></div>
             </div>
+            <div class="text-[10px] font-medium uppercase tracking-widest text-secondary-400">Export</div>
+            <div class="text-[10px] text-secondary-400 min-h-[14px]">&nbsp;</div>
           </div>
-          <div v-else class="text-sm text-secondary-400 italic">
-            {{ t('dashboard.noAdvisory') }}
+
+          <!-- Import -->
+          <div class="flex flex-col items-center gap-2">
+            <div class="text-base font-medium tracking-tight">{{ gridImportKwh.toFixed(1) }} <span class="text-xs text-secondary-400 font-normal">kWh</span></div>
+            <div class="bar-track">
+              <div class="bar-fill" :style="{ height: importBarPct + '%' }"></div>
+            </div>
+            <div class="text-[10px] font-medium uppercase tracking-widest text-secondary-400">Import</div>
+            <div class="text-[10px] text-secondary-400 min-h-[14px]">&nbsp;</div>
           </div>
+
+          <!-- Net label -->
+          <div class="flex flex-col justify-center text-[11px] text-secondary-400 leading-snug pb-10 whitespace-nowrap">
+            Net<br>
+            <span class="font-medium text-primary">{{ gridNetLabel }}</span><br>
+            {{ gridNetDirection }}
+          </div>
+
         </div>
       </div>
+ 
 
-      <!-- Chart toggle — mobile only -->
-      <button class="chart-toggle-text" @click="showChart = !showChart">
-        <i :class="showChart ? 'ph-light ph-caret-up' : 'ph-light ph-caret-down'"></i>
-        {{ showChart ? t('dashboard.hideChart') : t('dashboard.showChart') }}
-      </button>
-
-      <!-- Date nav + chart -->
-      <div v-show="showChart" class="mt-2 mb-6 border border-secondary-100 rounded-xl p-6 bg-white lg:mt-6">
+      <!-- Date nav + both charts (desktop only) -->
+      <div class=" mt-6 mb-6 hidden lg:block h-full" >
         <div class="date-nav mb-4">
           <button class="date-btn" @click="goToPrevDay"><i class="ph-light ph-caret-left"></i></button>
           <span class="date-label">{{ selectedDateLabel }}</span>
@@ -151,9 +97,8 @@
           :period="graphPeriod"
           :date="graphDate"
           :auto-update="isToday"
-          :height="isMobile ? '220px' : '200px'"
-          :granularity="isMobile ? 30 : 15"
-          :mode="isMobile ? 'bar' : 'line'"
+          :height="'200px'"
+          :granularity="10"
         />
         <!--<DashboardGraph
           :date="graphDate"
@@ -166,7 +111,7 @@
     </div>
 
     <!-- ── Right: power cards ──────────────────────────────────────────────── -->
-     <div class="right-section flex flex-col lg:col-span-2 bg-white rounded-xl border border-secondary-100 overflow-hidden" >
+     <div class="right-section flex flex-col bg-white">
  
       <!-- Panel switcher pill -->
       <div class="panel-switcher-wrap">
@@ -264,20 +209,9 @@ const homeBarPct  = computed(() => Math.round((todayLoad.value  / mainMax.value)
 const gridExportKwh = computed(() => parseFloat(realtimeStore.summaryData?.today_grid_export) || 0);
 const gridImportKwh = computed(() => parseFloat(realtimeStore.summaryData?.today_grid_import) || 0);
 
-// Grid bar scaling: 14-day average is the 100% reference (same pattern as solar/load).
-// Fallback: if no average yet, use max(export, import, 1) so bars are proportional
-// to each other rather than always showing one at 100%.
-const avgGridExport = computed(() => realtimeStore.averages?.avg_grid_export_14d ?? null);
-const avgGridImport = computed(() => realtimeStore.averages?.avg_grid_import_14d ?? null);
-
-const exportBarPct = computed(() => {
-  const ref = avgGridExport.value ?? Math.max(gridExportKwh.value, gridImportKwh.value, 1);
-  return Math.min(100, Math.round((gridExportKwh.value / ref) * 100));
-});
-const importBarPct = computed(() => {
-  const ref = avgGridImport.value ?? Math.max(gridExportKwh.value, gridImportKwh.value, 1);
-  return Math.min(100, Math.round((gridImportKwh.value / ref) * 100));
-});
+const gridMax      = computed(() => Math.max(gridExportKwh.value, gridImportKwh.value, 0.01));
+const exportBarPct = computed(() => Math.round((gridExportKwh.value / gridMax.value) * 100));
+const importBarPct = computed(() => Math.round((gridImportKwh.value / gridMax.value) * 100));
 
 const gridNetKwh       = computed(() => gridExportKwh.value - gridImportKwh.value);
 const gridNetLabel     = computed(() => {
@@ -492,47 +426,7 @@ const strategyModeClass = computed(() => {
 
 console.log('Dashboard step 5 loaded');
 console.log('Dashboard step 6 loaded');
-// ── Forecast + Plan ahead ─────────────────────────────────────────────────
-const forecast = computed(() => realtimeStore.forecast);
-const advisory = computed(() => realtimeStore.advisory);
 
-const forecastDisplay = computed(() => {
-  const days = Array.isArray(forecast.value) ? forecast.value : [];
-  const padded = [...days];
-  while (padded.length < 2) {
-    padded.push({ date: '', condition: 'unknown', expectedKwh: null });
-  }
-  return padded.slice(0, 2);
-});
-
-function formatForecastLabel(dateStr, idx) {
-  if (idx === 0) return t('dashboard.forecastToday');
-  if (idx === 1) return t('dashboard.forecastTomorrow');
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return dateStr;
-  return d.toLocaleDateString(undefined, { weekday: 'short' });
-}
-
-function forecastIconClass(day) {
-  if (day.expectedKwh === null) return 'ph-light ph-cloud text-secondary-400';
-  if (day.expectedKwh >= 18)    return 'ph-light ph-sun text-amber-500';
-  if (day.expectedKwh >= 10)    return 'ph-light ph-cloud-sun text-amber-400';
-  return 'ph-light ph-cloud text-secondary-400';
-}
-
-const isAdvisoryStub = computed(() =>
-  !advisory.value || advisory.value.id === 'idle-default' || !advisory.value.headline
-);
-
-const advisoryCalloutClass = computed(() => {
-  switch (advisory.value?.tone) {
-    case 'positive':  return 'bg-emerald-50 text-emerald-800';
-    case 'warning':   return 'bg-amber-50 text-amber-800';
-    case 'critical':  return 'bg-rose-50 text-rose-800';
-    default:          return 'bg-secondary-100 text-secondary-500';
-  }
-});
 // ── TIME & LIFECYCLE ───────────────────────────────────────────────────────
 const currentTime = ref('');
 const updateCurrentTime = () => {
@@ -544,14 +438,7 @@ const updateCurrentTime = () => {
 
 // ── Dashboard panel view preference ───────────────────────────────────────
 const panelView = ref('list'); // default until setting loads
-
-// Chart visibility — collapsed by default on mobile, always shown on desktop
-const showChart = ref(false);
-
-// Mobile detection — used for chart mode and granularity
-const isMobile = ref(false);
-const checkMobile = () => { isMobile.value = window.innerWidth < 1024; };
-
+ 
 const loadPanelView = async () => {
   try {
     const res = await apiClient.get('/settings/ui/dashboard-panel-view');
@@ -574,9 +461,6 @@ const setPanelView = async (view) => {
 let timeInterval = null;
 
 onMounted(() => {
-  checkMobile();
-  if (!isMobile.value) showChart.value = true;
-  window.addEventListener('resize', checkMobile);
   updateCurrentTime();
   timeInterval = setInterval(updateCurrentTime, 1000);
   strategyStore.fetchActive();
@@ -585,30 +469,11 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval);
-  window.removeEventListener('resize', checkMobile);
   // stopPolling() removed — polling ownership belongs to App.vue
 });
 </script>
 
 <style lang="css" scoped>
-/* ── Chart toggle text (mobile only) ─────────────────────────────────── */
-.chart-toggle-text {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  width: 100%;
-  padding: 0.4rem 0;
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  letter-spacing: 0.04em;
-}
-.chart-toggle-text:hover { color: var(--color-text-secondary); }
-@media (min-width: 1024px) { .chart-toggle-text { display: none; } }
-
 /* ── Vertical bars ────────────────────────────────────────────────────── */
 .bar-track {
   width: 44px;

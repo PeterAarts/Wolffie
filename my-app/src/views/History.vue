@@ -36,7 +36,7 @@
         <EnergyFlowGraph
           :period="graphPeriod"
           :date="selectedDate"
-          :granularity="granularity"
+          :granularity="5"
           :height="chartHeight"
           :showStats="true"
           @data-loaded="updateStats"
