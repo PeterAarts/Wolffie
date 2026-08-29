@@ -32,6 +32,7 @@ import collectorRoutes  from './core/system/routes/collectors.js';
 import eventRoutes      from './core/system/routes/events.js';
 import eventLogService  from './core/system/services/eventLogService.js';
 import modulesRoutes    from './core/system/routes/modules.js';
+import logsRoutes from './core/system/routes/logs.js';
 import aggregatorService from './core/system/services/aggregatorService.js';
 
 // __dirname equivalent voor ES modules
@@ -102,7 +103,7 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
-app.use('/api/auth', authLimiter); 
+// app.use('/api/auth', authLimiter); 
 app.use('/api/auth', authRoutes);
 
 // ============================================================================
@@ -122,7 +123,7 @@ app.use('/api/capability', capabilityRouter);
 app.use('/api/capabilities', (req, res) => res.redirect(307, '/api/capability'));
 app.use('/api/strategies', strategyRoutes);
 app.use('/api/alerts', alertRoutes);
-
+app.use('/api/logs', logsRoutes);
 // ============================================================================
 // SPA FALLBACK — alle niet-API routes sturen index.html terug
 // Hierdoor werkt Vue Router (history mode) correct in productie
@@ -214,7 +215,7 @@ app.listen(PORT, async () => {
   console.log(` - NODE_ENV: ${process.env.NODE_ENV || 'development'}`);
   console.log('   -------------------------------------------');
   
-  //await userService.createDefaultAdminIfNeeded();
+  await userService.createDefaultAdminIfNeeded();
   await initializeModules();
 });
 
