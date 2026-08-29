@@ -11,7 +11,7 @@
             @click="activeSection = item.id"
             class="w-full flex items-center p-4 transition-all duration-200 group text-sm "
             :class="activeSection === item.id 
-              ? 'bg-white ' 
+              ? 'bg-card ' 
               : 'hover:bg-secondary-200 text-secondary-700'"
           >
             <span class="ms-3 font-medium">{{ item.label }}</span>
@@ -19,7 +19,7 @@
         </nav>
       </aside>
 
-      <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-white rounded-lg inner-canvas-2">
+      <main class="flex-1 flex flex-col min-w-0 overflow-hidden bg-card rounded-lg inner-canvas-2">
         
         <header class="flex-shrink-0 flex flex-col lg:flex-row lg:items-center justify-between gap-4 mt-6 px-6">
           <div>

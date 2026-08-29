@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "WattsOn",
-    "loading": "Loading WattsOn...",
+    "name": "Wolffie",
+    "loading": "Loading Wolffie...",
     "loadingConfig": "Loading configuration...",
     "loadingSetup": "Checking setup status...",
     "loadingConnect": "Connecting to system...",
@@ -53,6 +53,7 @@
     "home": "Home",
     "clickForDetails": "click for details",
     "alertConfirm": "Confirm & execute",
+    "activeStrategy": "Active strategy",
     "smartDevices": {
       "title": "smart devices",
       "noUsage": "No smart device usage recorded for this day"
@@ -63,7 +64,7 @@
     "forecastTomorrow": "Tomorrow",
     "planAhead": "Plan ahead",
     "noAdvisory": "No active advisory. The system will surface guidance when available",
-    "pending": "pending update…" 
+    "pending": "pending update…"
   },
   "cards": {
     "homeSolar": "Home & Solar",
@@ -133,10 +134,21 @@
     "modules": "Modules",
     "general": "General",
     "usermanagement": "Users",
+    "logging": "Logging",
     "cloudApi": "Cloud API",
     "modbus": "ModBus",
     "display": "Display",
-    "notifications": "Notifications",
+    "notifications": {
+      "title": "Notifications",
+      "push": "push notifications",
+      "unsupported": "Push notifications aren't supported in this browser.",
+      "denied": "Notifications are blocked for this site. Enable them in your browser settings to receive alerts.",
+      "enabled": "Notifications are enabled on this device",
+      "disabled": "Notifications are disabled on this device",
+      "enable": "Enable",
+      "disable": "Disable",
+      "hint": "You'll receive a notification when Wolffie raises an alert, even if the app is closed."
+    },
     "tariffs": "Tariffs",
     "language": "Language",
     "theme": "Theme",
@@ -238,7 +250,7 @@
     "savedDetail": "Settings updated"
   },
   "setup": {
-    "welcome": "Welcome to WattsOn",
+    "welcome": "Welcome to Wolffie",
     "subtitle": "Let's set up your system in a few easy steps",
     "selectModel": "Select Model",
     "configureModbus": "Configure ModBus",
@@ -286,7 +298,8 @@
     "time": "Time",
     "days": "days",
     "saving": "Saving...",
-    "executing": "Executing..."
+    "executing": "Executing...",
+    "loadFailed": "Failed to load"
   },
   "events": {
     "title": "System Events",
@@ -476,7 +489,18 @@
       "added": "Device added successfully",
       "updated": "Device updated",
       "removed": "Device removed"
-    }
+    },
+    "curtailSolar":          "Curtail Solar",
+    "curtailSolarDesc":      "Cap solar production when the battery is full and grid prices are negative.",
+    "curtailLimit":          "Limit production to",
+    "curtailSummary":        "Cap at {watts} W for {hours} hours",
+    "startCurtailing":       "Start Curtailing",
+    "confirmCurtail":        "Cap solar production at {watts} W for {durationHours} hours?",
+    "curtailRequested":      "Curtailment requested",
+    "curtailApplyingShortly":"Cap of {watts} W will be applied within about 20 seconds.",
+    "curtailActive":         "Solar curtailment active",
+    "curtailStopped":        "Curtailment released",
+    "curtailDegraded":       "write failing — inverter will restore production shortly"
   },
   "modules": {
     "dayAheadPrices": {
@@ -632,5 +656,20 @@
     "dismiss": "Dismiss",
     "resolvedAt": "Resolved",
     "reResolve": "Re-resolve"
+  },
+  "logging": {
+    "columns": {
+      "time": "Time",
+      "level": "Level",
+      "message": "Message"
+    },
+    "showMarkedOnly": "Show marked only",
+    "clearAllMarks": "Clear all marks",
+    "clearAllConfirm": "Remove all marks? This can't be undone.",
+    "marksCleared": "All marks removed",
+    "marked": "Marked",
+    "mark": "Mark",
+    "unmark": "Unmark",
+    "noEntries": "No log entries"
   }
 }

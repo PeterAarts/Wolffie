@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "WattsOn",
-    "loading": "WattsOn laden...",
+    "name": "Wolffie",
+    "loading": "Wolffie laden...",
     "loadingConfig": "Configuratie laden...",
     "loadingSetup": "Installatiestatus controleren...",
     "loadingConnect": "Verbinding maken met systeem...",
@@ -58,7 +58,7 @@
     "forecastTomorrow": "Morgen",
     "planAhead": "Plan vooruit",
     "noAdvisory": "Geen actief advies. Het systeem zal begeleiding tonen wanneer deze beschikbaar is",
-    "pending": "in afwachting" 
+    "pending": "in afwachting"
   },
   "cards": {
     "homeSolar": "Thuis & Zonne-energie",
@@ -128,10 +128,21 @@
     "modules": "modules",
     "general": "Algemeen",
     "usermanagement": "Gebruikers",
+    "logging": "Logboek",
     "cloudApi": "Cloud API",
     "modbus": "ModBus",
     "display": "Weergave",
-    "notifications": "Notificaties",
+    "notifications": {
+      "title": "Meldingen",
+      "push": "pushmeldingen",
+      "unsupported": "Pushmeldingen worden niet ondersteund in deze browser.",
+      "denied": "Meldingen zijn geblokkeerd voor deze site. Schakel ze in via je browserinstellingen om waarschuwingen te ontvangen.",
+      "enabled": "Meldingen zijn ingeschakeld op dit apparaat",
+      "disabled": "Meldingen zijn uitgeschakeld op dit apparaat",
+      "enable": "Inschakelen",
+      "disable": "Uitschakelen",
+      "hint": "Je ontvangt een melding wanneer Wolffie een waarschuwing genereert, ook als de app gesloten is."
+    },
     "tariffs": "Tarieven",
     "language": "Taal",
     "theme": "Thema",
@@ -253,7 +264,7 @@
     }
   },
   "setup": {
-    "welcome": "Welkom bij WattsOn",
+    "welcome": "Welkom bij Wolffie",
     "subtitle": "Laten we je systeem in een paar eenvoudige stappen instellen",
     "selectModel": "Model selecteren",
     "configureModbus": "ModBus configureren",
@@ -292,7 +303,9 @@
     "updated": "Bijgewerkt",
     "created": "Aangemaakt",
     "saved": "Opgeslagen",
-    "done": "Klaar"
+    "done": "Klaar",
+    "refresh": "Vernieuwen",
+    "loadFailed": "Laden mislukt"
   },
   "events": {
     "title": "Systeemgebeurtenissen",
@@ -440,6 +453,77 @@
       "added": "Apparaat succesvol toegevoegd",
       "updated": "Apparaat bijgewerkt",
       "removed": "Apparaat verwijderd"
+    },
+    "curtailSolar":          "Zon afregelen",
+    "curtailSolarDesc":      "Begrens de zonneproductie wanneer de batterij vol is en de netprijs negatief.",
+    "curtailLimit":          "Begrens productie tot",
+    "curtailSummary":        "Begrenzen op {watts} W gedurende {hours} uur",
+    "startCurtailing":       "Afregelen starten",
+    "confirmCurtail":        "Zonneproductie begrenzen op {watts} W gedurende {durationHours} uur?",
+    "curtailRequested":      "Afregeling aangevraagd",
+    "curtailApplyingShortly":"Begrenzing van {watts} W wordt binnen circa 20 seconden toegepast.",
+    "curtailActive":         "Zonne-afregeling actief",
+    "curtailStopped":        "Afregeling opgeheven",
+    "curtailDegraded":       "schrijven mislukt — omvormer herstelt de productie binnenkort"    
+  },
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": "Prijsinstellingen",
+        "fetchSettings": "Ophaalinstellingen",
+        "collectorStatus": "Collector status"
+      },
+      "fields": {
+        "enabled": {
+          "label": "Day-ahead prijzen inschakelen",
+          "description": "Dagelijks ophalen van elektriciteitsprijzen activeren"
+        },
+        "bidding_zone": {
+          "label": "Biedzone",
+          "description": "Selecteer de elektriciteitsbiedzone voor uw regio"
+        },
+        "country_code": {
+          "label": "Landcode",
+          "description": "Tweeletterige landcode (optioneel)",
+          "placeholder": "NL"
+        },
+        "fetch_days": {
+          "label": "Aantal dagen ophalen",
+          "description": "Hoeveel dagen historische prijzen per ophaalronde worden opgehaald"
+        },
+        "fetch_interval_hours": {
+          "label": "Ophaalinterval (uren)",
+          "description": "Hoe vaak prijzen opnieuw worden opgehaald (in uren). Standaard: 4 uur"
+        },
+        "retry_max": {
+          "label": "Max. aantal pogingen",
+          "description": "Maximaal aantal nieuwe pogingen wanneer de prijzen van morgen ontbreken"
+        }
+      },
+      "status": {
+        "lastFetch": "Laatst opgehaald",
+        "lastFetchRecords": "Aantal opgehaalde records",
+        "status": "Status",
+        "retrying": "Opnieuw proberen actief",
+        "retryCount": "Aantal pogingen"
+      },
+      "biddingZones": {
+        "NL": "Nederland (NL)",
+        "DE": "Duitsland (DE)",
+        "DE-LU": "Duitsland-Luxemburg (DE-LU)",
+        "BE": "België (BE)",
+        "FR": "Frankrijk (FR)",
+        "CH": "Zwitserland (CH)",
+        "AT": "Oostenrijk (AT)",
+        "DK1": "Denemarken West (DK1)",
+        "DK2": "Denemarken Oost (DK2)",
+        "NO1": "Noorwegen 1 (NO1)",
+        "NO2": "Noorwegen 2 (NO2)",
+        "SE1": "Zweden 1 (SE1)",
+        "SE2": "Zweden 2 (SE2)",
+        "SE3": "Zweden 3 (SE3)",
+        "SE4": "Zweden 4 (SE4)"
+      }
     }
   },
   "profile": {
@@ -452,5 +536,104 @@
     "passwordMismatch": "Wachtwoorden komen niet overeen",
     "savePassword": "Wachtwoord opslaan",
     "passwordChanged": "Wachtwoord gewijzigd. Log opnieuw in."
+  },
+  "modulesTab": {
+    "install": "Modules installeren/bijwerken",
+    "install_desc": "Upload een .zip-pakket…",
+    "install_btn": "Installeren",
+    "update_btn": "Bijwerken",
+    "drop": "Sleep een .zip hierheen of",
+    "browse": "blader",
+    "zip_hint": "Max 10 MB · alleen .zip",
+    "zip_only": "Alleen .zip-bestanden worden ondersteund",
+    "checksum": "Verwachte SHA-256-checksum",
+    "checksum_placeholder": "Plak hash om te verifiëren vóór installatie…",
+    "installed": "Geïnstalleerd",
+    "updated": "Bijgewerkt",
+    "edit_settings": "Instellingen bewerken",
+    "install_failed": "Installatie mislukt",
+    "restart_required": "Herstart de server om deze module te activeren.",
+    "installed_title": "Geïnstalleerde modules",
+    "count": "modules gevonden",
+    "empty": "Nog geen modules geïnstalleerd.",
+    "verified": "geverifieerd",
+    "verify": "Integriteit verifiëren",
+    "verify_ok": "Module-integriteit bevestigd",
+    "update_detected": "Update gedetecteerd",
+    "update_ready": "Update gereed",
+    "new": "Nieuwe module",
+    "reading": "Pakket lezen…",
+    "uninstall": "Verwijderen",
+    "uninstall_title": "Module verwijderen",
+    "uninstall_confirm": "{name} verwijderen? Alle modulebestanden worden verwijderd.",
+    "uninstalled": "{name} verwijderd",
+    "load_error": "Modules laden mislukt",
+    "col_name": "Module",
+    "col_version": "Versie",
+    "col_type": "Type",
+    "col_author": "Auteur",
+    "install_title": "Module installeren",
+    "update_title": "{name} bijwerken",
+    "manifest_view": "Manifest bekijken",
+    "manifest_collector": "Collector",
+    "manifest_interval": "Interval",
+    "manifest_priority": "Prioriteit",
+    "manifest_routes": "Routes",
+    "manifest_prefix": "API-prefix",
+    "manifest_dependencies": "Afhankelijkheden",
+    "manifest_config": "Configuratie",
+    "manifest_required": "Vereist",
+    "installed_at": "Geïnstalleerd op",
+    "capabilities": "Mogelijkheden"
+  },
+  "collectors": {
+    "title": "Module data-collectors",
+    "running": "Actief",
+    "stopped": "Gestopt",
+    "updated": "Bijgewerkt",
+    "lastCollected": "Laatst verzameld",
+    "nextRun": "Volgende run",
+    "interval": "Interval",
+    "error": "fout",
+    "errors": "fouten",
+    "restart": "Herstarten",
+    "starting": "Starten…",
+    "empty": "Geen collectors geregistreerd",
+    "loadError": "Laden van collectorstatus mislukt",
+    "restartError": "Herstarten mislukt",
+    "never": "Nooit",
+    "now": "nu",
+    "statusDisabled": "Uitgeschakeld",
+    "statusPaused": "Gepauzeerd na {n} fouten",
+    "statusErrors": "{n} opeenvolgende fout(en)",
+    "statusStale": "Geen recente gegevens",
+    "statusHealthy": "Gezond"
+  },
+  "alerts": {
+    "openDrawer": "Meldingen",
+    "drawerTitle": "Meldingen",
+    "tabActive": "Actief",
+    "tabHistory": "Geschiedenis",
+    "noActive": "Geen actieve meldingen",
+    "noHistory": "Nog geen meldingsgeschiedenis",
+    "confirm": "Bevestigen & uitvoeren",
+    "dismiss": "Negeren",
+    "resolvedAt": "Opgelost",
+    "reResolve": "Opnieuw oplossen"
+  },
+  "logging": {
+    "columns": {
+      "time": "Tijd",
+      "level": "Niveau",
+      "message": "Bericht"
+    },
+    "showMarkedOnly": "Alleen gemarkeerde tonen",
+    "clearAllMarks": "Alle markeringen wissen",
+    "clearAllConfirm": "Alle markeringen verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "marksCleared": "Alle markeringen verwijderd",
+    "marked": "Gemarkeerd",
+    "mark": "Markeren",
+    "unmark": "Demarkeren",
+    "noEntries": "Geen logregels"
   }
 }

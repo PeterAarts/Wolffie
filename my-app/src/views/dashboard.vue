@@ -3,61 +3,52 @@
     <!-- ── Left: hero + chart ──────────────────────────────────────────────── -->
     <div class="hero-card lg:col-span-3  overflow-hidden " >
 
-      <!-- Five vertical bars: Solar · Home · Battery | Export · Import
-           All 5 columns are identical in structure. A thin separator sits
-           between battery and export. The net label spans cols 4-5 below. -->
-      <div class="mb-2 border border-secondary-100 rounded-xl p-6 bg-white">
+      <!-- Five gauges: Solar · Home · Battery | Export · Import
+           Each gauge is an EnergyFlowDiagram node with a level arc, filled
+           against its own reference scale (see solarLevel / homeLevel /
+           exportLevel / importLevel below). The net label spans cols 4-5. -->
+      <div class="mb-2 border border-secondary-100 rounded-xl p-6 bg-card">
 
-        <!-- Row 1 — value labels -->
-        <div class="grid grid-cols-5 mb-2">
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ todaySolar.toFixed(1) }}<span class="text-xs text-secondary-400 font-normal ml-0.5">kWh</span></span>
-          </div>
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ todayLoad.toFixed(1) }}<span class="text-xs text-secondary-400 font-normal ml-0.5">kWh</span></span>
-          </div>
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ currentBatterySOC }}<span class="text-xs text-secondary-400 font-normal ml-0.5">%</span></span>
-          </div>
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ gridExportKwh.toFixed(1) }}<span class="text-xs text-secondary-400 font-normal ml-0.5">kWh</span></span>
-          </div>
-          <div class="flex justify-center">
-            <span class="text-base font-medium tracking-tight">{{ gridImportKwh.toFixed(1) }}<span class="text-xs text-secondary-400 font-normal ml-0.5">kWh</span></span>
-          </div>
+        <!-- Row 1 — gauges -->
+        <div class="grid grid-cols-5 gap-x-3">
+          <EnergyGauge
+            icon="ph-light ph-sun"
+            :level="solarLevel"
+            :value="todaySolar.toFixed(1)"
+            unit="kWh"
+            :label="t('control.solar')"
+          />
+          <EnergyGauge
+            icon="ph-light ph-house"
+            :level="homeLevel"
+            :value="todayLoad.toFixed(1)"
+            unit="kWh"
+            :label="t('dashboard.home')"
+          />
+          <EnergyGauge
+            icon="ph-light ph-battery-charging"
+            :level="currentBatterySOC"
+            :value="currentBatterySOC"
+            unit="%"
+            :label="t('dashboard.batteryLabel')"
+          />
+          <EnergyGauge
+            icon="ph-light ph-arrow-up"
+            :level="exportLevel"
+            :value="gridExportKwh.toFixed(1)"
+            unit="kWh"
+            label="export"
+          />
+          <EnergyGauge
+            icon="ph-light ph-arrow-down"
+            :level="importLevel"
+            :value="gridImportKwh.toFixed(1)"
+            unit="kWh"
+            label="import"
+          />
         </div>
 
-        <!-- Row 2 — bars (fixed height, all identical) -->
-        <div class="grid grid-cols-5 items-end gap-x-3" style="height: 80px;">
-          <div class="flex justify-center items-end h-full">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: solarBarPct + '%' }"></div></div>
-          </div>
-          <div class="flex justify-center items-end h-full">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: homeBarPct + '%' }"></div></div>
-          </div>
-          <!-- Battery + separator: relative wrapper so separator can be absolute -->
-          <div class="flex justify-center items-end h-full relative">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: currentBatterySOC + '%' }"></div></div>
-            <div class="absolute right-0 top-2 bottom-2 w-px bg-secondary-200"></div>
-          </div>
-          <div class="flex justify-center items-end h-full">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: exportBarPct + '%' }"></div></div>
-          </div>
-          <div class="flex justify-center items-end h-full">
-            <div class="bar-track"><div class="bar-fill" :style="{ height: importBarPct + '%' }"></div></div>
-          </div>
-        </div>
-
-        <!-- Row 3 — labels -->
-        <div class="grid grid-cols-5 mt-2">
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">{{ t('control.solar') }}</div>
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">{{ t('dashboard.home') }}</div>
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">{{ t('dashboard.batteryLabel') }}</div>
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">export</div>
-          <div class="text-center text-[11px] font-bold lowercase tracking-widest text-primary">import</div>
-        </div>
-
-        <!-- Row 4 — sub-labels (avg / status) -->
+        <!-- Row 2 — sub-labels (scale reference / status) -->
         <div class="grid grid-cols-5 mt-1">
           <div class="text-center text-[10px] text-secondary-400 leading-tight">
             <template v-if="solarScale !== null">{{ solarScaleLabel }} {{ solarScale.toFixed(1) }}<span v-if="solarOverAvg"> ↑+{{ solarOver.toFixed(1) }}</span></template>
@@ -67,18 +58,16 @@
             <template v-if="avgLoad !== null">avg {{ avgLoad.toFixed(1) }}<span v-if="loadOverAvg"> ↑+{{ loadOver.toFixed(1) }}</span></template>
             <template v-else>no avg yet</template>
           </div>
-          <div class="text-center text-[10px] text-secondary-400 leading-tight"><!-- {{ battStatusText }} --></div>
+          <div class="text-center text-[10px] text-secondary-400 leading-tight">{{ battStatusText }}</div>
           <div class="text-center text-[10px] text-secondary-400 leading-tight">
-            <template v-if="avgGridExport !== null">avg {{ avgGridExport.toFixed(1) }}</template>
-            <template v-else>&nbsp;</template>
+            export<template v-if="avgGridExport !== null"> · avg {{ avgGridExport.toFixed(1) }}</template>
           </div>
           <div class="text-center text-[10px] text-secondary-400 leading-tight">
-            <template v-if="avgGridImport !== null">avg {{ avgGridImport.toFixed(1) }}</template>
-            <template v-else>&nbsp;</template>
+            import<template v-if="avgGridImport !== null"> · avg {{ avgGridImport.toFixed(1) }}</template>
           </div>
         </div>
 
-        <!-- Row 5 — net label spanning export+import columns -->
+        <!-- Row 3 — net label spanning export+import columns -->
         <div class="grid grid-cols-5 mt-1">
           <div class="col-span-3"></div>
           <div class="col-span-2 text-center text-[11px] text-secondary-400 whitespace-nowrap">
@@ -88,7 +77,7 @@
 
       </div>
       <!-- ── Forecast + Plan ahead ──────────────────────────────────────── -->
-      <div class="mt-2 border border-secondary-100 rounded-xl grid grid-cols-3 p-6 bg-white lg:mt-4">
+      <div class="mt-2 border border-secondary-100 rounded-xl grid grid-cols-4 grid-locked p-6 bg-card lg:mt-4">
 
         <!-- Forecast strip: today / tomorrow -->
         <div class="flex items-center gap-8 mb-6">
@@ -111,25 +100,15 @@
         </div>
 
         <!-- Plan ahead -->
-        <div class="grid col-span-2 gap-4">
-          <div class="text-[11px] font-bold lowercase tracking-widest text-secondary-500 mb-3 flex items-center justify-between">
-            <span>{{ t('dashboard.planAhead') }}</span>
-            <span v-if="isAdvisoryStub"
-                  class="text-[10px] text-secondary-400 bg-secondary-100 px-2 py-0.5 rounded font-normal tracking-normal">
-              {{ t('dashboard.pending') }}
-            </span>
-          </div>
-          <div v-if="!isAdvisoryStub"
-               class="advisory-callout p-4 rounded-xl text-sm leading-relaxed"
-               :class="advisoryCalloutClass">
-            <div v-if="advisory.headline" class="font-semibold mb-1">{{ advisory.headline }}</div>
-            <div>{{ advisory.body }}</div>
-            <div v-if="advisory.constraint" class="mt-3 pt-3 border-t border-current/10 font-medium">
-              {{ advisory.constraint }}
+        <div class="grid col-span-3 gap-4">
+          <div class="text-sm leading-relaxed">
+            <div class="text-[11px] font-medium lowercase tracking-widest text-secondary-500 mb-2">{{ t('dashboard.activeStrategy') }}</div>
+            <div class="font-semibold mb-1">{{ strategyStore.activeStrategy?.name }}</div>
+            <div class="text-secondary-500">{{ strategyStore.activeStrategy?.description }}</div>
+            <div v-if="strategyStore.decision?.action && strategyStore.decision.action !== 'IDLE'"
+                 class="mt-3 pt-3 border-t border-secondary-200 font-medium">
+              {{ strategyStore.decision.reason }}
             </div>
-          </div>
-          <div v-else class="text-sm text-secondary-400 italic">
-            {{ t('dashboard.noAdvisory') }}
           </div>
         </div>
       </div>
@@ -141,7 +120,7 @@
       </button>
 
       <!-- Date nav + chart -->
-      <div v-show="showChart" class="mt-2 mb-6 border border-secondary-100 rounded-xl p-6 bg-white lg:mt-6">
+      <div v-show="showChart" class="mt-2 mb-6 border border-secondary-100 rounded-xl p-6 bg-card lg:mt-6">
         <div class="date-nav mb-4">
           <button class="date-btn" @click="goToPrevDay"><i class="ph-light ph-caret-left"></i></button>
           <span class="date-label">{{ selectedDateLabel }}</span>
@@ -166,7 +145,7 @@
     </div>
 
     <!-- ── Right: power cards ──────────────────────────────────────────────── -->
-     <div class="right-section flex flex-col lg:col-span-2 bg-white rounded-xl border border-secondary-100 overflow-hidden" >
+     <div class="right-section flex flex-col lg:col-span-2 bg-card rounded-xl border border-secondary-100 overflow-hidden" >
  
       <!-- Panel switcher pill -->
       <div class="panel-switcher-wrap">
@@ -224,6 +203,7 @@ import SmartDeviceList      from '@/components/SmartDeviceList.vue';
 import DashboardGraph       from '@/components/common/DashboardGraph.vue';
 import DashboardPowerList from '@/components/common/DashboardPowerList.vue';
 import EnergyFlowDiagram  from '@/components/common/EnergyFlowDiagram.vue';
+import EnergyGauge        from '@/components/common/EnergyGauge.vue';
 
 const router = useRouter();
 const realtimeStore = useRealtimeStore();
@@ -232,7 +212,7 @@ const { t, formatLocaleEnergy, formatLocalePower } = useLocale();
 
 console.log('Dashboard step 1 loaded');
 
-// ── Bar computeds (replaces ring computeds) ────────────────────────────────
+// ── Gauge computeds ────────────────────────────────────────────────────────
 // Today's kWh totals
 const todaySolar = computed(() => parseFloat(realtimeStore.summaryData.today_pv_gen) || 0);
 const todayLoad  = computed(() => parseFloat(realtimeStore.summaryData.today_load)   || 0);
@@ -251,33 +231,27 @@ const solarOver    = computed(() => solarOverAvg.value ? todaySolar.value - (sol
 const loadOverAvg  = computed(() => avgLoad.value !== null && todayLoad.value > avgLoad.value);
 const loadOver     = computed(() => loadOverAvg.value ? todayLoad.value - (avgLoad.value ?? 0) : 0);
 
-// Main three bars scale relative to each other.
-// Battery SoC (0–100) is used directly for its bar; divide by 10 as a kWh
-// proxy so a full battery doesn't collapse solar/home bars on low-yield days.
-const mainMax = computed(() =>
-  Math.max(todaySolar.value, todayLoad.value, (realtimeStore.realtimeData?.batterySOC || 0) / 10, 0.01)
-);
-const solarBarPct = computed(() => Math.round((todaySolar.value / mainMax.value) * 100));
-const homeBarPct  = computed(() => Math.round((todayLoad.value  / mainMax.value) * 100));
-
 // Grid today
 const gridExportKwh = computed(() => parseFloat(realtimeStore.summaryData?.today_grid_export) || 0);
 const gridImportKwh = computed(() => parseFloat(realtimeStore.summaryData?.today_grid_import) || 0);
 
-// Grid bar scaling: 14-day average is the 100% reference (same pattern as solar/load).
-// Fallback: if no average yet, use max(export, import, 1) so bars are proportional
-// to each other rather than always showing one at 100%.
 const avgGridExport = computed(() => realtimeStore.averages?.avg_grid_export_14d ?? null);
 const avgGridImport = computed(() => realtimeStore.averages?.avg_grid_import_14d ?? null);
 
-const exportBarPct = computed(() => {
-  const ref = avgGridExport.value ?? Math.max(gridExportKwh.value, gridImportKwh.value, 1);
-  return Math.min(100, Math.round((gridExportKwh.value / ref) * 100));
-});
-const importBarPct = computed(() => {
-  const ref = avgGridImport.value ?? Math.max(gridExportKwh.value, gridImportKwh.value, 1);
-  return Math.min(100, Math.round((gridImportKwh.value / ref) * 100));
-});
+// Each gauge is measured against its own reference — the same one printed in
+// the caption underneath it. No reference available yet → null → only the
+// track renders, rather than inventing a fraction. (The previous ring gauges
+// divided solar and home by a shared mainMax, which pinned whichever was
+// largest to 100% regardless of the caption.)
+const pctOf = (value, scale) => {
+  if (scale === null || scale === undefined || scale <= 0) return null;
+  return Math.min(100, Math.max(0, Math.round((value / scale) * 100)));
+};
+
+const solarLevel  = computed(() => pctOf(todaySolar.value,    solarScale.value));
+const homeLevel   = computed(() => pctOf(todayLoad.value,     avgLoad.value));
+const exportLevel = computed(() => pctOf(gridExportKwh.value, avgGridExport.value));
+const importLevel = computed(() => pctOf(gridImportKwh.value, avgGridImport.value));
 
 const gridNetKwh       = computed(() => gridExportKwh.value - gridImportKwh.value);
 const gridNetLabel     = computed(() => {
@@ -285,7 +259,7 @@ const gridNetLabel     = computed(() => {
   return val >= 1 ? `${val.toFixed(1)} kWh` : `${Math.round(val * 1000)} Wh`;
 });
 const gridNetDirection = computed(() => gridNetKwh.value >= 0 ? 'to grid' : 'from grid');
-// ── End bar computeds ──────────────────────────────────────────────────────
+// ── End gauge computeds ────────────────────────────────────────────────────
 const strategyDecision = computed(() => realtimeStore.strategyDecision);
 const decisionAge = computed(() => {
   const d = strategyDecision.value;
@@ -317,7 +291,7 @@ const battStatusText = computed(() => {
   const soc = realtimeStore.realtimeData?.batterySOC || 0;
   return soc >= 95 ? 'Full' : soc <= 5 ? 'Empty' : t('status.idle');
 });
-// ── End ring computeds ────────────────────────────────────────────────────;
+
 // PERIOD LOGIC: EXACTLY AS PER YOUR CODE
 const periods = [
   { value: 'day',   label: t('dashboard.periodDay')   },
@@ -592,56 +566,30 @@ onUnmounted(() => {
 
 <style lang="css" scoped>
 /* ── Chart toggle text (mobile only) ─────────────────────────────────── */
-.chart-toggle-text {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  width: 100%;
-  padding: 0.4rem 0;
-  font-size: 11px;
-  color: var(--color-text-tertiary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  letter-spacing: 0.04em;
+.chart-toggle-text            { display: flex;align-items: center;justify-content: center;gap: 0.3rem;width: 100%;padding: 0.4rem 0;font-size: 11px;color: var(--color-text-tertiary);background: none;border: none;cursor: pointer;letter-spacing: 0.04em; }
+.chart-toggle-text:hover      { color: var(--color-text-secondary); }
+@media (min-width: 1024px) { 
+  .chart-toggle-text          { display: none; } 
 }
-.chart-toggle-text:hover { color: var(--color-text-secondary); }
-@media (min-width: 1024px) { .chart-toggle-text { display: none; } }
+@media (min-width: 769px) { 
+  .grid-cols-4.grid-locked    { grid-template-columns: repeat(4, 1fr); }
+  .grid-cols-3.grid-locked    { grid-template-columns: repeat(3, 1fr); }
+  .grid-cols-2.grid-locked    { grid-template-columns: repeat(2, 1fr); }  
+}
+/* Strategy text inline to the right of the battery gauge */
 
-/* ── Vertical bars ────────────────────────────────────────────────────── */
-.bar-track {
-  width: 44px;
-  height: 80px;
-  background: var(--color-secondary-100);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  display: flex;
-  align-items: flex-end;
-}
-.bar-fill {
-  width: 100%;
-  background: var(--color-secondary-400);
-  border-radius: var(--radius-md);
-  transition: height 0.6s ease;
-}
-
-/* Strategy text inline to the right of the battery ring */
-.battery-strategy-inline {
-  gap: 0.3rem;
-  font-size: 11px;
-  color: var(--color-text-secondary, #6b7280);
-  line-height: 1.45;
-}
 @media (max-width: 768px) {
-  .hero-value         { font-size: 3rem; }
-  .hero-card          { height: auto; }
+  .hero-value                 { font-size: 3rem; }
+  .hero-card                  { height: auto; }
+  .grid-cols-4.grid-locked    { grid-template-columns: repeat(4, 1fr); }
+  .grid-cols-3.grid-locked    { grid-template-columns: repeat(3, 1fr); }
+  .grid-cols-2.grid-locked    { grid-template-columns: repeat(2, 1fr); }
 }
-
+.battery-strategy-inline {gap: 0.3rem;font-size: 11px;color: var(--color-text-secondary, #6b7280);line-height: 1.45;}
 /* Power card layout — shared by all 5 cards in the right column */
 .power-card                   { display: flex;align-items: center;gap: 1rem;padding: 1.25rem;position: relative;border-radius: var(--radius-md);border : var(--border-width) solid var(--color-secondary-200);margin-bottom: 1rem;}
 /* ── Date navigation ──────────────────────────────────────────────── */
-.date-nav                     { display: inline-flex;align-items: center;background: var(--color-white);overflow: hidden;}
+.date-nav                     { display: inline-flex;align-items: center;background: var(--color-surface);overflow: hidden;}
 .date-btn                     { width: 32px; height: 42px;display: flex; align-items: center; justify-content: center;background: none; border: none;font-size: 1rem;line-height: 1rem;color: var(--color-text-secondary);cursor: pointer; transition: background .12s;}
 .date-btn:hover               { background: var(--color-secondary-subtle); }
 .date-btn.disabled            { opacity: .3; cursor: default; pointer-events: none; }
@@ -661,8 +609,8 @@ onUnmounted(() => {
 .panel-switcher-wrap  { display: flex; justify-content: flex-end; padding: 0.75rem 1rem; }
 .panel-switcher       { display: inline-flex; align-items: center; gap: 0; background: var(--color-secondary-100); border: var(--border-width) solid var(--color-secondary-200); border-radius: 999px; padding: 3px; }
 .switcher-btn         { display: flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border: none; background: transparent; border-radius: 999px; color: var(--color-text-secondary); cursor: pointer; font-size: 1rem; transition: background .15s, color .15s; }
-.switcher-btn:hover   { background: var(--color-secondary-200); color: var(--color-text-primary); }
-.switcher-btn.active  { background: var(--color-white); color: var(--color-text-primary); box-shadow: 0 1px 3px rgba(0,0,0,.10); }
+.switcher-btn:hover   { background: var(--color-secondary-400); color: var(--color-primary); }
+.switcher-btn.active  { background: var(--card-bg-color); color: var(--color-secondary-800); box-shadow: 0 1px 3px rgba(0,0,0,.10); }
 .switcher-sep         { width: 1px; height: 1.25rem; background: var(--color-secondary-200); margin: 0 2px; }
  
 

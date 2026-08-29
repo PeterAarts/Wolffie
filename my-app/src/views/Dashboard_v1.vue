@@ -39,21 +39,21 @@
 
         <!-- Summary badges -->
         <div class="flex gap-4 lg:gap-6 lg:ml-auto">
-          <div class="flex-1 p-4 bg-white rounded-md">
+          <div class="flex-1 p-4 bg-card rounded-md">
             <div class="text-2xl font-bold text-primary">
               {{ parseFloat(realtimeStore.summaryData.today_pv_gen || 0).toFixed(1) }}
               <span class="text-sm font-medium"> kWh</span>
             </div>
             <div class="text-xs lowercase tracking-wider text-secondary-500 mt-1">{{ t('dashboard.produced') }}</div>
           </div>
-          <div class="flex-1 p-4 bg-white rounded-md">
+          <div class="flex-1 p-4 bg-card rounded-md">
             <div class="text-2xl font-bold text-primary">
               {{ parseFloat(realtimeStore.summaryData.today_grid_export || 0).toFixed(1) }}
               <span class="text-sm font-medium"> kWh</span>
             </div>
             <div class="text-xs lowercase tracking-wider text-secondary-500 mt-1">{{ t('dashboard.exported') }}</div>
           </div>
-          <div class="flex-1 p-4 bg-white rounded-md">
+          <div class="flex-1 p-4 bg-card rounded-md">
             <div class="text-2xl font-bold text-primary">
               {{ parseFloat(realtimeStore.summaryData.today_battery_charge || 0).toFixed(1) }}
               <span class="text-sm font-medium"> kWh</span>
@@ -85,7 +85,7 @@
     </div>
 
     <!-- ── Right: power cards ──────────────────────────────────────────────── -->
-    <div class="right-section flex flex-col bg-white">
+    <div class="right-section flex flex-col bg-card">
       <div class="flex-1 overflow-y-auto">
         <transition
           enter-active-class="transition duration-200 ease-out"

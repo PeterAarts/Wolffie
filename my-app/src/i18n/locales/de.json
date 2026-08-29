@@ -1,7 +1,7 @@
 {
   "app": {
-    "name": "WattsOn",
-    "loading": "WattsOn wird geladen...",
+    "name": "Wolffie",
+    "loading": "Wolffie wird geladen...",
     "loadingConfig": "Konfiguration wird geladen...",
     "loadingSetup": "Einrichtungsstatus wird geprüft...",
     "loadingConnect": "Verbindung zum System wird hergestellt...",
@@ -123,10 +123,21 @@
     "modules": "Module",
     "general": "Allgemein",
     "usermanagement": "Benutzer",
+    "logging": "Protokoll",
     "cloudApi": "Cloud API",
     "modbus": "ModBus",
     "display": "Anzeige",
-    "notifications": "Benachrichtigungen",
+    "notifications": {
+      "title": "Benachrichtigungen",
+      "push": "Push-Benachrichtigungen",
+      "unsupported": "Push-Benachrichtigungen werden von diesem Browser nicht unterstützt.",
+      "denied": "Benachrichtigungen sind für diese Seite blockiert. Aktiviere sie in den Browsereinstellungen, um Warnungen zu erhalten.",
+      "enabled": "Benachrichtigungen sind auf diesem Gerät aktiviert",
+      "disabled": "Benachrichtigungen sind auf diesem Gerät deaktiviert",
+      "enable": "Aktivieren",
+      "disable": "Deaktivieren",
+      "hint": "Du erhältst eine Benachrichtigung, wenn Wolffie eine Warnung auslöst, auch wenn die App geschlossen ist."
+    },
     "tariffs": "Tarife",
     "language": "Sprache",
     "theme": "Design",
@@ -285,7 +296,9 @@
     "updated": "Aktualisiert",
     "created": "Erstellt",
     "saved": "Gespeichert",
-    "done": "Fertig"
+    "done": "Fertig",
+    "refresh": "Aktualisieren",
+    "loadFailed": "Laden fehlgeschlagen"
   },
   "events": {
     "title": "Systemereignisse",
@@ -433,6 +446,77 @@
       "added": "Gerät erfolgreich hinzugefügt",
       "updated": "Gerät aktualisiert",
       "removed": "Gerät entfernt"
+    },
+    "curtailSolar":          "Solar abregeln",
+    "curtailSolarDesc":      "Solarproduktion begrenzen, wenn der Speicher voll ist und die Netzpreise negativ sind.",
+    "curtailLimit":          "Produktion begrenzen auf",
+    "curtailSummary":        "Begrenzung auf {watts} W für {hours} Stunden",
+    "startCurtailing":       "Abregelung starten",
+    "confirmCurtail":        "Solarproduktion für {durationHours} Stunden auf {watts} W begrenzen?",
+    "curtailRequested":      "Abregelung angefordert",
+    "curtailApplyingShortly":"Begrenzung auf {watts} W wird in etwa 20 Sekunden übernommen.",
+    "curtailActive":         "Solarabregelung aktiv",
+    "curtailStopped":        "Abregelung aufgehoben",
+    "curtailDegraded":       "Schreibvorgang fehlgeschlagen — Wechselrichter stellt die Produktion in Kürze wieder her"
+  },
+  "modules": {
+    "dayAheadPrices": {
+      "groups": {
+        "priceSettings": "Preiseinstellungen",
+        "fetchSettings": "Abrufeinstellungen",
+        "collectorStatus": "Collector-Status"
+      },
+      "fields": {
+        "enabled": {
+          "label": "Day-Ahead-Preise aktivieren",
+          "description": "Tägliches Abrufen der Strompreise aktivieren"
+        },
+        "bidding_zone": {
+          "label": "Gebotszone",
+          "description": "Wählen Sie die Strom-Gebotszone für Ihre Region"
+        },
+        "country_code": {
+          "label": "Ländercode",
+          "description": "Zweistelliger Ländercode (optional)",
+          "placeholder": "NL"
+        },
+        "fetch_days": {
+          "label": "Abzurufende Tage",
+          "description": "Wie viele Tage historischer Preise pro Abruf geholt werden"
+        },
+        "fetch_interval_hours": {
+          "label": "Abrufintervall (Stunden)",
+          "description": "Wie oft Preise erneut abgerufen werden (in Stunden). Standard: 4 Stunden"
+        },
+        "retry_max": {
+          "label": "Max. Wiederholungsversuche",
+          "description": "Maximale Anzahl an Wiederholungsversuchen, wenn die Preise von morgen fehlen"
+        }
+      },
+      "status": {
+        "lastFetch": "Letzter Abruf",
+        "lastFetchRecords": "Abgerufene Datensätze",
+        "status": "Status",
+        "retrying": "Wiederholung aktiv",
+        "retryCount": "Anzahl Versuche"
+      },
+      "biddingZones": {
+        "NL": "Niederlande (NL)",
+        "DE": "Deutschland (DE)",
+        "DE-LU": "Deutschland-Luxemburg (DE-LU)",
+        "BE": "Belgien (BE)",
+        "FR": "Frankreich (FR)",
+        "CH": "Schweiz (CH)",
+        "AT": "Österreich (AT)",
+        "DK1": "Dänemark West (DK1)",
+        "DK2": "Dänemark Ost (DK2)",
+        "NO1": "Norwegen 1 (NO1)",
+        "NO2": "Norwegen 2 (NO2)",
+        "SE1": "Schweden 1 (SE1)",
+        "SE2": "Schweden 2 (SE2)",
+        "SE3": "Schweden 3 (SE3)",
+        "SE4": "Schweden 4 (SE4)"
+      }
     }
   },
   "profile": {
@@ -445,5 +529,104 @@
     "passwordMismatch": "Passwörter stimmen nicht überein",
     "savePassword": "Passwort speichern",
     "passwordChanged": "Passwort geändert. Bitte erneut anmelden."
+  },
+  "modulesTab": {
+    "install": "Module installieren/aktualisieren",
+    "install_desc": "Laden Sie ein .zip-Paket hoch…",
+    "install_btn": "Installieren",
+    "update_btn": "Aktualisieren",
+    "drop": "Ziehen Sie eine .zip hierher oder",
+    "browse": "durchsuchen",
+    "zip_hint": "Max. 10 MB · nur .zip",
+    "zip_only": "Nur .zip-Dateien werden unterstützt",
+    "checksum": "Erwartete SHA-256-Prüfsumme",
+    "checksum_placeholder": "Hash zur Überprüfung vor der Installation einfügen…",
+    "installed": "Installiert",
+    "updated": "Aktualisiert",
+    "edit_settings": "Einstellungen bearbeiten",
+    "install_failed": "Installation fehlgeschlagen",
+    "restart_required": "Starten Sie den Server neu, um dieses Modul zu aktivieren.",
+    "installed_title": "Installierte Module",
+    "count": "Module gefunden",
+    "empty": "Noch keine Module installiert.",
+    "verified": "verifiziert",
+    "verify": "Integrität überprüfen",
+    "verify_ok": "Modulintegrität bestätigt",
+    "update_detected": "Update erkannt",
+    "update_ready": "Update bereit",
+    "new": "Neues Modul",
+    "reading": "Paket wird gelesen…",
+    "uninstall": "Deinstallieren",
+    "uninstall_title": "Modul deinstallieren",
+    "uninstall_confirm": "{name} entfernen? Alle Moduldateien werden gelöscht.",
+    "uninstalled": "{name} entfernt",
+    "load_error": "Module konnten nicht geladen werden",
+    "col_name": "Modul",
+    "col_version": "Version",
+    "col_type": "Typ",
+    "col_author": "Autor",
+    "install_title": "Modul installieren",
+    "update_title": "{name} aktualisieren",
+    "manifest_view": "Manifest anzeigen",
+    "manifest_collector": "Collector",
+    "manifest_interval": "Intervall",
+    "manifest_priority": "Priorität",
+    "manifest_routes": "Routen",
+    "manifest_prefix": "API-Präfix",
+    "manifest_dependencies": "Abhängigkeiten",
+    "manifest_config": "Konfiguration",
+    "manifest_required": "Erforderlich",
+    "installed_at": "Installiert am",
+    "capabilities": "Fähigkeiten"
+  },
+  "collectors": {
+    "title": "Modul-Datenkollektoren",
+    "running": "Aktiv",
+    "stopped": "Gestoppt",
+    "updated": "Aktualisiert",
+    "lastCollected": "Zuletzt erfasst",
+    "nextRun": "Nächster Lauf",
+    "interval": "Intervall",
+    "error": "Fehler",
+    "errors": "Fehler",
+    "restart": "Neu starten",
+    "starting": "Wird gestartet…",
+    "empty": "Keine Collectoren registriert",
+    "loadError": "Collector-Status konnte nicht geladen werden",
+    "restartError": "Neustart fehlgeschlagen",
+    "never": "Nie",
+    "now": "jetzt",
+    "statusDisabled": "Deaktiviert",
+    "statusPaused": "Pausiert nach {n} Fehlern",
+    "statusErrors": "{n} aufeinanderfolgende Fehler",
+    "statusStale": "Keine aktuellen Daten",
+    "statusHealthy": "Fehlerfrei"
+  },
+  "alerts": {
+    "openDrawer": "Benachrichtigungen",
+    "drawerTitle": "Benachrichtigungen",
+    "tabActive": "Aktiv",
+    "tabHistory": "Verlauf",
+    "noActive": "Keine aktiven Benachrichtigungen",
+    "noHistory": "Noch kein Benachrichtigungsverlauf",
+    "confirm": "Bestätigen & ausführen",
+    "dismiss": "Verwerfen",
+    "resolvedAt": "Gelöst",
+    "reResolve": "Erneut lösen"
+  },
+  "logging": {
+    "columns": {
+      "time": "Zeit",
+      "level": "Stufe",
+      "message": "Meldung"
+    },
+    "showMarkedOnly": "Nur markierte anzeigen",
+    "clearAllMarks": "Alle Markierungen löschen",
+    "clearAllConfirm": "Alle Markierungen entfernen? Dies kann nicht rückgängig gemacht werden.",
+    "marksCleared": "Alle Markierungen entfernt",
+    "marked": "Markiert",
+    "mark": "Markieren",
+    "unmark": "Markierung aufheben",
+    "noEntries": "Keine Log-Einträge"
   }
 }

@@ -1,13 +1,11 @@
 <template>
   <div class="loginscreen flex flex-col items-center justify-center app-section font-sans antialiased bg-secondary">
-    <div class="login-outer w-full flex justify-center">
-      <div class="login-grid grid lg:grid-cols-4 items-center w-full p-10 ">
+    <div class="login-outer w-full w-full max-w-[1400px] mx-auto flex justify-center">
+      <div class="login-grid grid lg:grid-cols-5 items-center w-full p-10 ">
         <!-- ── Branding panel ─────────────────────────────────────────────── -->
-        <div class="bg-white rounded-xl shadow-md brand-panel lg:col-span-3 flex flex-col items-center justify-center text-center">
-          <img
-            src="@/assets/wolffie.svg"
-            class="w-4/5 max-w-[400px] aspect-square object-contain grayscale opacity-20 hover:opacity-100 transition-opacity duration-700"
-            alt="Wolffie Logo"
+        <div class="bg-card rounded-xl shadow-md brand-panel lg:col-span-3 flex flex-col items-center justify-center text-center">
+          <WolffieLogo
+            class="w-2/5 max-w-[400px] text-primary opacity-20 hover:opacity-100 transition-opacity duration-700"
           />
           <div class="brand-text">
             <h2 class="text-2xl font-black tracking-tighter uppercase text-primary">Wolffie</h2>
@@ -22,7 +20,7 @@
           </div>
         </div>
         <!-- ── Form card ──────────────────────────────────────────────────── -->
-        <div class="login-card ">
+        <div class="login-card lg:col-span-2  ">
           <div class="login-logo flex items-center">
             <h2 class="text-2xl font-black  text-primary">login</h2>
           </div>
@@ -104,6 +102,7 @@
 import { ref, onMounted, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
+import WolffieLogo from '@/components/common/WolffieLogo.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -167,8 +166,8 @@ onUnmounted(() => {
 .shout-wrap             { min-height: 3.5rem; margin-bottom: 2.5rem; }
 
 /* ── Fields ──────────────────────────────────────────────────────────────── */
-.field-wrap             { position: relative;margin-top: 1.5rem;height: 3.25rem;background: var(--color-bg-primary);}
-.field-input            { position: absolute;inset: 0;padding: 1.25rem 2.5rem 0.25rem 0.625rem;height: 100%;background: transparent;color: var(--color-primary);border-bottom: 1px solid var(--color-secondary-200);}
+.field-wrap             { position: relative;margin-top: 1.5rem;height: 3.25rem;}
+.field-input            { position: absolute;inset: 0;padding: 1.25rem 2.5rem 0.25rem 0.625rem;height: 100%;background: transparent;color: var(--color-secondary-700);border-bottom: 1px solid var(--color-secondary-200);}
 .field-input:focus      { font-weight:500; }
 
 /* Kill browser autofill bg injection */
@@ -186,9 +185,9 @@ onUnmounted(() => {
 
 /* ── Submit ──────────────────────────────────────────────────────────────── */
 .login-submit           { margin-top: 2.5rem; }
-.login-btn              { padding: 0.5rem 1rem;background: var(--color-primary);color: #fff;border-radius:var(--radius-sm);}
+.login-btn              { padding: 0.5rem 1rem;background: var(--color-secondary-200);color: var(--color-text-primary);border-radius:var(--radius-sm);}
 .login-btn:hover:not(:disabled) 
-                        { background: var(--color-secondary-700);}
+                        { background: var(--color-secondary-200);}
 
 /* ── Brand panel ─────────────────────────────────────────────────────────── */
 .brand-panel            { padding: 1.5rem; }

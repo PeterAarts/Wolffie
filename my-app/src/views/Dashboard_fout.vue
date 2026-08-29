@@ -111,7 +111,7 @@
     </div>
 
     <!-- ── Right: power cards ──────────────────────────────────────────────── -->
-     <div class="right-section flex flex-col bg-white">
+     <div class="right-section flex flex-col bg-card">
  
       <!-- Panel switcher pill -->
       <div class="panel-switcher-wrap">

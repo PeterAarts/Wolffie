@@ -1,6 +1,6 @@
 <template>
   <div class="lg:p-6 p-1">
-    <div class="history-page inner-canvas bg-secondary-50 rounded-lg ">
+    <div class="history-page inner-canvas">
 
       <!-- Header with controls -->
       <div class="history-header">
@@ -32,11 +32,11 @@
       </div>
 
       <!-- Main energy chart -->
-      <div class="chart-wrapper">
+      <div class="chart-wrapper p-6 rounded-xl border border-secondary-100">
         <EnergyFlowGraph
           :period="graphPeriod"
           :date="selectedDate"
-          :granularity="5"
+          :granularity="3"
           :height="chartHeight"
           :showStats="true"
           @data-loaded="updateStats"
@@ -44,15 +44,16 @@
       </div>
 
       <!-- Smart device chart — day view only, below the energy graph -->
-      <div v-if="selectedPeriod === 'day'" class="device-chart-wrapper">
-        <div class="device-chart-header">
-          <i class="ph-light ph-devices"></i>
+     <div class="device-chart-header">
+        <i class="ph-light ph-devices"></i>
           {{ t('dashboard.smartDevices.title') }}
-        </div>
+      </div>
+      <div v-if="selectedPeriod === 'day'" class="device-chart-wrapper p-6 rounded-xl border border-secondary-100 ">
+
         <SmartDeviceFlowGraph
           :date="selectedDate"
           :period="graphPeriod"
-          :granularity="5"
+          :granularity="1"
           :height="deviceChartHeight"
           :show-stats="true"
         />
@@ -155,20 +156,20 @@ function selectPeriod(period) {
 .period-selector        { display: flex; gap: 8px; padding: 4px; }
 .period-btn             { padding: 10px 20px; border: none; background: transparent; font-family: 'Rubik', sans-serif; color: var(--color-text-secondary); cursor: pointer; transition: all 0.2s ease; white-space: nowrap; border-radius: var(--radius-sm); }
 .period-btn:hover       { background: var(--color-secondary-subtle); color: var(--color-text-primary); }
-.period-btn.active      { background: var(--color-text-primary); color: var(--color-bg-secondary); font-weight: 600; }
+.period-btn.active      { background: var(--color-secondary-500); color: var(--color-bg-secondary); font-weight: 600; }
 
 /* ── Date navigator (matches dashboard style) ────────────────────── */
-.date-nav               { display: inline-flex; align-items: center; height: 3rem; background: var(--color-white); overflow: hidden; }
+.date-nav               { display: inline-flex; align-items: center; height: 3rem; background: var(--card-bg-color); overflow: hidden; }
 .date-btn               { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; background: none; border: none; font-size: 18px; color: var(--color-text-secondary); cursor: pointer; transition: background 0.12s; }
 .date-btn:hover         { background: var(--color-secondary-subtle); }
 .date-btn.disabled      { opacity: .3; cursor: default; pointer-events: none; }
 .date-label             { display: flex; align-items: center; gap: 6px; padding: 0 14px; height: 32px; font-size: 13px; font-weight: 500; color: var(--color-text-primary); white-space: nowrap; border-left: 1px solid var(--color-border); border-right: 1px solid var(--color-border); }
-.today-badge            { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: var(--color-secondary-200); color: var(--color-bg-primary); padding: 1px 6px; border-radius: var(--radius-sm); }
+.today-badge            { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; background: var(--color-secondary-500); color: var(--color-bg-primary); padding: 1px 6px; border-radius: var(--radius-sm); }
 
 /* ── Chart wrappers ──────────────────────────────────────────────── */
-.chart-wrapper          { background: transparent; padding: 0; }
-.device-chart-wrapper   { margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--color-border); }
-.device-chart-header    { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--color-text-secondary); letter-spacing: 0.04em; text-transform: lowercase; margin-bottom: 16px; }
+.chart-wrapper          { background-color: var(--card-bg-color);padding: 1rem;border: 1px solid var(--color-border); }
+.device-chart-wrapper   { background-color: var(--card-bg-color); border: 1px solid var(--color-border); }
+.device-chart-header    { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--color-text-secondary); letter-spacing: 0.04em; text-transform: lowercase; margin-top: 1rem; }
 .device-chart-header i  { font-size: 14px; }
 
 /* ── Responsive ──────────────────────────────────────────────────── */
