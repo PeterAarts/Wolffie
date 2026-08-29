@@ -70,6 +70,17 @@ class StrategyManager {
     this._lastDecision        = null;
     this._curtailState        = 'NORMAL';
     this._curtailPendingSince = null;
+
+    // ── Grid availability tracking ──────────────────────────────────────────
+    // Last known grid:status reading. null = never read yet / capability not
+    // implemented — kept distinct from `false` (genuinely disconnected) so
+    // _checkGridAvailability doesn't misfire on startup before the first read.
+    this._gridConnected = null;
+
+    // ── Load anomaly tracking (smart-eco only) ──────────────────────────────
+    this._loadAnomalySince     = null;   // Date.now() when sustained elevated load first started
+    this._loadAnomalyConfirmed = false;  // true once past the 2h sustained threshold
+    this._loadAnomalyAlertId   = null;   // pending confirm/decline alert id, while a held action exists
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
@@ -269,6 +280,7 @@ async regenerateDayPlan(date = null, source = 'timer') {
       const activeId    = await this._getActiveId();
       const strategy    = STRATEGIES[activeId];
       const autoExecute = await settings.get('strategy', 'auto_execute') ?? true;
+      const origin       = `strategy:${activeId}`;
 
       if (!strategy) {
         console.warn(`   • ${PREFIX} - No strategy implementation for '${activeId}'`);
@@ -277,6 +289,34 @@ async regenerateDayPlan(date = null, source = 'timer') {
 
       const context = await this._buildContext();
       const config  = await this._getConfig(activeId);
+
+      // ── Grid availability gate — applies to every strategy ─────────────────
+      // While grid is down (UPS/island mode), any charge/discharge command
+      // would fail outright — held, not attempted, every cycle until grid
+      // returns. Logged inside the check itself.
+      if (await this._checkGridAvailability(context, origin)) {
+        return;
+      }
+
+      // ── Manual-override guard ───────────────────────────────────────────────
+      // A manual dispatch is authoritative until it expires or is explicitly
+      // stopped — the strategy must not re-arm/clobber it on the next tick.
+      // Safety gate above still wins over this (grid availability checked first).
+      const dispatchStatusHandler = registry.get('battery:status');
+      if (dispatchStatusHandler) {
+        try {
+          const ds = await dispatchStatusHandler({});
+          // Non-strategy origin ('manual:api', 'capability', etc.) is treated as
+          // authoritative and must not be clobbered — only strategy-vs-strategy
+          // re-evaluation should freely re-arm.
+          if (ds.active && !ds.origin?.startsWith('strategy:') && ds.status !== 'stopping') {
+            console.log(`   • ${PREFIX} - Deferring — active non-strategy dispatch [origin: ${ds.origin}] (${ds.remainingSeconds ?? '?'}s remaining)`);
+            return;
+          }
+        } catch (e) {
+          console.warn(`   • ${PREFIX} - battery:status check failed: ${e.message}`);
+        }
+      }
 
       // SoC drift guard
       const dayPlan = await this.getDayPlan();
@@ -320,11 +360,23 @@ async regenerateDayPlan(date = null, source = 'timer') {
       }
 
       if (activeId === 'smart-eco' || activeId === 'pure-solar') {
-        await this._evaluateCurtailment(context, config);
+        await this._evaluateCurtailment(context, config, activeId);
       }
 
-      if (autoExecute && decision.action !== 'IDLE') {
+      // ── Load anomaly gate — smart-eco only ────────────────────────────────
+      // Scoped to smart-eco because the comparison baseline
+      // (nightlyProfile.hourlyLoadProfile) only exists in smart-eco's config.
+      // Logged inside the check itself.
+      const held = activeId === 'smart-eco'
+        ? await this._checkLoadAnomaly(context, config, decision, origin)
+        : false;
+
+      if (autoExecute && decision.action !== 'IDLE' && !held) {
         await this._execute(decision, decisionId, activeId);
+      } else if (autoExecute && decision.action === 'IDLE') {
+        await this._stopIfActive(origin, decisionId);
+      } else if (held) {
+        console.log(`   • ${PREFIX} - '${decision.action}' held — anomaly confirmation pending`);
       }
 
     } catch (e) {
@@ -392,6 +444,195 @@ async regenerateDayPlan(date = null, source = 'timer') {
         `Strategy dispatch failed: ${e.message}`,
         { action: decision.action, decisionId });
     }
+  }
+
+  /**
+   * Called when the strategy's decision is IDLE. Previously this was a no-op —
+   * capabilityMap has no 'IDLE' entry, so a transition into IDLE never told
+   * the hardware to stop; an active dispatch just kept re-writing itself every
+   * collector cycle until its own internal session timer expired on its own
+   * schedule, disconnected from what the strategy currently wanted.
+   *
+   * Skips if nothing is active, if a stop is already in flight ('stopping'),
+   * or if the active dispatch's origin is 'manual' — manual dispatches are
+   * only ever stopped explicitly by the user, never implicitly by IDLE.
+   */
+  async _stopIfActive(origin, decisionId) {
+    const dsHandler = registry.get('battery:status');
+    if (!dsHandler) return;
+
+    let ds;
+    try {
+      ds = await dsHandler({});
+    } catch (e) {
+      console.warn(`   • ${PREFIX} - battery:status check failed: ${e.message}`);
+      return;
+    }
+    // Never auto-stop a non-strategy-initiated dispatch (manual, capability, etc.) —
+    // IDLE only clears dispatches the strategy itself is responsible for.
+    if (!ds.active || ds.status === 'stopping' || !ds.origin?.startsWith('strategy:')) return;
+
+    const stopHandler = registry.get('battery:stop');
+    if (!stopHandler) {
+      console.warn(`   • ${PREFIX} - Decision IDLE but 'battery:stop' capability unavailable — cannot stop active dispatch`);
+      return;
+    }
+
+    try {
+      await stopHandler({ origin });
+      await eventLog.log(origin, 'dispatch', 'dispatch_stopped', 'notice',
+        'Strategy decided IDLE — stopping previously active dispatch.', { decisionId });
+      console.log(`   • ${PREFIX} - Decision IDLE — stop issued for active '${ds.status}' dispatch [was origin: ${ds.origin}]`);
+    } catch (e) {
+      console.error(`   • ${PREFIX} - Stop-on-IDLE failed:`, e.message);
+      await eventLog.log(origin, 'dispatch', 'stop_on_idle_failed', 'error',
+        `Strategy decided IDLE but stop failed: ${e.message}`, { decisionId });
+    }
+  }
+
+  // ── Grid Availability & Load Anomaly Gates ────────────────────────────────
+  //
+  // Both gates sit in front of dispatch, not inside any individual strategy's
+  // decide() — UPS/island-mode affects every strategy equally, and the
+  // load-anomaly baseline (nightlyProfile) is the one piece smart-eco-specific
+  // data this needs, so scoping happens here in _evaluate() rather than by
+  // duplicating logic into each strategy file.
+
+  /**
+   * Detect UPS/island-mode transitions. While grid is down, any
+   * charge/discharge command would fail outright — so dispatch is held,
+   * not attempted, every cycle until grid returns. On restore, force an
+   * immediate day-plan regen (same pattern as the existing SoC-drift guard) —
+   * SoC may have moved a lot during the outage and the stale plan is now
+   * actively wrong, not just slightly off.
+   *
+   * @param {object} context  - from _buildContext(), needs gridConnected
+   * @param {string} origin   - e.g. 'strategy:smart-eco', for event logging
+   * @returns {Promise<boolean>} true if dispatch should be SKIPPED this cycle
+   */
+  async _checkGridAvailability(context, origin) {
+    const connected = context.gridConnected;
+
+    // Capability not implemented, or genuinely unknown — don't block dispatch
+    // on a signal we don't have.
+    if (connected === null || connected === undefined) return false;
+
+    const wasConnected = this._gridConnected;
+    this._gridConnected = connected;
+
+    if (!connected) {
+      if (wasConnected !== false) {
+        await eventLog.log(origin, 'grid', 'grid_unavailable_ups_mode', 'warning',
+          `Grid unavailable (UPS/island mode${context.gridStatusMode ? `, mode=${context.gridStatusMode}` : ''}). ` +
+          `Dispatch held this cycle — charge/discharge would fail with no grid.`);
+      }
+      return true;
+    }
+
+    if (wasConnected === false) {
+      await eventLog.log(origin, 'grid', 'grid_restored', 'notice',
+        'Grid restored after UPS/island mode. Forcing immediate day-plan regeneration.');
+      await this.regenerateDayPlan('grid-restored');
+      // Falls through — decide()/execute() continue normally below in this
+      // same tick, since grid really is back now. No need to re-call _evaluate().
+    }
+
+    return false;
+  }
+
+  /**
+   * SmartEco-specific: hold CHARGE_FROM_GRID/DISCHARGE_TO_GRID behind an
+   * explicit confirm/decline once load has been ≥1.5x the hourly profile
+   * average for 2+ hours. No confirmation = no action, indefinitely — this
+   * deliberately does NOT mirror the curtailment flow's timeout-to-act
+   * pattern; silence here means stay put, not proceed.
+   *
+   * Both CHARGE_FROM_GRID and DISCHARGE_TO_GRID are gated: once SoC is below
+   * floor during a load anomaly, grid gets used regardless of which action
+   * the strategy picks, so an uncommitted CHARGE_FROM_GRID deserves the same
+   * pause as DISCHARGE_TO_GRID does. STOP/IDLE are never held — STOP is
+   * protective and IDLE has nothing to commit.
+   *
+   * Scoped to smart-eco only: the baseline this compares against
+   * (nightlyProfile.hourlyLoadProfile) only exists in smart-eco's config.
+   *
+   * @param {object} context   - from _buildContext(), needs loadPowerW
+   * @param {object} config    - smart-eco strategy config
+   * @param {object} decision  - this cycle's decide() result
+   * @param {string} origin    - e.g. 'strategy:smart-eco', for logging/alerts
+   * @returns {Promise<boolean>} true if the decision should be HELD this cycle
+   */
+  async _checkLoadAnomaly(context, config, decision, origin) {
+    const ANOMALY_MULTIPLIER   = 1.5;
+    const SUSTAINED_MS         = 2 * 60 * 60 * 1000; // 2 hours
+    const TEMP_LABEL_THRESHOLD = 29; // °C — cosmetic label only, never a gate
+
+    if (context.loadPowerW === null) return false;
+
+    const expectedW = smartEcoStrategy.getExpectedLoadW(config);
+    if (expectedW === null) return false;
+
+    const isElevated = context.loadPowerW >= expectedW * ANOMALY_MULTIPLIER;
+    const now = Date.now();
+
+    if (!isElevated) {
+      if (this._loadAnomalyConfirmed) {
+        await eventLog.log(origin, 'strategy', 'load_anomaly_cleared', 'info',
+          `Load back to normal (${Math.round(context.loadPowerW)}W vs ${Math.round(expectedW)}W expected). Hold released.`);
+        if (this._loadAnomalyAlertId) {
+          await alertService.resolveByTypePrefix('strategy', 'load_anomaly_action_hold');
+        }
+      }
+      this._loadAnomalySince     = null;
+      this._loadAnomalyConfirmed = false;
+      this._loadAnomalyAlertId   = null;
+      return false;
+    }
+
+    // Elevated — start or continue the clock
+    if (!this._loadAnomalySince) this._loadAnomalySince = now;
+    if (now - this._loadAnomalySince < SUSTAINED_MS) return false; // elevated, not long enough yet
+
+    // Sustained past 2h — log once on the transition into "confirmed"
+    // context.outdoorTempC: not currently wired into _buildContext() — see
+    // patch notes. Optional chaining means this just silently stays
+    // unlabeled until an actual ambient-temperature source is plumbed in.
+    const likelyAc = context.outdoorTempC != null && context.outdoorTempC > TEMP_LABEL_THRESHOLD;
+
+    if (!this._loadAnomalyConfirmed) {
+      this._loadAnomalyConfirmed = true;
+      await eventLog.log(origin, 'strategy', 'load_anomaly_detected', 'warning',
+        `Load sustained at ${Math.round(context.loadPowerW)}W (≥${ANOMALY_MULTIPLIER}x the ${Math.round(expectedW)}W expected) for 2h+.` +
+        `${likelyAc ? ` Outdoor temp >${TEMP_LABEL_THRESHOLD}°C — likely AC.` : ''}`);
+    }
+
+    // Only CHARGE_FROM_GRID / DISCHARGE_TO_GRID are worth holding — STOP is
+    // protective and should never be blocked; IDLE has nothing to hold.
+    if (!['CHARGE_FROM_GRID', 'DISCHARGE_TO_GRID'].includes(decision?.action)) return false;
+
+    if (this._loadAnomalyAlertId) {
+      const response = await alertService.getResponse(this._loadAnomalyAlertId);
+      if (response === 'confirmed') return false; // let it through
+      return true; // declined, or still pending — keep holding
+    }
+
+    // First cycle with an actual action to hold — raise the alert
+ // First cycle with an actual action to hold — raise the alert
+    this._loadAnomalyAlertId = await alertService.write('strategy', 'smart-eco', {
+      type:       'load_anomaly_action_hold',
+      severity:   'warning',
+      message:    `Load has been ${Math.round(context.loadPowerW)}W (≥${ANOMALY_MULTIPLIER}x expected) for 2h+` +
+                  `${likelyAc ? ' — likely AC' : ''}. SmartEco wants to ${decision.action} (${decision.reason}). ` +
+                  `Confirm to continue, or it will not run.`,
+      summary:    `High load detected. SmartEco wants to ${decision.action === 'CHARGE_FROM_GRID' ? 'charge from grid' : 'discharge to grid'} — confirm to proceed.`,
+      suggestion: 'Confirm to let this proceed, or decline to keep holding.',
+      action:     'CONFIRM_OR_DECLINE',
+    }, 1440); // long dedup window — this is a held state, not a repeating notice
+    await eventLog.log(origin, 'dispatch', 'action_held_pending_confirmation', 'notice',
+      `Held '${decision.action}' pending confirmation — sustained load anomaly active. Reason: ${decision.reason}`,
+      { action: decision.action, alertId: this._loadAnomalyAlertId });
+
+    return true;
   }
 
   // ── Effectiveness & Metrics ───────────────────────────────────────────────
@@ -510,7 +751,15 @@ async regenerateDayPlan(date = null, source = 'timer') {
       const savedState = await settings.get('strategy', 'curtailment_state');
       if (savedState === 'CURTAILED') {
         console.warn(`   • ${PREFIX} - Watchdog: server restarted while solar was curtailed — restoring to 100%`);
-        await this._curtailSolar(false);
+        const restored = await this._curtailSolar(false);
+        if (!restored) {
+          // Not fatal: the provider writes 100% on its first collection cycle
+          // regardless of this call, and the inverter's own command-timeout
+          // watchdog lifts any stale limit within a few minutes. Logged so a
+          // failure here is visible rather than silent.
+          console.error(`   • ${PREFIX} - Watchdog restore request was NOT accepted — ` +
+                        `verify production resumed in the inverter's own app`);
+        }
         await settings.upsert('strategy', 'curtailment_state', 'NORMAL', {
           changedBy: 'system', reason: 'Watchdog restore on startup', valueType: 'string',
         });
@@ -533,23 +782,70 @@ async regenerateDayPlan(date = null, source = 'timer') {
     }
   }
 
-  async _curtailSolar(curtail) {
+  /**
+   * Request or release solar curtailment via the capability registry.
+   *
+   * Never references a provider module directly — after the DC-coupled
+   * migration the provider may become AlphaESS rather than SolarEdge, and
+   * this code should not have to change.
+   *
+   * The cap is expressed in WATTS, not percent. Two reasons:
+   *   1. Watts can be compared against house load; a percentage of an
+   *      inverter nameplate cannot.
+   *   2. The previous `pct: 0` would have opened the inverter's AC output
+   *      relays. Below roughly 30-60 W a single-phase SolarEdge cannot hold
+   *      them closed, so it disconnects and needs a full grid-monitoring
+   *      reconnect cycle before production can resume. A small non-zero cap
+   *      keeps the inverter online and instantly restorable.
+   *
+   * NOTE: the provider records the request and applies it on its next
+   * collection cycle (~20s) — it does not open its own Modbus connection.
+   * So `true` here means ACCEPTED, not yet APPLIED.
+   *
+   * @param  {boolean} curtail   true = cap production, false = restore 100%
+   * @param  {object}  config    active strategy config
+   * @param  {string}  activeId  active strategy id, for provenance
+   * @returns {Promise<boolean>} true when the request was accepted
+   */
+  async _curtailSolar(curtail, config = {}, activeId = null) {
     const handler = registry.get('solar:curtail');
     if (!handler) {
       console.warn(`   • ${PREFIX} - solar:curtail capability not available`);
       return false;
     }
+
+    // 400 W ≈ household baseline draw. Keeps the inverter producing into the
+    // house rather than exporting, without dropping its output relays.
+    const targetWatts = Number.isFinite(config.curtailmentTargetWatts)
+      ? config.curtailmentTargetWatts
+      : 400;
+
+    const source = `strategy:${activeId ?? 'unknown'}`;
+
     try {
-      const result = await handler({ enabled: !curtail, pct: curtail ? 0 : 100 });
-      console.log(`   • ${PREFIX} - Solar curtailment ${curtail ? 'ACTIVE (0%)' : 'RESTORED (100%)'}`);
-      return result?.success ?? true;
+      const result = curtail
+        ? await handler({ curtail: true, watts: targetWatts, source })
+        : await handler({ curtail: false, source });
+
+      const ok = result?.success ?? false;
+
+      if (ok) {
+        console.log(
+          `   • ${PREFIX} - Solar curtailment ${curtail
+            ? `REQUESTED (cap ${targetWatts} W)`
+            : 'RELEASE REQUESTED (100%)'} — applies within one collector cycle`
+        );
+      } else {
+        console.error(`   • ${PREFIX} - solar:curtail returned success=false`);
+      }
+      return ok;
     } catch (e) {
       console.error(`   • ${PREFIX} - solar:curtail failed: `, e.message);
       return false;
     }
   }
 
-  async _evaluateCurtailment(context, config) {
+  async _evaluateCurtailment(context, config, activeId = null) {
     try {
       const {
         negativePriceThreshold      = 0,
@@ -572,7 +868,8 @@ async regenerateDayPlan(date = null, source = 'timer') {
             type:       'solar_curtailment_pending',
             severity:   'warning',
             message:    `Battery at ${soc.toFixed(0)}% and prices negative (${price.toFixed(1)}ct). Solar export will be stopped in ${PENDING_MINUTES} minutes unless dismissed.`,
-            suggestion: `Dismiss this alert to keep solar running. If not dismissed, Wolffie will set the SolarEdge export limit to 0% automatically.`,
+            summary:    `Battery full — solar export will pause in ${PENDING_MINUTES} min unless dismissed.`,
+            suggestion: `Dismiss this alert to keep solar running. If not dismissed, Wolffie will cap solar production automatically until conditions improve.`,
             action:     'SOLAR_CURTAIL_PENDING',
           }, 20);
 
@@ -597,12 +894,13 @@ async regenerateDayPlan(date = null, source = 'timer') {
             await this._saveCurtailState('NORMAL');
             console.log(`   • ${PREFIX} - Curtailment PENDING — user dismissed, cancelling`);
           } else if (elapsedMin >= PENDING_MINUTES) {
-            const ok = await this._curtailSolar(true);
+            const ok = await this._curtailSolar(true, config, activeId);
             if (ok) {
               await alertService.write('strategy', 'smart-eco', {
                 type:       'solar_curtailed',
                 severity:   'info',
-                message:    `Solar export has been stopped (SoC ${soc.toFixed(0)}%, price ${price.toFixed(1)}ct). Will restore automatically when conditions improve.`,
+                message:    `Solar production has been capped (SoC ${soc.toFixed(0)}%, price ${price.toFixed(1)}ct). Will restore automatically when conditions improve.`,
+                summary:    'Solar export paused — battery full. Will resume automatically.',
                 suggestion: 'Solar will resume automatically when price recovers or battery discharges.',
                 action:     'SOLAR_CURTAILED',
               }, 60);
@@ -617,7 +915,18 @@ async regenerateDayPlan(date = null, source = 'timer') {
         }
       } else if (this._curtailState === 'CURTAILED') {
         if (shouldRestore) {
-          await this._curtailSolar(false);
+          const restored = await this._curtailSolar(false, config, activeId);
+
+          if (!restored) {
+            // Do NOT drop to NORMAL on a failed restore. That would leave
+            // Wolffie believing solar is running while the inverter is still
+            // capped, with nothing scheduled to retry. Staying in CURTAILED
+            // means the next evaluation tries again. The inverter's own
+            // command-timeout watchdog is the backstop underneath this.
+            console.error(`   • ${PREFIX} - Curtailment restore NOT accepted — staying in CURTAILED to retry`);
+            return;
+          }
+
           await alertService.resolveByTypePrefix('strategy', 'solar_curtailed');
           await alertService.resolveByTypePrefix('strategy', 'solar_curtailment_pending');
           this._curtailPendingSince = null;
@@ -671,6 +980,9 @@ async regenerateDayPlan(date = null, source = 'timer') {
       batteryPowerW:   null,
       solarPowerW:     null,
       gridPowerW:      null,
+      gridConnected:   null,
+      gridStatusMode:  null,
+      loadPowerW:      null,
       currentPrice:    null,
       prices:          [],
       solarForecast:   [],
@@ -703,6 +1015,15 @@ async regenerateDayPlan(date = null, source = 'timer') {
       } catch (e) { console.warn(`   • ${PREFIX} - grid:read failed:`, e.message); }
     }
 
+    const gridStatusHandler = registry.get('grid:status');
+    if (gridStatusHandler) {
+      try {
+        const gs = await gridStatusHandler({});
+        context.gridConnected  = gs.gridConnected;
+        context.gridStatusMode = gs.mode;
+      } catch (e) { console.warn(`   • ${PREFIX} - grid:status failed:`, e.message); }
+    }
+
     const pricingHandler = registry.get('grid:pricing');
     if (pricingHandler) {
       try {
@@ -718,6 +1039,23 @@ async regenerateDayPlan(date = null, source = 'timer') {
         const f = await forecastHandler({ windowStart, windowHours: planningHours });
         context.solarForecast = f.hourly ?? [];
       } catch (e) { console.warn(`   • ${PREFIX} - solar:forecast failed:`, e.message); }
+    }
+
+    // ── Derived: live load ──────────────────────────────────────────────────
+    // Solar, battery, and grid power are all already fetched above for other
+    // purposes — load is solar + gridImport - batteryCharge (canonical signs:
+    // production/import/charging = positive).
+    //
+    // ⚠️ Sign trap: this is NOT the same convention as the raw Modbus
+    // battery_power column SmartEco's _loadHourlyProfileFromHistory() uses.
+    // That raw column is positive on DISCHARGE. battery:read here (canonical,
+    // per capabilitySchemas.js) is positive on CHARGE — so the battery term
+    // is subtracted here, not added.
+    if (context.solarPowerW !== null || context.batteryPowerW !== null || context.gridPowerW !== null) {
+      const solar   = context.solarPowerW   ?? 0;
+      const battery = context.batteryPowerW ?? 0;
+      const grid    = context.gridPowerW    ?? 0;
+      context.loadPowerW = Math.max(0, solar + grid - battery);
     }
 
     return context;

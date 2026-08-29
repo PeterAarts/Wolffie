@@ -11,18 +11,35 @@
 // Module collector contract (what each collector.js must expose):
 //   collect()   → async, does one poll cycle, returns true/false
 //   getStatus() → { lastCollection, lastError, consecutiveErrors, ... }
+//
+// Optional contract:
+//   abort()     → async, best-effort force-teardown of any in-flight
+//                 connection. Called when a collect() cycle has exceeded
+//                 its hang-timeout (see _collectWithTimeout below) and
+//                 this manager has stopped waiting on it. No-op if a
+//                 module doesn't implement it — purely opt-in. Modules
+//                 with stricter connection-sharing constraints (e.g. a
+//                 single shared TCP connection also used for dispatch
+//                 writes) can deliberately skip this and still get full
+//                 hang-detection/reporting without their connection ever
+//                 being forcibly killed.
 
 import db from './database.js';
 import capabilityRegistry from './capabilityRegistry.js';
 import settingsService from './system/services/settingsService.js';
+import eventLog from './system/services/eventLogService.js';
 import { padName } from './utils/logger.js';
 import { localTimestamp } from './utils/localTimestamp.js';
 const PREFIX = padName('CollectorManager');
 
 const FALLBACK_INTERVAL                  = 30000; // 30 s — used when nothing else is configured
-const MAX_CONSECUTIVE_ERRORS             = 5;     // pause a collector after this many back-to-back failures
+const MAX_CONSECUTIVE_ERRORS             = 15;    // pause a collector after this many back-to-back failures
 const DERIVED_METRICS_INTERVAL           = 15000; // 15 s — derived load calculation cadence
 const DEFAULT_COLLECTOR_RESTART_MINUTES  = 30;    // fallback if system_settings not found
+const DEFAULT_COLLECT_TIMEOUT_MS         = 8000;  // 8 s — hard deadline for a single collect() cycle.
+                                                   // A cycle that hangs past this is treated as a normal
+                                                   // failure (counts toward MAX_CONSECUTIVE_ERRORS).
+                                                   // Override per module via manifest.collector.timeout.
 
 class CollectorManager {
   constructor() {
@@ -32,6 +49,8 @@ class CollectorManager {
     //   name:              string,        // human-readable from manifest
     //   collector:         object,        // the imported collector instance
     //   interval:          number,        // resolved poll interval in ms
+    //   timeout:           number,        // hard deadline (ms) for a single collect() cycle —
+    //                                      // exceeding this is treated as a failure (possible hang)
     //   enabled:           boolean,
     //   timer:             Timeout|null,  // current pending setTimeout handle
     //   lastRun:           Date|null,
@@ -109,6 +128,7 @@ class CollectorManager {
       name:              manifest.name,
       collector:         module,
       interval:          manifest.collector?.interval || FALLBACK_INTERVAL,
+      timeout:           manifest.collector?.timeout  || DEFAULT_COLLECT_TIMEOUT_MS,
       enabled:           manifest.collector?.enabled !== false,
       timer:             null,
       lastRun:           null,
@@ -119,7 +139,7 @@ class CollectorManager {
       recoveryTimer:     null,
     });
 
-    console.log(`     - Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms)`);
+    console.log(`     - Registered collector: ${manifest.name} (default interval: ${manifest.collector?.interval || FALLBACK_INTERVAL}ms, hang timeout: ${manifest.collector?.timeout || DEFAULT_COLLECT_TIMEOUT_MS}ms)`);
   }
 
   /**
@@ -355,8 +375,71 @@ class CollectorManager {
   }
 
   /**
+   * Run entry.collector.collect() under a hard outer deadline (entry.timeout).
+   *
+   * Why this exists:
+   *   _armNext() only schedules the NEXT cycle after this one resolves — the
+   *   "no drift" pattern. That means if collect() never settles at all (e.g.
+   *   a TCP connect() that hangs because the remote device silently drops
+   *   the handshake instead of erroring), this module's schedule stops
+   *   forever: no error, no log line, nothing — until the whole process is
+   *   restarted.
+   *
+   * What this does:
+   *   - Races collect() against a timeout. Whichever settles first wins.
+   *   - If collect() loses (times out), we stop waiting on it and report a
+   *     timeout error up to _runCollector — but the original promise may
+   *     still be running underneath. We attach a no-op .catch() to it so
+   *     that whenever it does eventually settle (e.g. an OS-level TCP
+   *     timeout firing minutes later), it can never surface as a confusing
+   *     unhandled rejection.
+   *   - If the module exposes an optional abort() method, we call it after
+   *     a timeout so it can forcibly tear down whatever connection is
+   *     stuck, instead of leaking it until GC. Opt-in per module — see the
+   *     "Module collector contract" note at the top of this file.
+   */
+  async _collectWithTimeout(entry) {
+    const timeoutMs = entry.timeout || DEFAULT_COLLECT_TIMEOUT_MS;
+    let timedOut = false;
+
+    const collectPromise = Promise.resolve()
+      .then(() => entry.collector.collect())
+      .catch((err) => {
+        // Cycle already timed out and _runCollector has moved on — this
+        // rejection belongs to an orphaned attempt. Swallow it so it can
+        // never surface as an unhandled rejection later.
+        if (timedOut) return;
+        throw err;
+      });
+
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        timedOut = true;
+        reject(new Error(`Collection timed out after ${timeoutMs}ms (possible hang)`));
+      }, timeoutMs);
+    });
+
+    try {
+      return await Promise.race([collectPromise, timeoutPromise]);
+    } catch (err) {
+      if (timedOut && typeof entry.collector.abort === 'function') {
+        try {
+          await entry.collector.abort();
+        } catch (abortErr) {
+          console.warn(`\x1b[93m   • ${entry.name}: abort() after timeout failed — ${abortErr.message}\x1b[37m`);
+        }
+      }
+      throw err;
+    }
+  }
+
+  /**
    * Execute one collection cycle for a module.
    * Updates lastRun, error tracking, and pauses on too many failures.
+   *
+   * The actual call to entry.collector.collect() is wrapped by
+   * _collectWithTimeout() so a hung Modbus/TCP/HTTP call can never block
+   * this module's schedule forever — see that method for details.
    */
   async _runCollector(moduleId) {
     const entry = this.schedules.get(moduleId);
@@ -365,7 +448,7 @@ class CollectorManager {
     const startTime = Date.now();
 
     try {
-      const success = await entry.collector.collect();
+      const success = await this._collectWithTimeout(entry);
       const elapsed = Date.now() - startTime;
 
       entry.lastRun = new Date();
@@ -382,7 +465,8 @@ class CollectorManager {
       }
 
     } catch (error) {
-      // collect() threw — hard failure
+      // collect() threw, or _collectWithTimeout() rejected (including a
+      // hang-timeout) — hard failure either way.
       entry.lastRun = new Date();
       entry.consecutiveErrors++;
       entry.lastError = error.message;
@@ -395,6 +479,10 @@ class CollectorManager {
    * Pause a collector if it has hit the consecutive error limit.
    * Arms a one-shot recovery timer based on system_settings
    * category='data_collection', setting_key='collector_restart_minutes'.
+   * Also raises a 'collector' event-log entry (category='collector',
+   * event='collect_paused') so the failure shows up as a proper audit-trail
+   * alert, not just a console line. The event is resolved automatically
+   * once the auto-recovery attempt below succeeds.
    */
   _checkPause(entry) {
     if (entry.consecutiveErrors >= MAX_CONSECUTIVE_ERRORS && !entry.paused) {
@@ -410,6 +498,17 @@ class CollectorManager {
         `Auto-restart in ${restartMinutes}m.\x1b[37m`
       );
 
+      eventLog.log(
+        `collector:${entry.id}`,
+        'collector',
+        'collect_paused',
+        'error',
+        `Communication failed with ${entry.name} after ${MAX_CONSECUTIVE_ERRORS} consecutive failures — retrying in ${restartMinutes}m`,
+        { consecutiveErrors: entry.consecutiveErrors, lastError: entry.lastError, restartMinutes }
+      ).catch((err) => {
+        console.warn(`\x1b[93m   • ${entry.name}: failed to log collect_paused event — ${err.message}\x1b[37m`);
+      });
+
       // Cancel any existing recovery timer before arming a new one
       if (entry.recoveryTimer) {
         clearTimeout(entry.recoveryTimer);
@@ -423,7 +522,13 @@ class CollectorManager {
         entry.paused            = false;
         entry.lastError         = null;
         this._runCollector(entry.id)
-          .then(() => this._armNext(entry.id))
+          .then(() => {
+            this._armNext(entry.id);
+            if (entry.consecutiveErrors === 0) {
+              // Recovery attempt succeeded — close out the alert.
+              eventLog.resolveBySource(`collector:${entry.id}`, 'collect_paused').catch(() => {});
+            }
+          })
           .catch((err) => {
             console.error(`\x1b[91m   ❌ ${entry.name}: auto-recovery failed — ${err.message}\x1b[37m`);
             this._armNext(entry.id);

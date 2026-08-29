@@ -21,8 +21,8 @@ export const apiLimiter = rateLimit({
  * 5 requests per 15 minutes per IP
  */
 export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 login attempts per window
+  windowMs: 5 * 60 * 1000, // 15 minutes
+  max: 15, // Limit each IP to 5 login attempts per window
   message: {
     success: false,
     error: 'Too many login attempts, please try again later',
@@ -70,7 +70,7 @@ export const passwordResetLimiter = rateLimit({
  * 200 requests per 15 minutes per IP
  */
 export const readLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 5 * 60 * 1000, // 15 minutes
   max: 200, // Limit each IP to 200 requests per window
   message: {
     success: false,

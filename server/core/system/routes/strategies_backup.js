@@ -104,97 +104,30 @@ router.post('/evaluate', async (req, res) => {
 // Wijziging:
 //   ON DUPLICATE KEY UPDATE config = ?
 //   → ON CONFLICT(strategy_id) DO UPDATE SET config = excluded.config
-//
-// Hardening (2026-07-17): the frontend previously managed to persist
-// nightlyProfile as a character-exploded object (a stringify/spread bug
-// upstream of this route), which then compounded on every subsequent save
-// because this handler blindly merged+re-stored whatever it read back from
-// the DB. That merge is fine for legitimate flat config, but it has no
-// defense against garbage getting in — and once it's in, it never gets
-// pruned. Two independent guards below close that hole:
-//   1. nightlyProfile is backend-owned and is never accepted from the
-//      client, regardless of shape — always carried over from `existing`.
-//   2. Any other field that isn't a flat primitive (object/array) is
-//      rejected rather than stored, plus a hard size ceiling on the final
-//      payload as a last-resort circuit breaker.
-// This does NOT validate specific field names/types yet — that requires
-// per-strategy settings_schema.json, which doesn't exist yet.
-
-const CONFIG_MAX_FIELDS      = 50;    // sane ceiling; real configs are ~15 fields
-const CONFIG_MAX_STRING_LEN  = 500;   // sane ceiling for a single field value
-const CONFIG_MAX_PAYLOAD_LEN = 20000; // bytes; real configs are well under 1000
 
 router.post('/config', async (req, res) => {
   try {
     const activeId = await strategyManager._getActiveId();
     const incoming = req.body ?? {};
 
-    // nightlyProfile is computed and owned by the backend. Never accept a
-    // client-supplied value for it — silently drop it here and let it
-    // fall through from `existing` in the merge below.
-    const { nightlyProfile: _ignoredClientNightlyProfile, ...editable } = incoming;
-
-    const rejected = [];
-    const coerced  = {};
-
-    for (const [k, v] of Object.entries(editable)) {
-      // Nested objects/arrays are exactly the shape the earlier corruption
-      // took (a stringified/spread object landing as config data). Reject
-      // rather than silently persist.
-      if (v !== null && typeof v === 'object') {
-        rejected.push(k);
-        continue;
-      }
-      if (typeof v === 'string' && v.length > CONFIG_MAX_STRING_LEN) {
-        rejected.push(k);
-        continue;
-      }
-      // Only coerce genuinely numeric strings/numbers — leave booleans
-      // (and everything else) untouched. Previously `isNaN(true)` was
-      // false, which silently turned booleans into 1/0.
-      coerced[k] = (typeof v !== 'boolean' && v !== '' && !isNaN(v))
-        ? Number(v)
-        : v;
-    }
-
-    if (Object.keys(coerced).length > CONFIG_MAX_FIELDS) {
-      return res.status(400).json({
-        error: `Refusing to save: ${Object.keys(coerced).length} fields exceeds the ` +
-               `${CONFIG_MAX_FIELDS}-field safety limit. This usually indicates a ` +
-               `frontend serialization bug rather than legitimate config.`
-      });
-    }
-
-    if (rejected.length > 0) {
-      console.warn(`   • strategy/config: rejected non-primitive/oversized fields for ${activeId}: ${rejected.join(', ')}`);
+    const coerced = {};
+    for (const [k, v] of Object.entries(incoming)) {
+      coerced[k] = v !== '' && !isNaN(v) ? Number(v) : v;
     }
 
     const existing = await strategyManager._getConfig(activeId);
     const merged   = { ...existing, ...coerced };
-
-    const payload = JSON.stringify(merged);
-    if (payload.length > CONFIG_MAX_PAYLOAD_LEN) {
-      return res.status(400).json({
-        error: `Refusing to save: resulting config is ${payload.length} bytes, exceeding ` +
-               `the ${CONFIG_MAX_PAYLOAD_LEN}-byte safety limit. Not persisting — this would ` +
-               `compound on every future save.`
-      });
-    }
 
     const db = (await import('../../database.js')).default;
     await db.pool.query(
       `INSERT INTO strategy_config (strategy_id, config)
        VALUES (?, ?)
        ON CONFLICT(strategy_id) DO UPDATE SET config = excluded.config`,
-      [activeId, payload]
+      [activeId, JSON.stringify(merged)]
     );
 
     await strategyManager._evaluate();
-    res.json({
-      success: true,
-      config:  merged,
-      ...(rejected.length ? { rejectedFields: rejected } : {}),
-    });
+    res.json({ success: true, config: merged });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

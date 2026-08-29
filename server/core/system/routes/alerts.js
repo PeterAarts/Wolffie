@@ -5,6 +5,7 @@
 //
 // GET  /api/alerts                — fetch active alerts for current user
 // POST /api/alerts/:id/dismiss    — per-user dismiss
+// POST /api/alerts/:id/respond    — per-user confirm/decline (held actions)
 // POST /api/alerts/:id/resolve    — global resolve (admin only)
 
 import express from 'express';
@@ -16,7 +17,9 @@ const router = express.Router();
 
 // ── GET /api/alerts/history ────────────────────────────────────────────────
 // Returns resolved alerts (auto_resolved = 1), newest first, last 100.
-// Includes alerts dismissed by the requesting user via the dismissals table.
+// Includes alerts dismissed by the requesting user via the dismissals table,
+// and the requesting user's response (confirmed/declined) if they answered
+// a held-action alert before it resolved.
 
 router.get('/history', async (req, res) => {
   try {
@@ -28,16 +31,19 @@ router.get('/history', async (req, res) => {
          a.id, a.source, a.source_id, a.type, a.severity,
          a.message, a.suggestion, a.action,
          a.created_at, a.resolved_at,
-         MAX(d.dismissed_at) AS dismissed_at
+         MAX(d.dismissed_at) AS dismissed_at,
+         MAX(r.response)     AS user_response
        FROM app_alerts a
        LEFT JOIN app_alert_dismissals d
          ON d.alert_id = a.id AND d.user_id = ?
+       LEFT JOIN app_alert_responses r
+         ON r.alert_id = a.id AND r.user_id = ?
        WHERE a.auto_resolved = 1
           OR d.alert_id IS NOT NULL
        GROUP BY a.id
        ORDER BY a.created_at DESC
        LIMIT 100`,
-      [userId]
+      [userId, userId]
     );
 
     res.json({ alerts: rows });
@@ -50,6 +56,7 @@ router.get('/history', async (req, res) => {
 // ── GET /api/alerts ────────────────────────────────────────────────────────
 // Returns unresolved alerts not yet dismissed by the requesting user.
 // Optional query param: ?source=strategy to filter by source.
+// Each alert includes user_response (null while pending) for held actions.
 
 router.get('/', async (req, res) => {
   try {
@@ -86,6 +93,34 @@ router.post('/:id/dismiss', async (req, res) => {
   } catch (e) {
     console.error('POST /api/alerts/:id/dismiss error:', e.message);
     res.status(500).json({ error: 'Failed to dismiss alert' });
+  }
+});
+
+// ── POST /api/alerts/:id/respond ───────────────────────────────────────────
+// Records an explicit confirm/decline for an alert that's holding a pending
+// strategy action (e.g. the load-anomaly or UPS-mode dispatch holds in
+// strategyManager). Deliberately NOT admin-gated — this is the requesting
+// user answering a question about their own system, not a moderation action.
+// Distinct from dismiss/resolve; see alertService.respond() for why.
+//
+// Body: { response: 'confirmed' | 'declined' }
+
+router.post('/:id/respond', async (req, res) => {
+  try {
+    const alertId  = parseInt(req.params.id, 10);
+    const userId   = req.user?.id;
+    const response  = req.body?.response;
+
+    if (!alertId || !userId) return res.status(400).json({ error: 'Invalid request' });
+    if (response !== 'confirmed' && response !== 'declined') {
+      return res.status(400).json({ error: "response must be 'confirmed' or 'declined'" });
+    }
+
+    await alertService.respond(alertId, userId, response);
+    res.json({ ok: true, response });
+  } catch (e) {
+    console.error('POST /api/alerts/:id/respond error:', e.message);
+    res.status(500).json({ error: 'Failed to record response' });
   }
 });
 

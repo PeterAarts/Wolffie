@@ -111,7 +111,7 @@ class PureSolarStrategy {
     const { negativePriceThreshold = 0 } = config;
 
     // Flag negative price periods for curtailment
-    if (contractType === 'dynamic' && currentPrice !== null && currentPrice <= negativePriceThreshold && (solarPowerW ?? 0) > 50) {
+  if (contractType === 'dynamic' && currentPrice !== null && currentPrice <= negativePriceThreshold && (solarPowerW ?? 0) > 50) {
       return {
         action:        'IDLE',
         reason:        `Negative price (${currentPrice.toFixed(1)}ct) — solar curtailment active or pending.`,
@@ -120,6 +120,7 @@ class PureSolarStrategy {
           type:       'negative_price_solar',
           severity:   'warning',
           message:    `Grid price is ${currentPrice.toFixed(1)}ct/kWh. Solar export will be curtailed to avoid paying to export.`,
+          summary:    'Negative grid price — solar export will be paused.',
           suggestion: 'Dismiss this alert to keep solar running at full output.',
           action:     'SOLAR_CURTAIL_PENDING',
         },

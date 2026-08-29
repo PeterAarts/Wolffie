@@ -16,10 +16,29 @@
 //   const alerts = await alertService.getActive(userId);
 //   await alertService.dismiss(alertId, userId);
 //   await alertService.resolve(alertId);           // global, admin-only
+//
+// Confirm/decline (added for held dispatch actions — see strategyManager's
+// load-anomaly and UPS-mode gates):
+//   const alertId = await alertService.write(...);
+//   ...
+//   await alertService.respond(alertId, userId, 'confirmed');
+//   const response = await alertService.getResponse(alertId); // 'confirmed' | 'declined' | null
+//
+// getActive() includes each alert's user_response (null while pending) so
+// the frontend can render "already responded" state immediately on load,
+// not just after the user clicks something in the current session.
+//
+// Events:
+//   Emits 'alert' with { id, source, sourceId, type, severity, message,
+//   suggestion, action } whenever a NEW alert is written (not on dedup-skip).
+//   Consumers (e.g. the push module) subscribe via alertService.on('alert', ...).
+//   This service has no knowledge of what listens — keeps it decoupled from
+//   any specific notification mechanism.
 
 import db from '../../database.js';
+import { EventEmitter } from 'events';
 
-class AlertService {
+class AlertService extends EventEmitter {
 
   /**
    * Write an alert, deduplicating by (source, type) within `dedupMinutes`.
@@ -63,6 +82,24 @@ class AlertService {
       );
 
       console.log(`   • AlertService [${alert.severity ?? 'info'}] ${source}/${alert.type}`);
+
+      // Notify listeners (e.g. push module) — fire-and-forget, never throws.
+      // `summary` is optional and push-only: a short, notification-friendly
+      // version of the alert. Not persisted to app_alerts — the dashboard
+      // keeps showing the full `message`. Falls back to `message` for any
+      // caller that doesn't set it (push module truncates as a backstop).
+      this.emit('alert', {
+        id:         result.insertId,
+        source,
+        sourceId:   sourceId ?? null,
+        type:       alert.type,
+        severity:   alert.severity ?? 'info',
+        message:    alert.message,
+        summary:    alert.summary ?? null,
+        suggestion: alert.suggestion ?? null,
+        action:     alert.action ?? null,
+      });
+
       return result.insertId;
 
     } catch (e) {
@@ -75,22 +112,29 @@ class AlertService {
    * Return all unresolved alerts not dismissed by the given user.
    * Newest first. Limited to 50.
    *
+   * Includes `user_response` ('confirmed' | 'declined' | null) for alerts
+   * awaiting an explicit answer — null means still pending.
+   *
    * @param {number} userId
    * @returns {Array}
    */
   async getActive(userId) {
+    await this._ensureResponseTable();
     const [rows] = await db.pool.query(
       `SELECT
          a.id, a.source, a.source_id, a.type, a.severity,
-         a.message, a.suggestion, a.action, a.created_at
+         a.message, a.suggestion, a.action, a.created_at,
+         r.response AS user_response
        FROM app_alerts a
        LEFT JOIN app_alert_dismissals d
          ON d.alert_id = a.id AND d.user_id = ?
+       LEFT JOIN app_alert_responses r
+         ON r.alert_id = a.id AND r.user_id = ?
        WHERE (a.auto_resolved = 0 OR a.auto_resolved IS NULL)
          AND d.id IS NULL
        ORDER BY a.created_at DESC
        LIMIT 50`,
-      [userId]
+      [userId, userId]
     );
     return rows;
   }
@@ -141,6 +185,50 @@ class AlertService {
           AND (auto_resolved = 0 OR auto_resolved IS NULL)`,
       [source, `${typePrefix}%`]
     );
+  }
+
+  // ── Confirm / decline ───────────────────────────────────────────────────────
+
+  async _ensureResponseTable() {
+    if (this._responseTableReady) return;
+    await db.pool.query(`
+      CREATE TABLE IF NOT EXISTS app_alert_responses (
+        alert_id     INTEGER NOT NULL,
+        user_id      INTEGER NOT NULL,
+        response     TEXT    NOT NULL CHECK (response IN ('confirmed', 'declined')),
+        responded_at TEXT    NOT NULL DEFAULT (datetime('now')),
+        PRIMARY KEY (alert_id, user_id)
+      )
+    `);
+    this._responseTableReady = true;
+  }
+
+  async respond(alertId, userId, response) {
+    if (response !== 'confirmed' && response !== 'declined') {
+      throw new Error(`Invalid response '${response}' — must be 'confirmed' or 'declined'`);
+    }
+    await this._ensureResponseTable();
+    await db.pool.query(
+      `INSERT INTO app_alert_responses (alert_id, user_id, response, responded_at)
+       VALUES (?, ?, ?, datetime('now'))
+       ON CONFLICT(alert_id, user_id) DO UPDATE SET
+         response     = excluded.response,
+         responded_at = excluded.responded_at`,
+      [alertId, userId, response]
+    );
+    console.log(`   • AlertService - alert #${alertId} ${response} by user ${userId}`);
+  }
+
+  async getResponse(alertId) {
+    await this._ensureResponseTable();
+    const [rows] = await db.pool.query(
+      `SELECT response FROM app_alert_responses
+        WHERE alert_id = ?
+        ORDER BY responded_at DESC
+        LIMIT 1`,
+      [alertId]
+    );
+    return rows[0]?.response ?? null;
   }
 }
 

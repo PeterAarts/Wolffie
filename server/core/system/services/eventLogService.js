@@ -192,7 +192,7 @@ class EventLogService {
 
     // Validate severity
     if (SEVERITY_LEVELS[severity] === undefined) {
-      console.warn(`   • ${PREFIX} — invalid severity '${severity}', defaulting to 'info'`);
+      console.warn(`   • ${PREFIX} - invalid severity '${severity}', defaulting to 'info'`);
       severity = 'info';
     }
 
@@ -203,7 +203,7 @@ class EventLogService {
 
     // Validate category — warn but don't reject (extensible)
     if (!VALID_CATEGORIES.has(category)) {
-      console.warn(`   • ${PREFIX} — unknown category '${category}' (allowed but consider adding to VALID_CATEGORIES)`);
+      console.warn(`   • ${PREFIX} - unknown category '${category}' (allowed but consider adding to VALID_CATEGORIES)`);
     }
 
     try {
@@ -219,7 +219,7 @@ class EventLogService {
       const sevTag = severity.toUpperCase().padEnd(8);
       const isAlert = SEVERITY_LEVELS[severity] >= SEVERITY_LEVELS[this._alertThreshold];
       const alertFlag = isAlert ? ' 🔔' : '';
-      console.log(`   • ${PREFIX} [${sevTag}] ${source}/${event} — ${message}${alertFlag}`);
+      console.log(`   • ${PREFIX} - ${sevTag} ${source}/${event} — ${message}${alertFlag}`);
 
       return result.insertId ?? null;
     } catch (err) {
@@ -248,7 +248,7 @@ class EventLogService {
       );
       return (result.affectedRows ?? 0) > 0;
     } catch (err) {
-      console.error(`   • ${PREFIX} — resolve(${id}) failed: ${err.message}`);
+      console.error(`   • ${PREFIX} - resolve(${id}) failed: ${err.message}`);
       return false;
     }
   }
@@ -278,7 +278,7 @@ class EventLogService {
       const [result] = await db.pool.query(sql, params);
       return result.affectedRows ?? 0;
     } catch (err) {
-      console.error(`   • ${PREFIX} — resolveBySource(${source}) failed: ${err.message}`);
+      console.error(`   • ${PREFIX} - resolveBySource(${source}) failed: ${err.message}`);
       return 0;
     }
   }
@@ -301,7 +301,7 @@ class EventLogService {
       );
       return result.affectedRows ?? 0;
     } catch (err) {
-      console.error(`   • ${PREFIX} — resolveByCategory(${category}) failed: ${err.message}`);
+      console.error(`   • ${PREFIX} - resolveByCategory(${category}) failed: ${err.message}`);
       return 0;
     }
   }
@@ -339,7 +339,7 @@ class EventLogService {
           metadata: r.metadata ? JSON.parse(r.metadata) : null,
         }));
     } catch (err) {
-      console.error(`   • ${PREFIX} — getActive failed: ${err.message}`);
+      console.error(`   • ${PREFIX} - getActive failed: ${err.message}`);
       return [];
     }
   }
@@ -422,7 +422,7 @@ class EventLogService {
 
       return { events, total, limit: safeLimit, offset: safeOffset };
     } catch (err) {
-      console.error(`   • ${PREFIX} — getHistory failed: ${err.message}`);
+      console.error(`   • ${PREFIX} - getHistory failed: ${err.message}`);
       return { events: [], total: 0, limit: safeLimit, offset: safeOffset };
     }
   }
@@ -452,11 +452,11 @@ class EventLogService {
 
       const deleted = result.affectedRows ?? 0;
       if (deleted > 0) {
-        console.log(`   • ${PREFIX} — pruned ${deleted} events older than ${days} days`);
+        console.log(`   • ${PREFIX} - pruned ${deleted} events older than ${days} days`);
       }
       return deleted;
     } catch (err) {
-      console.error(`   • ${PREFIX} — prune failed: ${err.message}`);
+      console.error(`   • ${PREFIX} - prune failed: ${err.message}`);
       return 0;
     }
   }

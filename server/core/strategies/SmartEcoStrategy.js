@@ -75,6 +75,22 @@ class SmartEcoStrategy {
   }
 
   /**
+   * Expected load (W) for a given hour, from the same nightlyProfile used
+   * internally by decide()/generateFullDayPlan(). Read-only — does not
+   * affect either of those methods. Exposed so strategyManager's
+   * load-anomaly detector can know what "average" means right now without
+   * reaching into the underscore-prefixed _getProfile() directly.
+   *
+   * @param {object} config        - strategy config (same shape decide() receives)
+   * @param {number} [hour]        - 0-23, defaults to the current local hour
+   * @returns {number|null}        - expected watts for that hour, or null if unavailable
+   */
+  getExpectedLoadW(config, hour = new Date().getHours()) {
+    const profile = this._getProfile(config);
+    return profile.hourlyLoadProfile[hour % 24] ?? null;
+  }
+
+  /**
    * Compute an hourly load profile (24 × watts) from recent history.
    *
    * `load_power` in `energy_snapshots` is 100% NULL in this deployment — no
@@ -261,15 +277,15 @@ class SmartEcoStrategy {
   async decide(context, config) {
     const {
       batteryCapacityKwh       = 11.2,
-      minSocPct                = 20,
+      minSocPct                = 40,
       chargePowerWatts         = 3000,
-      negativePriceThreshold   = 0,
+      negativePriceThreshold   = -8,
       solarSurplusThresholdKwh = 5,
       dischargeFloorCt         = 5.0,
       curtailmentSocTrigger    = 90,    // kept for alert only — curtailment trigger is soc >= 100
       curtailmentPricePercentile = 20,
       curtailmentSocStep         = 5,
-      curtailmentLookaheadHours  = 2,
+      curtailmentLookaheadHours  = 6,
       dischargePercentile        = 90,
       dischargeLookaheadHours    = 2,
       dischargeSocMinPct         = 95,
@@ -316,6 +332,7 @@ class SmartEcoStrategy {
             type:       `solar_curtailment_risk_${socBracket}`,
             severity:   'warning',
             message:    `Battery at ${soc}% with solar incoming and low prices (${currentPrice.toFixed(1)}ct ≤ ${curtailmentPricePercentile}th percentile). Consider running high-load appliances now.`,
+            summary:    `Battery ${soc}% full, cheap solar incoming — good time to run high-load appliances.`,
             suggestion: `Solar will arrive soon but the battery is already ${soc}% full. Run dishwasher, washing machine, or EV charger now to use this cheap/free energy before it cannot be stored.`,
             action:     'USE_HIGH_LOAD',
           },
@@ -363,6 +380,7 @@ class SmartEcoStrategy {
             type:       'negative_price_curtail',
             severity:   'info',
             message:    `Battery full at ${soc}% and prices are negative (${currentPrice.toFixed(1)}ct). Solar export stopped.`,
+            summary:    'Battery full — solar export paused during negative prices.',
             suggestion: `Solar will resume automatically when price recovers or battery discharges.`,
             action:     'SOLAR_CURTAILED',
           },
@@ -381,13 +399,99 @@ class SmartEcoStrategy {
     // Note: actual curtailment restore is handled by _evaluateCurtailment()
     // in strategyManager. decide() does not need to send CURTAIL_SOLAR = false.
 
+    // ── Scenario 1.7: Overnight solar-headroom discharge ─────────────────────
+    // Battery capacity < daily solar production → battery WILL overflow.
+    // Sitting at high SoC overnight means hitting 100% by mid-morning and
+    // exporting excess solar at cheap/negative prices.
+    // Better: discharge at the best overnight prices, arrive near minSocPct
+    // when solar starts, absorb maximum solar for free.
+    //
+    // Price selection:
+    //   - Compare against prices from 00:00 to solarStartHour
+    //   - Current price must be >= 30th percentile of that window
+    //   - Discharge at the highest-priced hours (top N needed to drain)
+    //   - Also respect dischargeFloorCt as absolute minimum price
+    const isNight = hour >= 20 || hour < profile.solarStartHour;
+    if (isNight && isStrongSolar && soc > minSocPct + 5) {
+      const roomKwh = batteryCapacityKwh - currentKwh;
+      const solarWouldOverflow = adjustedSolarKwh > roomKwh * 1.1; // 10% margin
+
+      if (solarWouldOverflow) {
+        // Overnight prices (00:00 to solarStartHour) for percentile calc
+        const overnightPrices = prices
+          .filter(p => p.hour >= 0 && p.hour < profile.solarStartHour && p.price != null);
+
+        if (overnightPrices.length > 0) {
+          // 30th percentile threshold
+          const sortedAsc = overnightPrices.map(p => p.price).sort((a, b) => a - b);
+          const p30idx = Math.min(
+            Math.floor(0.30 * sortedAsc.length),
+            sortedAsc.length - 1
+          );
+          const priceFloor30 = sortedAsc[p30idx];
+
+          // Effective floor: max of percentile threshold and absolute floor
+          const effectiveFloor = Math.max(priceFloor30, dischargeFloorCt);
+
+          // How many hours of discharge needed to reach minSocPct
+          const dischargableKwh = currentKwh - minKwh;
+          const dischargePowerKw = chargePowerWatts / 1000;
+          const hoursNeeded = Math.max(1, Math.ceil(dischargableKwh / dischargePowerKw));
+
+          // Remaining hours from now until solar start (handling midnight wrap)
+          const remainingPrices = prices.filter(p => {
+            if (p.price == null) return false;
+            if (hour >= 20) {
+              // Evening: include tonight (hour..23) + early morning (0..solarStart)
+              return p.hour >= hour || p.hour < profile.solarStartHour;
+            }
+            // Early morning: only hours from now to solarStart
+            return p.hour >= hour && p.hour < profile.solarStartHour;
+          });
+
+          // Best N hours above threshold, sorted by price descending
+          const bestHours = [...remainingPrices]
+            .filter(p => p.price >= effectiveFloor)
+            .sort((a, b) => b.price - a.price)
+            .slice(0, hoursNeeded)
+            .map(p => p.hour);
+
+          if (bestHours.includes(hour)) {
+            console.log(
+              `   • Strategy [SmartEco]       - Scenario 1.7: overnight discharge at ` +
+              `${currentPrice.toFixed(1)}ct (≥ floor ${effectiveFloor.toFixed(1)}ct, P30=${priceFloor30.toFixed(1)}ct). ` +
+              `SoC ${soc}% → ${minSocPct}%. Solar ${adjustedSolarKwh.toFixed(1)} kWh > room ${roomKwh.toFixed(1)} kWh. ` +
+              `Best hours: [${bestHours.join(', ')}], hoursNeeded: ${hoursNeeded}`
+            );
+            return {
+              action:        'DISCHARGE_TO_GRID',
+              reason:        `Overnight solar-headroom: selling at ${currentPrice.toFixed(1)}ct ` +
+                             `(≥ 30th pct ${priceFloor30.toFixed(1)}ct, floor ${dischargeFloorCt}ct). ` +
+                             `Solar forecast ${adjustedSolarKwh.toFixed(1)} kWh would overflow ` +
+                             `${roomKwh.toFixed(1)} kWh room. Discharging to ${minSocPct}% for solar absorption.`,
+              power:         chargePowerWatts,
+              targetSoc:     minSocPct,
+              durationHours: 1,
+              ...curtailmentAlert,
+            };
+          } else {
+            console.log(
+              `   • Strategy [SmartEco]       - Scenario 1.7: waiting — h${hour} ` +
+              `(${currentPrice.toFixed(1)}ct) not in best hours [${bestHours.join(', ')}]. ` +
+              `Floor=${effectiveFloor.toFixed(1)}ct (P30=${priceFloor30.toFixed(1)}ct, abs=${dischargeFloorCt}ct)`
+            );
+          }
+        }
+      }
+    }
+
     // ── Scenario 1.5: Strong solar forecast — set charge limit ───────────────
     // When solar is expected to be strong tomorrow, cap the battery SoC now
     // so there is room to absorb solar production without forced export.
     // Uses Charge Cut SoC register (0x0855) — inverter enforces natively.
     // Only fires at night (after solar has stopped) to avoid interfering with
     // daytime solar charging.
-    const isNight = hour >= 20 || hour < profile.solarStartHour;
+    // Note: isNight already declared above for Scenario 1.7.
     if (isNight && isStrongSolar) {
       const targetSoC = this._calcChargeLimitSoC(
         adjustedSolarKwh,
@@ -448,6 +552,28 @@ class SmartEcoStrategy {
       }
     }
 
+    // ── Scenario 2.7: Solar hours + strong forecast → IDLE ─────────────────
+    // The gap calculation below uses hoursUntilSolar, which wraps around to
+    // TOMORROW's solar start during daytime (e.g. at 11:00 with solarStartHour=6,
+    // hoursUntilSolar = 19h → phantom 8-10 kWh gap → unwanted grid charge).
+    // During active solar hours with a strong forecast, solar is already
+    // filling the battery — no grid charging needed. The day plan (slot-by-slot
+    // simulation) governs daytime dispatch decisions.
+    const isSolarHours = hour >= profile.solarStartHour && hour < 20;
+    if (isSolarHours && isStrongSolar) {
+      console.log(
+        `   • Strategy [SmartEco]       - Scenario 2.7: solar hours (h${hour}) ` +
+        `with strong forecast (${adjustedSolarKwh.toFixed(1)} kWh remaining). ` +
+        `SoC ${soc}%. Staying IDLE — no grid charge during daylight.`
+      );
+      return {
+        action: 'IDLE',
+        reason: `Solar hours with strong forecast (${adjustedSolarKwh.toFixed(1)} kWh remaining). ` +
+                `Battery at ${soc}% — solar filling naturally. No grid charging during daylight.`,
+        ...curtailmentAlert,
+      };
+    }
+
     // ── Scenario 3: No morning gap — solar will cover it ─────────────────────
     if (gapKwh === 0) {
       return {
@@ -500,6 +626,13 @@ class SmartEcoStrategy {
 
     // ── Scenario 7: Large gap, no good price window, no solar — charge anyway ─
     if (gapKwh >= 2) {
+      console.log(
+        `   • Strategy [SmartEco]       - Scenario 7 firing: gap=${gapKwh.toFixed(1)} kWh, ` +
+        `hoursUntilSolar=${hoursUntilSolar}, energyNeeded=${energyNeededKwh.toFixed(1)} kWh, ` +
+        `usable=${usableKwh.toFixed(1)} kWh, soc=${soc}%, price=${currentPrice}ct, ` +
+        `hour=${hour}, solarStartHour=${profile.solarStartHour}, ` +
+        `adjustedSolar=${adjustedSolarKwh.toFixed(1)} kWh, isStrongSolar=${isStrongSolar}`
+      );
       const chargeKw      = chargePowerWatts / 1000;
       const durationHours = Math.max(1, Math.ceil(gapKwh / chargeKw));
       const targetSoc     = Math.min(
@@ -568,9 +701,9 @@ class SmartEcoStrategy {
   async generateFullDayPlan(context, config) {
     const {
       batteryCapacityKwh       = 11.2,
-      minSocPct                = 20,
+      minSocPct                = 40,
       chargePowerWatts         = 3000,
-      negativePriceThreshold   = 0,
+      negativePriceThreshold   = -8,
       solarSurplusThresholdKwh = 5,
       dischargeFloorCt         = 5.0,
       dischargePercentile      = 80,

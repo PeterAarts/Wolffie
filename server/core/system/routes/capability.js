@@ -201,6 +201,97 @@ router.get('/solar/forecast', (req, res) =>
   dispatch('solar:forecast', req, res)
 );
 
+/**
+ * GET /api/capability/solar/curtail/status
+ * Current curtailment state (active, targetWatts, verifiedPct, remainingSeconds).
+ * Lightweight — backed by in-memory state, no hardware I/O.
+ *
+ * Declared BEFORE the POST /solar/curtail route for readability only; Express
+ * matches on method + path so ordering is not significant here.
+ */
+router.get('/solar/curtail/status', (req, res) =>
+  dispatch('solar:curtail-status', req, res)
+);
+
+/**
+ * POST /api/capability/solar/curtail
+ * Request a production cap on the solar inverter.
+ * Body: { watts: number, durationHours?: number, source?: string }
+ *
+ * The provider records the request and applies it on its next collection
+ * cycle (~20s) — it deliberately does not open its own connection to the
+ * inverter. A 202-style "accepted, applying shortly" is the honest reading
+ * of the response, but 200 is kept for consistency with the battery routes.
+ */
+router.post('/solar/curtail', async (req, res) => {
+  const type = 'solar:curtail';
+  const handler = registry.get(type);
+  if (!handler) {
+    return res.status(503).json({
+      error: 'capability_unavailable', capability: type,
+      message: `No module currently provides '${type}'. Enable the required module in Settings.`,
+    });
+  }
+
+  try {
+    // Force the curtail flag on this route regardless of body shape, so a
+    // malformed body can never turn a curtail request into a release.
+    const body = { ...req.body, curtail: true, source: req.body?.source ?? 'manual' };
+
+    const raw    = await handler(body, req);
+    const result = normalize(type, raw);
+
+    await eventLog.resolveByCategory('curtailment');
+    await eventLog.log('manual:api', 'curtailment', 'curtail_started', 'notice',
+      `Solar curtailment requested at ${req.body?.watts ?? '?'}W` +
+      (req.body?.durationHours ? ` for ${req.body.durationHours}h` : ' (no expiry)'),
+      { watts: req.body?.watts, durationHours: req.body?.durationHours, source: body.source });
+
+    res.json(result ?? { success: true });
+  } catch (e) {
+    console.error(`[CapabilityRouter] Error executing '${type}':`, e.message);
+    await eventLog.log('manual:api', 'curtailment', 'curtail_failed', 'error',
+      `Solar curtailment failed: ${e.message}`, { watts: req.body?.watts });
+    res.status(500).json({ error: 'capability_error', capability: type, message: e.message });
+  }
+});
+
+/**
+ * POST /api/capability/solar/curtail/stop
+ * Release any active curtailment. The provider writes 100% on its next cycle.
+ *
+ * Note: even if this call fails, the inverter's own command-timeout watchdog
+ * restores production on its own. This route is the fast path, not the only
+ * safety net.
+ */
+router.post('/solar/curtail/stop', async (req, res) => {
+  const type = 'solar:curtail';
+  const handler = registry.get(type);
+  if (!handler) {
+    return res.status(503).json({
+      error: 'capability_unavailable', capability: type,
+      message: `No module currently provides '${type}'. Enable the required module in Settings.`,
+    });
+  }
+
+  try {
+    const raw    = await handler({ curtail: false, source: req.body?.source ?? 'manual' }, req);
+    const result = normalize(type, raw);
+
+    const resolved = await eventLog.resolveByCategory('curtailment');
+    await eventLog.log('manual:api', 'curtailment', 'curtail_stopped', 'info',
+      'Solar curtailment released — inverter returning to full output',
+      { resolvedEvents: resolved });
+
+    res.json(result ?? { success: true });
+  } catch (e) {
+    console.error(`[CapabilityRouter] Error executing '${type}' (stop):`, e.message);
+    await eventLog.log('manual:api', 'curtailment', 'curtail_stop_failed', 'error',
+      `Solar curtailment stop failed: ${e.message}`);
+    res.status(500).json({ error: 'capability_error', capability: type, message: e.message });
+  }
+});
+
 // ─── Grid ──────────────────────────────────────────────────────────────────
 
 /**

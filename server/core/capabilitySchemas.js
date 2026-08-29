@@ -90,6 +90,33 @@ const schemas = {
   'battery:set-charge-limit': { success: null, chargeLimitPct: null },
   'grid:status': { gridConnected: null, mode: null },
   'solar:curtail': null,  // passthrough
+
+  // ── Solar curtailment state ───────────────────────────────────────────────
+  // Mirrors battery:status — in-memory, no hardware I/O on read.
+  //
+  // targetPct   is what Wolffie asked the inverter for.
+  // verifiedPct is what the inverter confirmed on read-back.
+  // When those disagree, or failedWrites > 0, `degraded` is true and the UI
+  // must say so rather than showing a calm "curtailing" state over a write
+  // path that is not actually working.
+  'solar:curtail-status': {
+    active:                false,
+    targetWatts:           null,   // W   requested cap
+    targetPct:             null,   // %   that cap as % of baseLimitW
+    verifiedPct:           null,   // %   read back from the inverter
+    remainingSeconds:      null,   // s   null = no expiry set
+    expiresAt:             null,   // ISO
+    requestedAt:           null,   // ISO
+    source:                null,   // 'manual' | 'strategy:smart-eco' | ...
+    lastAppliedAt:         null,   // ISO  last successful write + read-back
+    lastError:             null,
+    failedWrites:          0,
+    baseLimitW:            null,   // W   inverter's active power limit base
+    commandTimeoutS:       null,   // s   inverter watchdog timeout
+    fallbackPct:           null,   // %   what it reverts to on timeout
+    dynamicControlEnabled: null,   // bool
+    degraded:              false,
+  },
   'smartdevice:read':   null,   // passthrough — define shape later
   'smartdevice:status': null,
   'smartdevice:write':  null,
