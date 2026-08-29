@@ -12,15 +12,17 @@ export default defineConfig({
     vue(),
     tailwindcss(),
     VitePWA({
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.js',
       registerType: 'autoUpdate',
-      workbox: {
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallbackDenylist: [/^\/api/],
       },
       includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
       manifest: {
         name: 'Wolffie Energy Manager',
-        start_url: 'https://wolffie.lan/',
+        start_url: '/',
         short_name: 'Wolffie',
         description: 'your Watts OnLine/oFFline Energy management system',
         theme_color: '#ffffff',
@@ -40,14 +42,10 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
       '@fortawesome': path.resolve(__dirname, 'node_modules/@fortawesome'),
-      // Force the full vue-i18n build (runtime + compiler) in production.
-      // Without this, Vite bundles the runtime-only build which cannot
-      // compile message templates containing {placeholders} at runtime.
       'vue-i18n': 'vue-i18n/dist/vue-i18n.cjs.js',
     },
   },
 
-  // Dev server only — Apache proxy handles this in production
   server: {
     port: 5173,
     proxy: {
@@ -63,6 +61,8 @@ export default defineConfig({
   },
 
   build: {
+    outDir: 'w:/_wolffie/my-app/dist',
+    emptyOutDir: true,
     rollupOptions: {
       output: {
         entryFileNames: `assets/[name]-${timestamp}.js`,
