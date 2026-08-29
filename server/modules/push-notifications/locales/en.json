@@ -1,0 +1,31 @@
+{
+  "modules": {
+    "pushNotifications": {
+      "groups": {
+        "general": {
+          "title": "Push Notification Settings",
+          "description": "Send a notification to your device's notification tray when Wolffie raises an alert, even when the app is closed"
+        },
+        "status": {
+          "title": "Push Status"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Enable Push Notifications",
+          "description": "Turn on the push-notifications service. Individual devices still need to subscribe separately under General settings → Notifications."
+        },
+        "min_severity": {
+          "label": "Minimum Severity",
+          "description": "Lowest alert severity that triggers a push (info, notice, warning, error, or critical)"
+        }
+      },
+      "status": {
+        "vapidPublicKey": "VAPID Public Key",
+        "subscriptionCount": "Subscribed Devices",
+        "lastSent": "Last Notification Sent",
+        "lastError": "Last Error"
+      }
+    }
+  }
+}

@@ -25,6 +25,10 @@ class HomeWizardCollector {
     // P1 meters report lifetime cumulative kWh, not a daily-resetting counter.
     // Key: device serial or ip_address. Value: { date, import_kwh, export_kwh }
     this._baseline = new Map();
+
+    // In-memory cache of the last P1 reading — served by getLastP1Reading()
+    // so the grid:read capability handler reads from cache, not live HTTP.
+    this._lastP1Data = null;
   }
 
   // ── Public collect entry point ─────────────────────────────────────────────
@@ -169,20 +173,20 @@ class HomeWizardCollector {
 
     // 3. Write P1 snapshot row.
     //
+    //    The P1 meter sits at the utility grid connection point — it is the
+    //    official billing meter. It measures grid import/export, NOT house load.
+    //
     //    Fields this module OWNS:
-    //      load_power             — active_power_w is net house consumption as seen
-    //                               by P1 meter (installed after AlphaESS EPS port).
-    //                               Always stored as positive (consumption only).
-    //      load_energy_today      — daily import kWh delta
-    //      grid_voltage_l1/l2/l3 — AC bus voltage
-    //      grid_current_l1/l2/l3 — AC bus current
-    //      grid_frequency         — AC frequency
+    //      grid_power                 — net grid power (positive = importing)
+    //      grid_energy_import_today   — daily grid import delta (kWh)
+    //      grid_energy_export_today   — daily grid export delta (kWh)
+    //      grid_voltage_l1/l2/l3     — AC bus voltage
+    //      grid_current_l1/l2/l3     — AC bus current
+    //      grid_frequency             — AC frequency
     //
     //    Fields NOT OWNED → NULL:
-    //      grid_power             — P1 is after AlphaESS EPS port; it does NOT see
-    //                               grid import/export. AlphaESS Modbus is authoritative.
-    //      solar_*, battery_*     — not measured by P1.
-    //      grid_energy_import/export_today — not reliable from this meter position.
+    //      solar_*, battery_*         — not measured by P1
+    //      load_power, load_energy_today — derived by wolffie-core
     await db.pool.query(
       `INSERT INTO energy_snapshots (
         timestamp, source, device_id,
@@ -198,15 +202,16 @@ class HomeWizardCollector {
         battery_charge_today, battery_discharge_today
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(timestamp, source) DO UPDATE SET
-        load_power               = excluded.load_power,
-        load_energy_today        = excluded.load_energy_today,
-        grid_voltage_l1          = excluded.grid_voltage_l1,
-        grid_voltage_l2          = excluded.grid_voltage_l2,
-        grid_voltage_l3          = excluded.grid_voltage_l3,
-        grid_current_l1          = excluded.grid_current_l1,
-        grid_current_l2          = excluded.grid_current_l2,
-        grid_current_l3          = excluded.grid_current_l3,
-        grid_frequency           = excluded.grid_frequency`,
+        grid_power                = excluded.grid_power,
+        grid_energy_import_today  = excluded.grid_energy_import_today,
+        grid_energy_export_today  = excluded.grid_energy_export_today,
+        grid_voltage_l1           = excluded.grid_voltage_l1,
+        grid_voltage_l2           = excluded.grid_voltage_l2,
+        grid_voltage_l3           = excluded.grid_voltage_l3,
+        grid_current_l1           = excluded.grid_current_l1,
+        grid_current_l2           = excluded.grid_current_l2,
+        grid_current_l3           = excluded.grid_current_l3,
+        grid_frequency            = excluded.grid_frequency`,
       [
         localNow,
         MODULE_SOURCE,
@@ -219,8 +224,8 @@ class HomeWizardCollector {
         null,           // battery_voltage
         null,           // battery_current
         null,           // battery_temp
-        null,           // grid_power — AlphaESS Modbus is authoritative
-        // ── OWNED ─────────────────────────────────────────────────────────────
+        // ── OWNED — grid (P1 at utility meter) ───────────────────────────────
+        gridPower,      // grid_power — positive = importing (P1 native convention)
         data.active_voltage_l1_v ?? data.active_voltage_v ?? null,
         data.active_voltage_l2_v ?? null,
         data.active_voltage_l3_v ?? null,
@@ -228,12 +233,11 @@ class HomeWizardCollector {
         data.active_current_l2_a ?? null,
         data.active_current_l3_a ?? null,
         data.active_frequency_hz ?? null,
-        // ── NOT OWNED → NULL ──────────────────────────────────────────────────
-        null,           // grid_energy_import_today
-        null,           // grid_energy_export_today
-        // ── OWNED ─────────────────────────────────────────────────────────────
-        gridPower !== null ? Math.abs(gridPower) : null,  // load_power — always positive
-        importToday,    // load_energy_today
+        importToday,    // grid_energy_import_today
+        exportToday,    // grid_energy_export_today
+        // ── NOT OWNED → NULL — derived by wolffie-core ────────────────────────
+        null,           // load_power
+        null,           // load_energy_today
         // ── NOT OWNED → NULL ──────────────────────────────────────────────────
         null,           // inverter_temp
         null,           // inverter_power
@@ -241,6 +245,31 @@ class HomeWizardCollector {
         null,           // battery_discharge_today
       ]
     );
+
+    // 4. Cache the P1 reading for the grid:read capability handler
+    const p_l1 = data.active_power_l1_w ?? 0;
+    const p_l2 = data.active_power_l2_w ?? 0;
+    const p_l3 = data.active_power_l3_w ?? 0;
+    const hasPhaseData = data.active_power_l1_w != null
+                      || data.active_power_l2_w != null
+                      || data.active_power_l3_w != null;
+
+    this._lastP1Data = {
+      power:        hasPhaseData ? p_l1 + p_l2 + p_l3 : (data.active_power_w ?? null),
+      power_l1:     data.active_power_l1_w   ?? null,
+      power_l2:     data.active_power_l2_w   ?? null,
+      power_l3:     data.active_power_l3_w   ?? null,
+      voltage_l1:   data.active_voltage_l1_v ?? null,
+      voltage_l2:   data.active_voltage_l2_v ?? null,
+      voltage_l3:   data.active_voltage_l3_v ?? null,
+      current_l1:   data.active_current_l1_a ?? null,
+      current_l2:   data.active_current_l2_a ?? null,
+      current_l3:   data.active_current_l3_a ?? null,
+      frequency:    data.active_frequency_hz ?? null,
+      import_today: importToday,
+      export_today: exportToday,
+      timestamp:    localNow,
+    };
   }
 
   // ── Daily delta calculation ────────────────────────────────────────────────
@@ -349,6 +378,11 @@ class HomeWizardCollector {
       lastError:         this.lastError,
       consecutiveErrors: this.consecutiveErrors,
     };
+  }
+
+  /** Last P1 meter reading for the grid:read capability handler. */
+  getLastP1Reading() {
+    return this._lastP1Data;
   }
 }
 

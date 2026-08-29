@@ -1,0 +1,31 @@
+{
+  "modules": {
+    "pushNotifications": {
+      "groups": {
+        "general": {
+          "title": "Push-Benachrichtigungseinstellungen",
+          "description": "Sende eine Benachrichtigung an die Benachrichtigungsleiste deines Geräts, wenn Wolffie eine Warnung auslöst, auch wenn die App geschlossen ist"
+        },
+        "status": {
+          "title": "Push-Status"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Push-Benachrichtigungen aktivieren",
+          "description": "Aktiviert den Push-Benachrichtigungsdienst. Einzelne Geräte müssen sich zusätzlich unter Allgemein → Benachrichtigungen anmelden."
+        },
+        "min_severity": {
+          "label": "Mindestschweregrad",
+          "description": "Niedrigster Schweregrad, der eine Push-Benachrichtigung auslöst (info, notice, warning, error oder critical)"
+        }
+      },
+      "status": {
+        "vapidPublicKey": "VAPID-öffentlicher Schlüssel",
+        "subscriptionCount": "Abonnierte Geräte",
+        "lastSent": "Zuletzt gesendete Benachrichtigung",
+        "lastError": "Letzter Fehler"
+      }
+    }
+  }
+}

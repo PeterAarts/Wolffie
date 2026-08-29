@@ -6,8 +6,6 @@ import collector from './services/collector.js';
 import routes from './routes/index.js';
 import settingsService from '../../core/system/services/settingsService.js';
 import capabilityRegistry from '../../core/capabilityRegistry.js';
-import homewizardAPI from './services/api.js';
-import db from '../../core/database.js';
 import { padName } from '../../core/utils/logger.js';
 const PREFIX = padName('HomeWizard');
 
@@ -109,90 +107,34 @@ class HomeWizardModule {
 
   _registerCapabilities() {
 
-    // ── grid:read via HWE-P1 ──────────────────────────────────────────────────
+    // ── grid:read via P1 meter cache ─────────────────────────────────────────
     //
-    // Live power values (power, power_l1/2/3, voltage, current, frequency) are
-    // fetched directly from the P1 device for real-time accuracy.
+    // Reads from the collector's in-memory cache (refreshed every collection
+    // cycle). No live HTTP calls — fast, non-blocking, at most one cycle old.
     //
-    // import_today / export_today are read from the most recent energy_snapshots
-    // row for source = 'homewizard' — the collector already applies a midnight
-    // baseline delta there, converting lifetime cumulative kWh into today's value.
-    // Reading the raw device totals here would return lifetime values (~16000 kWh)
-    // which break the derived load_energy_today calculation in collectorManager.
+    // The P1 meter sits at the utility grid connection point and measures
+    // official grid import/export. Sign convention: positive = importing.
 
     capabilityRegistry.register(
       'grid:read',
       async () => {
-        // ── Live device query — real-time power values ─────────────────────
-        const [deviceRows] = await db.pool.query(
-          `SELECT * FROM device_settings
-            WHERE module       = 'homewizard'
-              AND product_type = 'HWE-P1'
-              AND enabled      = 1
-            ORDER BY priority DESC
-            LIMIT 1`
-        );
-
-        if (!deviceRows.length) throw new Error('No enabled HWE-P1 device found');
-
-        const device = deviceRows[0];
-        const d      = await homewizardAPI.getData(device.ip_address, device.port || 80);
-
-        const p_l1 = d.active_power_l1_w ?? 0;
-        const p_l2 = d.active_power_l2_w ?? 0;
-        const p_l3 = d.active_power_l3_w ?? 0;
-        const hasPhaseData = d.active_power_l1_w != null
-                          || d.active_power_l2_w != null
-                          || d.active_power_l3_w != null;
-
-        // ── Daily totals — from energy_snapshots baseline delta ────────────
-        // The homewizard collector writes correctly computed daily deltas to
-        // energy_snapshots. Reading from there avoids returning lifetime totals.
-        let importToday = null;
-        let exportToday = null;
-
-        try {
-          const [snapRows] = await db.pool.query(
-            `SELECT grid_energy_import_today, grid_energy_export_today
-               FROM energy_snapshots
-              WHERE source = 'homewizard'
-              ORDER BY timestamp DESC
-              LIMIT 1`
-          );
-          if (snapRows.length) {
-            importToday = snapRows[0].grid_energy_import_today ?? null;
-            exportToday = snapRows[0].grid_energy_export_today ?? null;
-          }
-        } catch (snapErr) {
-          console.warn(`   • ${PREFIX} grid:read: could not read daily totals from snapshot — ${snapErr.message}`);
-        }
+        const d = collector.getLastP1Reading();
+        if (!d) throw new Error('No P1 data available yet — collector has not run');
 
         return {
-          // Netto totaal — som van de drie fases (+ = import, - = export)
-          power:        hasPhaseData ? p_l1 + p_l2 + p_l3
-                                     : (d.active_power_w ?? null),
-
-          // Per fase
-          power_l1:     d.active_power_l1_w   ?? null,  // W
-          power_l2:     d.active_power_l2_w   ?? null,  // W
-          power_l3:     d.active_power_l3_w   ?? null,  // W
-
-          // Spanning
-          voltage_l1:   d.active_voltage_l1_v ?? null,  // V
-          voltage_l2:   d.active_voltage_l2_v ?? null,  // V
-          voltage_l3:   d.active_voltage_l3_v ?? null,  // V
-
-          // Stroom
-          current_l1:   d.active_current_l1_a ?? null,  // A
-          current_l2:   d.active_current_l2_a ?? null,  // A
-          current_l3:   d.active_current_l3_a ?? null,  // A
-
-          // Frequentie
-          frequency:    d.active_frequency_hz ?? null,  // Hz
-
-          // Daily deltas — from energy_snapshots, not raw device lifetime totals
-          import_today: importToday,  // kWh
-          export_today: exportToday,  // kWh
+          power:        d.power,
+          power_l1:     d.power_l1,
+          power_l2:     d.power_l2,
+          power_l3:     d.power_l3,
+          voltage_l1:   d.voltage_l1,
+          voltage_l2:   d.voltage_l2,
+          voltage_l3:   d.voltage_l3,
+          current_l1:   d.current_l1,
+          current_l2:   d.current_l2,
+          current_l3:   d.current_l3,
+          frequency:    d.frequency,
+          import_today: d.import_today,
+          export_today: d.export_today,
         };
       },
       PRIORITY,

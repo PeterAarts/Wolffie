@@ -1,7 +1,7 @@
 {
   "id": "homewizard",
   "name": "HomeWizard Energy",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "HomeWizard P1 Meter and Energy Socket integration",
   "author": "wolffie",
   "type": "data-collector",
@@ -47,6 +47,14 @@
   },
 
   "changelog": [
+   {
+      "version": "1.0.9",
+      "date": "2026-06-08",
+      "author": "wolffie",
+      "changes": [
+        "Fixed grid:read capability returning lifetime cumulative kWh for import_today/export_today"
+      ]
+    },
     {
       "version": "1.0.8",
       "date": "2026-05-04",

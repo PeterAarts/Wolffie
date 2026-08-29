@@ -1,6 +1,7 @@
 // modules/alphaess-modbus-tcp/services/collector.js
 import db from '../../../core/database.js';
 import api from './api.js';
+import capabilityRegistry from '../../../core/capabilityRegistry.js';
 import alertService from '../../../core/system/services/alertService.js';
 import eventService from '../../../core/system/services/eventService.js';
 import { localTimestamp } from '../../../core/utils/localTimestamp.js';
@@ -8,11 +9,27 @@ import { padName } from '../../../core/utils/logger.js';
 const PREFIX = padName('AlphaESS ModBus');
 
 /**
- * Wolffie AlphaESS ModBus Collector - v6.14
+ * Wolffie AlphaESS ModBus Collector - v6.16
  * Bridge between SMILE G3-T10 hardware and energy_snapshots SQL table.
  * Fully aligned with the 30-column schema and Cloud collector pattern.
  *
  * Config/connection is owned by index.js — collector uses api directly.
+ *
+ * v6.16: battery_voltage, battery_current and battery_temp are now STORED.
+ *   Registers 0x0100 / 0x0101 / 0x0110 were never read before v1.1.7 of api.js —
+ *   the previous header comment claiming they are "not exposed via TCP" was wrong.
+ *   battery_current is signed: negative = charging (hardware-verified 2026-08-25).
+ *   battery_temp holds the MAX cell temperature, not an average — the peak is what
+ *   drives degradation, and averaging min/max would hide it. Any aggregation over
+ *   this column must preserve MAX rather than AVG or the long-term signal is lost.
+ *   battery_soc is no longer rounded — the register gives 0.1 % resolution.
+ *   inverter_power now comes from 0x040C (Inverter_Power_Total) instead of
+ *   m.solar.total_power, which is structurally 0 on this AC-coupled install.
+ *
+ * v6.15: grid_power_source uses capability registry for external reads.
+ *   'internal' = AlphaESS own register, anything else = grid:read capability.
+ *   No hardcoded module names — registry routes to highest-priority provider.
+ *   Legacy values ('p1-meter', 'homewizard-p1') handled as external.
  *
  * v6.14: timestamps now written in local time (CET/CEST without offset marker)
  *   to match alphaess-cloud / homewizard / wolffie-core / solaredge-modbus.
@@ -29,16 +46,23 @@ const PREFIX = padName('AlphaESS ModBus');
  *   AVG() in aggregation queries skips NULLs — prevents cross-source dilution.
  *
  * Fields this module OWNS (real values stored):
- *   battery_power, battery_soc, grid_power, grid_voltage_l1, grid_frequency,
+ *   battery_power, battery_soc, battery_voltage, battery_current, battery_temp,
+ *   grid_power, grid_voltage_l1, grid_frequency,
  *   grid_energy_import_today, grid_energy_export_today,
  *   inverter_temp, inverter_power,
  *   battery_charge_today, battery_discharge_today
  *
- * Fields NOT available via ModBus TCP on G3-T10 → NULL:
+ * Fields deliberately NOT stored by this module → NULL:
  *   solar_power, solar_energy_today   — SolarEdge is authoritative source
  *   load_power, load_energy_today     — derived by wolffie-core (collectorManager)
- *   battery_voltage, battery_current, battery_temp — not exposed via TCP
- *   grid_voltage_l2/l3, grid_current_l1/l2/l3     — single-phase, not exposed
+ *   grid_voltage_l2/l3                — available at 0x0015/0x0016, but HomeWizard
+ *                                       already owns the grid columns
+ *   grid_current_l1/l2/l3             — AlphaESS CTs report MAGNITUDE ONLY (unsigned).
+ *                                       Verified 2026-08-25: 232x1.8 + 230x1.9 +
+ *                                       235x2.2 = 1372 VA against a reported
+ *                                       grid_power of 3 W. Storing them would put
+ *                                       unsigned magnitudes in the same column where
+ *                                       HomeWizard writes correctly signed values.
  */
 class AlphaModbusCollector {
   constructor() {
@@ -104,29 +128,32 @@ class AlphaModbusCollector {
     }
 
     // ── Grid power source ─────────────────────────────────────────────────────
-    const gridPowerSource = this.config?.grid_power_source ?? 'p1-meter';
+    // 'internal' = use AlphaESS's own grid meter register
+    // 'external' = use the grid:read capability from the registry (e.g. P1 meter)
+    // Any unrecognised value (legacy 'p1-meter', 'homewizard-p1') → treat as external
+    const gridPowerSource = this.config?.grid_power_source ?? 'internal';
     let gridPowerDB = null;
 
     if (gridPowerSource === 'internal') {
       // AlphaESS register convention: positive = importing, negative = exporting.
       // No inversion needed — store as-is.
       gridPowerDB = m.grid.total_active_power;
-    } else if (gridPowerSource === 'p1-meter') {
+    } else {
+      // External: use grid:read capability from the registry.
+      // The registry routes to the highest-priority provider automatically.
       try {
-        const [p1Rows] = await db.pool.query(
-          `SELECT grid_power FROM energy_snapshots
-           WHERE source = 'p1-meter'
-           ORDER BY timestamp DESC LIMIT 1`
-        );
-        if (p1Rows.length > 0 && p1Rows[0].grid_power !== null) {
-          gridPowerDB = p1Rows[0].grid_power;
-        } else {
-          gridPowerDB = m.grid.total_active_power;
-          console.warn(`   • ${PREFIX} - grid_power_source=p1-meter but no P1 snapshot found, falling back to internal register`);
+        const gridHandler = capabilityRegistry.get('grid:read');
+        if (gridHandler) {
+          const gridData = await gridHandler({});
+          gridPowerDB = gridData.power ?? null;
         }
       } catch (err) {
+        console.warn(`   • ${PREFIX} - external grid:read failed: ${err.message}`);
+      }
+      // Fallback to internal register if external returned nothing
+      if (gridPowerDB === null) {
         gridPowerDB = m.grid.total_active_power;
-        console.warn(`   • ${PREFIX} - P1 grid power query failed: ${err.message}, falling back to internal register`);
+        console.warn(`   • ${PREFIX} - grid:read capability unavailable, falling back to internal register`);
       }
     }
 
@@ -176,6 +203,31 @@ class AlphaModbusCollector {
     } catch (modeErr) {
       // Non-fatal — don't abort the collection cycle if mode read fails
       console.warn(`   • ${PREFIX} readInverterMode failed: ${modeErr.message}`);
+    }
+
+    // ── Pending dispatch — piggybacks on the already-open connection ──────────
+    // api.runPendingDispatch() writes dispatch registers if a charge/discharge
+    // session is active, or resets to auto if stopDispatch() was called.
+    // No separate connection opened — uses the connection established above.
+    try {
+      const dispatched = await api.runPendingDispatch();
+      if (dispatched) {
+        const d = api.getDispatchStatus();
+        console.log(`   • ${PREFIX} - Dispatch: ${d.status} [origin: ${d.origin}]`);
+      }
+      if (api.getDispatchStatus().status === 'stopping') {
+        const result = api.checkStopConfirmation(m.battery.power, 100);
+        if (result?.timedOut) {
+          await alertService.write('hardware', 'alphaess-modbus-tcp', {
+            type: 'dispatch_stop_unconfirmed', severity: 'error',
+            message: 'Stop command sent but battery power did not settle within 5 minutes. Still retrying.',
+            suggestion: 'Check the inverter directly — dispatch may still be active.',
+            action: '',
+          }, 5); // 5-minute dedup — re-fires every cycle until confirmed, so it can't go silently unnoticed
+        }
+      }
+    } catch (dispErr) {
+      console.warn(`   • ${PREFIX} - runPendingDispatch failed: ${dispErr.message}`);
     }
 
     // ── Store ─────────────────────────────────────────────────────────────────
@@ -249,18 +301,16 @@ class AlphaModbusCollector {
 
         // ── OWNED ─────────────────────────────────────────────────────────────
         m.battery.power,                // battery_power
-        Math.round(m.battery.soc),      // battery_soc
-
-        // ── NOT AVAILABLE via ModBus TCP on G3-T10 → NULL ─────────────────────
-        null,                           // battery_voltage
-        null,                           // battery_current
-        null,                           // battery_temp
+        m.battery.soc,                  // battery_soc      0.1 % resolution — do NOT round
+        m.battery.voltage,              // battery_voltage  0x0100
+        m.battery.current,              // battery_current  0x0101, negative = charging
+        m.battery.temp_max,             // battery_temp     0x0110, MAX cell temp (not avg)
 
         // ── OWNED ─────────────────────────────────────────────────────────────
         gridPowerDB,                    // grid_power
         m.grid.l1_voltage,              // grid_voltage_l1
 
-        // ── NOT AVAILABLE (single-phase, not exposed via TCP) → NULL ──────────
+        // ── DELIBERATELY NOT STORED → NULL (see header) ───────────────────────
         null,                           // grid_voltage_l2
         null,                           // grid_voltage_l3
         null,                           // grid_current_l1
@@ -278,7 +328,7 @@ class AlphaModbusCollector {
 
         // ── OWNED ─────────────────────────────────────────────────────────────
         m.system.inverter_temp,         // inverter_temp
-        m.solar.total_power,            // inverter_power  (AC output of AlphaESS inverter)
+        m.system.inverter_power,        // inverter_power  (0x040C — real AC output)
         m.battery.charge_today,         // battery_charge_today
         m.battery.discharge_today,      // battery_discharge_today
         0.0,                            // trees_equivalent

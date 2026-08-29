@@ -1,0 +1,31 @@
+{
+  "modules": {
+    "pushNotifications": {
+      "groups": {
+        "general": {
+          "title": "Pushmeldingen instellingen",
+          "description": "Stuur een melding naar de meldingenbalk van je apparaat wanneer Wolffie een waarschuwing genereert, ook als de app gesloten is"
+        },
+        "status": {
+          "title": "Pushstatus"
+        }
+      },
+      "fields": {
+        "enabled": {
+          "label": "Pushmeldingen inschakelen",
+          "description": "Schakel de pushmeldingenservice in. Individuele apparaten moeten zich nog apart abonneren via Algemeen → Meldingen."
+        },
+        "min_severity": {
+          "label": "Minimale ernst",
+          "description": "Laagste waarschuwingsniveau dat een pushmelding activeert (info, notice, warning, error of critical)"
+        }
+      },
+      "status": {
+        "vapidPublicKey": "VAPID publieke sleutel",
+        "subscriptionCount": "Geabonneerde apparaten",
+        "lastSent": "Laatst verzonden melding",
+        "lastError": "Laatste fout"
+      }
+    }
+  }
+}

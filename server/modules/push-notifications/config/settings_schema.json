@@ -1,0 +1,49 @@
+{
+  "i18nKeys": true,
+  "groups": [
+    {
+      "title": "modules.pushNotifications.groups.general.title",
+      "description": "modules.pushNotifications.groups.general.description",
+      "sections": [
+        {
+          "fields": [
+            {
+              "key": "enabled",
+              "component": "boolean",
+              "label": "modules.pushNotifications.fields.enabled.label",
+              "description": "modules.pushNotifications.fields.enabled.description",
+              "cols": 6
+            },
+            {
+              "key": "min_severity",
+              "component": "text",
+              "label": "modules.pushNotifications.fields.min_severity.label",
+              "description": "modules.pushNotifications.fields.min_severity.description",
+              "placeholder": "info | notice | warning | error | critical",
+              "default": "info",
+              "cols": 6
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "modules.pushNotifications.groups.status.title",
+      "sections": [
+        {
+          "component": "info-panel",
+          "data": {
+            "endpoint": "/api/push/status",
+            "dynamic": true,
+            "items": [
+              { "label": "modules.pushNotifications.status.vapidPublicKey", "field": "vapidPublicKey" },
+              { "label": "modules.pushNotifications.status.subscriptionCount", "field": "subscriptionCount" },
+              { "label": "modules.pushNotifications.status.lastSent", "field": "lastSent", "template": { "type": "datetime" } },
+              { "label": "modules.pushNotifications.status.lastError", "field": "lastError" }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

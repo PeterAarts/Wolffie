@@ -1,12 +1,13 @@
 // modules/solaredge-modbus/services/collector.js
 import db from '../../../core/database.js';
 import api from './api.js';
+import curtailState from './curtailState.js';
 import { localTimestamp } from '../../../core/utils/localTimestamp.js';
 import { padName } from '../../../core/utils/logger.js';
 const PREFIX = padName('Solar-Edge ModBus');
 
 /**
- * Wolffie SolarEdge ModBus Collector - v2.5
+ * Wolffie SolarEdge ModBus Collector - v2.7
  * Bridge between SolarEdge SE3000H SunSpec inverter and energy_snapshots table.
  *
  * Design principles:
@@ -31,6 +32,36 @@ const PREFIX = padName('Solar-Edge ModBus');
  *
  *   5. All energy_snapshots rows use local time (CET/CEST without offset marker)
  *      to match alphaess-cloud / homewizard / wolffie-core.
+ *
+ *   6. abort() — optional hang-recovery hook for CollectorManager.
+ *      If a cycle's connect()/fetchAll() chain hangs (e.g. the inverter
+ *      accepts a TCP handshake but never replies), CollectorManager's
+ *      per-cycle deadline stops waiting on it and calls abort() here so
+ *      the stuck socket gets force-closed immediately instead of leaking
+ *      until the OS notices. Safe for this module specifically because
+ *      every cycle already opens its own fresh connection (point 1 above).
+ *      An abandoned curtail heartbeat is also safe — see point 7.
+ *
+ *   7. CURTAILMENT HEARTBEAT (new in v2.7).
+ *      The collector is the single writer of the inverter's dynamic power
+ *      limit (0xF322). Capability handlers only record intent in
+ *      curtailState; this is where it reaches hardware, inside the
+ *      connection this collector already owns.
+ *
+ *      Why a heartbeat rather than a one-shot write: 0xF322 is guarded by
+ *      the inverter's own watchdog (0xF310 Command Timeout = 380s,
+ *      0xF312 Fall-back = 100%). If the inverter stops receiving dynamic
+ *      commands it restores full production by itself. That is the
+ *      fail-safe — if Wolffie crashes while solar is curtailed, the
+ *      inverter recovers without us. The cost is that we must keep writing
+ *      for as long as we want the limit to hold.
+ *
+ *      A 20s cycle against a 380s timeout leaves 19 consecutive failed
+ *      cycles of slack, so transient Modbus errors never cause flapping.
+ *
+ *      The write is placed AFTER fetchAll() and BEFORE disconnect(), so a
+ *      curtail failure can never prevent a data collection — monitoring
+ *      keeps working even when control does not.
  */
 class SolarEdgeCollector {
   constructor() {
@@ -93,6 +124,107 @@ class SolarEdgeCollector {
     }
   }
 
+  // ─── Curtailment ───────────────────────────────────────────────────────────
+
+  /**
+   * Reconcile the inverter's dynamic power limit with curtailState.
+   *
+   * Called once per cycle while the connection is open. Never throws — a
+   * control failure must not abort a data collection. Failures are recorded
+   * in curtailState.lastError and logged loudly, because this path fires so
+   * rarely that a silent failure would go unnoticed for months (which is
+   * exactly what happened to the previous implementation).
+   */
+  async _applyCurtailment() {
+    try {
+      // Always refresh the hardware facts. The UI shows these, and reading
+      // them each cycle means the status reflects the inverter rather than
+      // Wolffie's assumptions about it.
+      const pc = await api.readPowerControl();
+
+      curtailState.baseLimitW            = pc.baseLimitW;
+      curtailState.commandTimeoutS       = pc.commandTimeoutS;
+      curtailState.fallbackPct           = pc.fallbackPct;
+      curtailState.dynamicControlEnabled = pc.dynamicControlEnabled;
+      curtailState.verifiedPct           = pc.currentPct;
+
+      // Expire a timed request before deciding what to write.
+      if (curtailState.isExpired()) {
+        console.log(`   • ${PREFIX} - Curtail window elapsed — restoring 100%`);
+        curtailState.release();
+      }
+
+      // Nothing wanted and nothing to undo → leave the inverter alone.
+      if (!curtailState.active && !curtailState.needsRestore) return;
+
+      // ── Guard: dynamic control must be armed ─────────────────────────────
+      // 0xF300 was 1 on this hardware at the time of writing. If it is ever
+      // 0, a write to 0xF322 would be accepted and stored but never acted
+      // on — the failure mode that cost six months last time. Refuse rather
+      // than report success.
+      if (curtailState.active && !pc.dynamicControlEnabled) {
+        throw new Error(
+          'F300 Enable Dynamic Power Control reads 0 — the inverter will store ' +
+          'a limit but not act on it. Refusing to report success.'
+        );
+      }
+
+      if (!(pc.baseLimitW > 0)) {
+        throw new Error(`F30C base limit reads ${pc.baseLimitW} — cannot compute a percentage.`);
+      }
+
+      // Recompute the percentage against the live base rather than the base
+      // captured when the request was made, in case F30C changed.
+      const targetPct = curtailState.active
+        ? Math.max(0, Math.min(100, (curtailState.targetWatts / pc.baseLimitW) * 100))
+        : 100;
+
+      const confirmed = await api.setDynamicActivePowerLimit(targetPct);
+
+      curtailState.targetPct     = curtailState.active ? targetPct : null;
+      curtailState.verifiedPct   = confirmed;
+      curtailState.lastAppliedAt = Date.now();
+      curtailState.lastError     = null;
+
+      if (curtailState.active) {
+        // Only log a transition or a recovery, not every 20s heartbeat —
+        // otherwise a two-hour curtailment writes 360 identical log lines.
+        if (curtailState.failedWrites > 0) {
+          console.log(`   • ${PREFIX} - Curtail heartbeat recovered at ${confirmed.toFixed(2)}%`);
+        }
+        curtailState.failedWrites = 0;
+      } else {
+        curtailState.needsRestore = false;
+        curtailState.failedWrites = 0;
+        console.log(`   • ${PREFIX} - Solar restored to 100% (confirmed ${confirmed.toFixed(2)}%)`);
+      }
+
+    } catch (err) {
+      curtailState.failedWrites++;
+      curtailState.lastError = err.message;
+
+      const timeout = curtailState.commandTimeoutS ?? 380;
+      const interval = (this.config?.poll_interval ?? 20000) / 1000;
+      const cyclesLeft = Math.max(0, Math.floor(timeout / interval) - curtailState.failedWrites);
+
+      console.error(
+        `\x1b[31m   • ${PREFIX} - Curtail apply FAILED (${curtailState.failedWrites}x): ` +
+        `${err.message}\x1b[37m`
+      );
+
+      if (curtailState.active) {
+        console.error(
+          `\x1b[31m     ↳ inverter watchdog will restore production in ~${cyclesLeft} ` +
+          `more failed cycles (F310 = ${timeout}s)\x1b[37m`
+        );
+      } else if (curtailState.needsRestore) {
+        console.error(
+          `\x1b[31m     ↳ could not confirm restore to 100% — verify in the SolarEdge app\x1b[37m`
+        );
+      }
+    }
+  }
+
   // ─── Collect ───────────────────────────────────────────────────────────────
 
   async collect() {
@@ -107,6 +239,12 @@ class SolarEdgeCollector {
 
       // ── Fetch ──────────────────────────────────────────────────────────────
       const data = await api.fetchAll();
+
+      // ── Curtailment heartbeat ──────────────────────────────────────────────
+      // Inside the connection we already hold. Deliberately after fetchAll()
+      // so a control failure can never cost us a data point, and never
+      // throws — it records its own errors.
+      await this._applyCurtailment();
 
       // ── Always disconnect after reading ────────────────────────────────────
       await api.disconnect();
@@ -148,13 +286,22 @@ class SolarEdgeCollector {
         ? '  Status=Not ready'
         : (data.status !== 4 ? `  Status=${data.status_label}` : '');
 
+      // Only appended while a limit is actually in force, so normal
+      // operation logs exactly as before.
+      const curtailStr = curtailState.active
+        ? `  Curtail=${Math.round(curtailState.targetWatts)}W` +
+          `(${(curtailState.verifiedPct ?? 0).toFixed(1)}%)` +
+          (curtailState.failedWrites > 0 ? ' ⚠' : '')
+        : '';
+
       console.log(
         `   • ${PREFIX} – ${localTimestamp()}` +
         ` Solar=${solarW}W` +
         ` Today=${solarEnergyToday}kWh` +
         ` Temp=${tempStr}` +
         ` Voltage=${voltStr}` +
-        statusStr
+        statusStr +
+        curtailStr
       );
 
       return true;
@@ -169,6 +316,16 @@ class SolarEdgeCollector {
       console.error(`\x1b[31m   • ${PREFIX} Error: ${error.message}\x1b[37m`);
       return false;
     }
+  }
+
+  /**
+   * Force-abort whatever connection api.js currently has in flight.
+   * See the class-level doc comment (point 6) for why this is safe here.
+   * Delegates straight to api.abort() — collector.js owns the polling
+   * cycle, api.js owns the actual socket.
+   */
+  async abort() {
+    return await api.abort();
   }
 
   // ─── Store ─────────────────────────────────────────────────────────────────
@@ -259,6 +416,7 @@ class SolarEdgeCollector {
       lastError:         this.lastError,
       consecutiveErrors: this.consecutiveErrors,
       lastData:          this.lastData,
+      curtail:           curtailState.snapshot(),
     };
   }
 }

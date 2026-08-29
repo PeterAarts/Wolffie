@@ -2,6 +2,9 @@
 import ModbusRTU from 'modbus-serial';
 import { createConnection } from 'net';
 import db from '../../../config/database.js';
+import { padName } from '../../../core/utils/logger.js';
+const PREFIX = padName('AlphaESS ModBus');
+
 
 /**
  * AlphaESS SMILE G3-T10 ModBus TCP API
@@ -39,7 +42,7 @@ class AlphaModbusAPI {
 
     // In-memory dispatch state.
     // Cleared on restart — resetOnStartup() ensures the inverter is reset too.
-    this._dispatch = { active: false, mode: null, watts: 0, endTime: null, _timer: null };
+    this._dispatch = { active: false, mode: null, watts: 0, targetSoc: 0, endTime: null, origin: null };
   }
 
   // ─── Connection ────────────────────────────────────────────────────────────
@@ -284,7 +287,15 @@ class AlphaModbusAPI {
    * Register reference (all holding registers):
    *
    *   BATTERY
+   *   0x0100 =  256  Battery voltage              unsigned, 0.1 V/bit
+   *   0x0101 =  257  Battery current              SIGNED 16-bit, 0.1 A/bit
+   *                                               negative = charging
+   *                                               (verified against hardware 2026-08-25:
+   *                                                raw 65468 = -68 = -6.8 A at 301.3 V
+   *                                                = -2049 W, matching 0x0126 exactly)
    *   0x0102 =  258  Battery SoC                  unsigned, 0.1 %/bit
+   *   0x0110 =  272  Max cell temperature         SIGNED 16-bit, 0.1 °C/bit
+   *                                               PEAK cell temp, not a pack average
    *   0x0126 =  294  Battery Power                signed 16-bit, 1 W/bit
    *                                               positive = discharge
    *   0x0120/0121 = 288  Battery charge energy    unsigned 32-bit, 0.1 kWh (CUMULATIVE)
@@ -298,6 +309,12 @@ class AlphaModbusAPI {
    *   0x0012/0013 =  18  Grid import total         unsigned 32-bit, 0.01 kWh (CUMULATIVE)
    *
    *   INVERTER
+   *   0x040C/040D = 1036  Inverter_Power_Total    signed 32-bit, 1 W/bit
+   *                       AC output of the AlphaESS inverter. Verified 2026-08-25:
+   *                       read 440 W against per-phase 0x0407/0409/040B = 133+159+149.
+   *                       Previously the collector mapped m.solar.total_power into the
+   *                       inverter_power column, which is structurally 0 on this
+   *                       AC-coupled install (MPPT inputs unused).
    *   0x041F/0420 = 1055  PV1 power               unsigned 32-bit, 1 W/bit
    *   0x0435      = 1077  INV Temperature          unsigned, 0.1 °C/bit
    *   0x043E/043F = 1086  Inverter Total PV Energy unsigned 32-bit, 0.1 kWh (CUMULATIVE)
@@ -306,6 +323,9 @@ class AlphaModbusAPI {
     // Battery
     const socRaw      = await this._readUint16(258);   // 0x0102
     const batteryPwr  = await this._readInt16(294);    // 0x0126  +W = discharge
+    const batVoltRaw  = await this._readUint16(256);   // 0x0100  0.1 V/bit
+    const batCurrRaw  = await this._readInt16(257);    // 0x0101  signed, 0.1 A/bit, -A = charging
+    const batTempRaw  = await this._readInt16(272);    // 0x0110  signed, 0.1 C/bit, MAX cell temp
     const batChgRaw   = await this._readUint32(288);   // 0x0120-0121  cumulative
     const batDisRaw   = await this._readUint32(290);   // 0x0122-0123  cumulative
 
@@ -320,6 +340,7 @@ class AlphaModbusAPI {
     const tempRaw     = await this._readUint16(1077);  // 0x0435  0.1 °C/bit
     const pvEnergyRaw = await this._readUint32(1086);  // 0x043E-043F  0.1 kWh cumulative
     const invFreqRaw  = await this._readUint16(1052);  // 0x041C  0.01 Hz/bit
+    const invPwrRaw   = await this._readInt32(1036);  // 0x040C-040D  Inverter_Power_Total, 1 W/bit
 
     // Current cumulative totals in kWh
     const totals = {
@@ -358,6 +379,9 @@ class AlphaModbusAPI {
       battery: {
         power:           batteryPwr,           // W, positive = discharge
         soc:             socRaw * 0.1,         // %
+        voltage:         batVoltRaw * 0.1,     // V   pack DC voltage
+        current:         batCurrRaw * 0.1,     // A   negative = charging (verified 2026-08-25)
+        temp_max:        batTempRaw * 0.1,     // C   hottest cell - peak, NOT average
         charge_total:    totals.bat_chg,       // kWh cumulative lifetime
         discharge_total: totals.bat_dis,       // kWh cumulative lifetime
         charge_today:    batChgToday,          // kWh since midnight
@@ -378,8 +402,9 @@ class AlphaModbusAPI {
         energy_today: homeToday,               // kWh since midnight (derived)
       },
       system: {
-        inverter_temp: tempRaw * 0.1,          // °C
-        inv_freq:      invFreqRaw * 0.01,      // Hz
+        inverter_temp:  tempRaw * 0.1,         // °C
+        inv_freq:       invFreqRaw * 0.01,     // Hz
+        inverter_power: invPwrRaw,             // W   AlphaESS inverter AC output
       },
     };
   }
@@ -464,21 +489,26 @@ class AlphaModbusAPI {
    *   1=Charge from PV only, 2=SoC control, 3=Load following,
    *   4=Maximise output, 5=Normal, 6=Optimise consumption, 7=Maximise consumption
    */
-  async setDispatch(mode, watts, targetSoc) {
-    const power = mode === 'charge'
+  async setDispatch(mode, watts, targetSoc, durationSec = 600) {
+    const power  = mode === 'charge'
       ? Math.max(0,     32000 - Math.round(watts))   // charge: < 32000
       : Math.min(65000, 32000 + Math.round(watts));  // discharge: > 32000
 
     const socVal = Math.round(Math.min(100, Math.max(0, targetSoc)) / 0.4);
+    const pwrHi  = (power >> 16) & 0xFFFF;
+    const pwrLo  = power & 0xFFFF;
+    const timeHi = (durationSec >> 16) & 0xFFFF;
+    const timeLo = durationSec & 0xFFFF;
 
-    const highWord = (power >> 16) & 0xFFFF;
-    const lowWord  = power & 0xFFFF;
-
-    await this._writeReg(2177, highWord); // 0x0881 power high word
-    await this._writeReg(2178, lowWord);  // 0x0882 power low word
-    await this._writeReg(2181, 2);        // 0x0885 SoC control mode
-    await this._writeReg(2182, socVal);   // 0x0886 target SoC
-    await this._writeReg(2176, 1);        // 0x0880 start dispatch
+    // Write order mirrors the working test script:
+    // duration → power → mode → soc → start
+    await this._writeReg(2183, timeHi);  // 0x0887 duration high word
+    await this._writeReg(2184, timeLo);  // 0x0888 duration low word
+    await this._writeReg(2177, pwrHi);   // 0x0881 power high word
+    await this._writeReg(2178, pwrLo);   // 0x0882 power low word
+    await this._writeReg(2181, 2);       // 0x0885 SoC control mode
+    await this._writeReg(2182, socVal);  // 0x0886 target SoC
+    await this._writeReg(2176, 1);       // 0x0880 start dispatch
   }
 
   /**
@@ -501,9 +531,8 @@ class AlphaModbusAPI {
    * @param {number} targetSoc     Stop charging at this SoC (%)
    * @param {number} durationHours Auto-stop after this many hours
    */
-  async startCharge(watts, targetSoc, durationHours) {
-    await this.withConnection(() => this.setDispatch('charge', watts, targetSoc), true);
-    this._armTimer('charge', watts, durationHours);
+  async startCharge(watts, targetSoc, durationHours, origin = 'manual') {
+    this._armDispatch('charge', watts, targetSoc, durationHours, origin);
   }
 
   /**
@@ -513,34 +542,105 @@ class AlphaModbusAPI {
    * @param {number} minimumSoc    Stop discharging when SoC hits this floor (%)
    * @param {number} durationHours Auto-stop after this many hours
    */
-  async startDischarge(watts, minimumSoc, durationHours) {
-    await this.withConnection(() => this.setDispatch('discharge', watts, minimumSoc), true);
-    this._armTimer('discharge', watts, durationHours);
+  async startDischarge(watts, minimumSoc, durationHours, origin = 'manual') {
+    this._armDispatch('discharge', watts, minimumSoc, durationHours, origin);
   }
 
   /**
    * Cancel any active dispatch and return the inverter to Self-Consumption mode.
    */
   async stopDispatch() {
-    this._clearTimer();
-    await this.withConnection(() => this.resetToAuto(), true);
+    // Do NOT clear state immediately — a resolved write is not proof the
+    // inverter obeyed. Keep mode/watts/origin visible, mark as stopping.
+    this._dispatch.pendingStop = true;
+    this._dispatch.stopRequestedAt = Date.now();
+    this._dispatch._settledCycles = 0;
+  }
+  // ─── Dispatch State Helpers ───────────────────────────────────────────────
+  /**
+   * Called by the collector after each fetchAll() while a stop is pending.
+   * Confirms only once battery telemetry has actually settled — separate
+   * from the Modbus write succeeding.
+   */
+  checkStopConfirmation(batteryPowerW, thresholdW = 100, confirmCycles = 2, timeoutMs = 5 * 60 * 1000) {
+    const d = this._dispatch;
+    if (!d.pendingStop) return null;
+
+    d._settledCycles = Math.abs(batteryPowerW) < thresholdW ? (d._settledCycles ?? 0) + 1 : 0;
+
+    if (d._settledCycles >= confirmCycles) {
+      this._clearDispatch();
+      return { confirmed: true, timedOut: false };
+    }
+    if (Date.now() - d.stopRequestedAt >= timeoutMs) {
+      // Do NOT clear dispatch — an unconfirmed stop must keep reporting
+      // status 'stopping' (not 'idle') and runPendingDispatch() must keep
+      // retrying resetToAuto() every cycle. Giving up here would mean the
+      // app silently believes the battery is idle when it may not be —
+      // the same class of mismatch between app state and hardware reality
+      // that caused the original incident this mechanism exists to prevent.
+      // Caller (collector) alerts every time timedOut is true; alertService's
+      // own dedup window controls re-fire cadence.
+      return { confirmed: false, timedOut: true };
+    }
+    return { confirmed: false, timedOut: false };
+  }
+  /**
+   * Arms the in-memory dispatch state.
+   * NO Modbus I/O here — the collector's _doCollect() cycle owns the connection
+   * and will call runPendingDispatch() after each successful fetchAll().
+   *
+   * The collector writes dispatch registers every 10s (its normal interval),
+   * which is sufficient to keep AlphaESS in dispatch mode.
+   */
+  _armDispatch(mode, watts, targetSoc, durationHours, origin = 'unknown') {
+    this._clearDispatch();
+    const endTime = Date.now() + Math.round(durationHours * 3600 * 1000);
+    this._dispatch = { active: true, mode, watts, targetSoc, endTime, pendingStop: false, origin };
+    console.log(`   • ${PREFIX} Dispatch armed: ${mode} ${watts}W targetSoc=${targetSoc}% duration=${durationHours}h [origin: ${origin}]`);
   }
 
   /**
-   * Returns the current in-memory dispatch state for the UI status bar.
-   * Pure in-memory read — no Modbus I/O.
+   * Clears dispatch state. Called by stopDispatch() and when session expires.
    */
+  _clearDispatch() {
+    this._dispatch = { active: false, mode: null, watts: 0, targetSoc: 0, endTime: null, pendingStop: false, origin: null };
+  }
+
+  /**
+   * Called by the collector inside its open connection window (after fetchAll).
+   * Writes dispatch registers if active, or resets to auto if pendingStop.
+   * Returns true if a write was performed (for logging).
+   */
+  async runPendingDispatch() {
+    const d = this._dispatch;
+
+    if (d.active && d.endTime && Date.now() >= d.endTime && !d.pendingStop) {
+      await this.resetToAuto();
+      this._clearDispatch();
+      return true;
+    }
+    if (d.pendingStop) {
+      await this.resetToAuto(); // re-assert every cycle until confirmed
+      return true;
+    }
+    if (d.active) {
+      await this.setDispatch(d.mode, d.watts, d.targetSoc);
+      return true;
+    }
+    return false;
+  }
+
   getDispatchStatus() {
-    const { active, mode, watts, endTime } = this._dispatch;
-    const remainingSeconds = active && endTime
-      ? Math.max(0, Math.round((endTime - Date.now()) / 1000))
-      : 0;
+    const { active, mode, watts, endTime, origin, pendingStop } = this._dispatch;
+    const status = pendingStop ? 'stopping' : active ? (mode === 'charge' ? 'charging' : 'discharging') : 'idle';
     return {
-      active,
-      charging:         active && mode === 'charge',
-      discharging:      active && mode === 'discharge',
+      active, status,
+      charging:    active && mode === 'charge'    && !pendingStop,
+      discharging: active && mode === 'discharge' && !pendingStop,
       watts,
-      remainingSeconds,
+      remainingSeconds: active && endTime && !pendingStop ? Math.max(0, Math.round((endTime - Date.now()) / 1000)) : 0,
+      origin: origin ?? null,
     };
   }
 
@@ -558,44 +658,6 @@ class AlphaModbusAPI {
       console.warn('     - Startup reset failed (inverter may be offline):', e.message);
     }
   }
-
-  // ─── Internal Timer Helpers ────────────────────────────────────────────────
-
-  /**
-   * Arms the auto-stop timer and updates _dispatch state.
-   * Always cancels any previous timer first so back-to-back commands
-   * don't leave a stale timer running.
-   */
-  _armTimer(mode, watts, durationHours) {
-    this._clearTimer();
-    const ms = Math.round(durationHours * 3600 * 1000);
-    const endTime = Date.now() + ms;
-
-    const _timer = setTimeout(async () => {
-      console.log(`[AlphaModbus] Dispatch timer expired (${mode} ${watts}W), resetting to auto.`);
-      try {
-        await this.withConnection(() => this.resetToAuto(), true);
-      } catch (e) {
-        console.error('[AlphaModbus] Auto-stop failed:', e.message);
-      }
-      this._dispatch = { active: false, mode: null, watts: 0, endTime: null, _timer: null };
-    }, ms);
-
-    // Prevent the timer from keeping the Node process alive on graceful shutdown
-    if (_timer.unref) _timer.unref();
-
-    this._dispatch = { active: true, mode, watts, endTime, _timer };
-  }
-
-  /**
-   * Cancels the active timer (if any) and resets _dispatch state to idle.
-   */
-  _clearTimer() {
-    if (this._dispatch._timer) {
-      clearTimeout(this._dispatch._timer);
-    }
-    this._dispatch = { active: false, mode: null, watts: 0, endTime: null, _timer: null };
-  }
 }
 
-export default new AlphaModbusAPI();
+export default new AlphaModbusAPI();w

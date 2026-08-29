@@ -1,0 +1,45 @@
+{
+  "id": "push-notifications",
+  "name": "Push Notifications",
+  "version": "1.0.0",
+  "description": "Web Push notifications for alerts — delivered to the Android/desktop notification tray via the PWA service worker, even when the app is closed",
+  "type": "service",
+  "author": "Wolffie",
+  "enabled": true,
+
+  "capabilities": {
+    "dataCollection": false,
+    "api": true
+  },
+
+  "dependencies": {
+    "web-push": "^3.6.7"
+  },
+
+  "settings": {
+    "schema": "settings_schema.json"
+  },
+
+  "routes": {
+    "enabled": true,
+    "prefix": "/api/push",
+    "file": "routes/index.js"
+  },
+
+  "database": {
+    "tables": ["push_subscriptions"]
+  },
+
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-07-12",
+      "author": "Wolffie",
+      "changes": [
+        "Initial release — Web Push notifications triggered by alertService 'alert' events",
+        "VAPID keypair auto-generated on first run and persisted in settings",
+        "Severity threshold configurable; subscriptions stored per-device"
+      ]
+    }
+  ]
+}

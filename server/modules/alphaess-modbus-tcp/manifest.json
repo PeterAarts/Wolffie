@@ -1,8 +1,8 @@
 {
   "id": "alphaess-modbus-tcp",
+  "version": "1.1.8",
   "name": "AlphaESS ModBus TCP",
-  "version": "1.1.0",
-  "description": "AlphaESS inverter communication via ModBus TCP/IP",
+  "description": "AlphaESS inverter communication via ModBus TCP/IP. Verified against SMILE G3-T10; other AlphaESS household models share the same register map (protocol v1.28) but are unverified.",
   "author": "Wolffie",
   "type": "data-collector",
 
@@ -18,6 +18,7 @@
     { "type": "battery:charge-from-grid",  "priority": 10 },
     { "type": "battery:discharge-to-grid", "priority": 10 },
     { "type": "battery:stop",              "priority": 10 },
+    { "type": "battery:set-charge-limit",  "priority": 10 },
     { "type": "solar:read",                "priority": 5 },
     { "type": "grid:read",                 "priority": 10 },
     { "type": "grid:status",               "priority": 10 },
@@ -53,6 +54,79 @@
   },
 
   "changelog": [
+    {
+      "version": "1.1.8",
+      "date": "2026-08-28",
+      "author": "Wolffie",
+      "changes": [
+        "Fixed: saving any module setting could silently stop the AlphaESS module. Battery data disappeared from the dashboard (showing an empty battery) and battery control was lost until the server was restarted. Changing the Max SoC value reproduced this every time",
+        "Cause: after saving settings the module tested the connection to the inverter. That test asked for a second connection while the collector was already connected, and the inverter allows only one at a time. The test therefore always failed, and the module concluded the inverter was unreachable and shut itself down",
+        "Saving settings no longer tests the connection. The collector already reconnects on every cycle and recovers from network problems on its own, so a settings change is no longer able to disable the module"
+      ]
+    },
+    {
+      "version": "1.1.7",
+      "date": "2026-08-25",
+      "author": "Wolffie",
+      "changes": [
+        "api.js fetchAll() now reads battery voltage (0x0100), battery current (0x0101) and max cell temperature (0x0110). These were never requested before, which is why battery_voltage / battery_current / battery_temp were NULL in energy_snapshots — a read gap, not a storage gap",
+        "Battery current sign convention verified against hardware during a forced 2 kW grid charge: raw 65468 = -68 = -6.8 A at 301.3 V = -2049 W, matching register 0x0126 exactly. Negative = charging, identical to battery_power. Read as signed int16 via _readInt16 — no derivation from 0x0126 needed",
+        "battery.temp_max maps 0x0110 (MAX cell temperature), deliberately NOT a min/max average. Averaging hides the peak temperature that drives cell degradation, which is the whole point of storing it",
+        "Added system.inverter_power from 0x040C/040D (Inverter_Power_Total, signed 32-bit) — the real AC output of the AlphaESS inverter. Cross-checked at 440 W against per-phase registers 0x0407/0x0409/0x040B (133+159+149 = 441)",
+        "Corrected a long-standing false assumption in collector.js header comments: battery voltage, current and temperature ARE exposed via ModBus TCP on the G3-T10, in the Household Battery block",
+        "AlphaESS grid CT currents (0x0017-0x0019) confirmed MAGNITUDE ONLY and deliberately left unstored: 232x1.8 + 230x1.9 + 235x2.2 = 1372 VA against a reported grid_power of 3 W. Registers 0x002C/0x002E/0x0030 (421/448/517, summing to 0x0032 = 1387) are the matching per-phase apparent powers. HomeWizard provides correctly signed per-phase values and remains authoritative for grid",
+        "Cost: four additional register reads per collection cycle, roughly 1.6 s at the 400 ms _safeCall minDelay. Fits the 10 s manifest interval but worth watching in the collector log",
+        "PENDING: collector.js is NOT yet updated. These values are read and exposed via fetchAll() but storeSnapshot() still writes NULL for battery_voltage / battery_current / battery_temp, and still maps m.solar.total_power (structurally 0 on this AC-coupled install) into inverter_power"
+      ]
+    },
+    {
+      "version": "1.1.6",
+      "date": "2026-07-02",
+      "author": "Wolffie",
+      "changes": [
+        "stopDispatch() no longer clears state instantly — sets pendingStop and marks status 'stopping' until hardware telemetry confirms the change, since a resolved Modbus write is not proof the inverter obeyed",
+        "Added checkStopConfirmation(batteryPowerW) — confirms a stop once |battery_power| stays under 100W for 2 consecutive collector cycles, or times out after 5 minutes and requires the caller to raise an alert",
+        "getDispatchStatus() now returns a three-state 'status' field (charging/discharging/stopping/idle) instead of a binary active flag, so the frontend can distinguish 'stop requested' from 'stop confirmed'",
+        "Correction to 1.1.3 entry below: the '_armHeartbeat/_clearHeartbeat 2-second heartbeat loop' described there does not exist in this version. Dispatch is kept alive by the collector's normal 10s cycle calling runPendingDispatch() — no separate heartbeat timer was found in code. Flagging here rather than silently editing history; origin of the discrepancy (reverted change vs. changelog written ahead of the code) is unconfirmed."
+      ]
+    },
+    {
+      "version": "1.1.5",
+      "date": "2026-06-10",
+      "author": "Wolffie",
+      "changes": [
+        "Registered battery:set-charge-limit capability — wraps writeMinSoC() (register 0x0855) for strategy manager access via registry",
+        "Collector grid_power_source refactored: 'external' now uses grid:read capability from registry instead of hardcoded module names",
+        "Removed all hardcoded references to 'p1-meter', 'homewizard-p1' — legacy values fall through to capability-based external read",
+        "Added capabilityRegistry import to collector.js for external grid reads",
+        "Collector version bumped to v6.15"
+      ]
+    },
+    {
+      "version": "1.1.4",
+      "date": "2026-06-10",
+      "author": "Wolffie",
+      "changes": [
+        "Added dispatch origin tracking — every dispatch command now logs which code path initiated it",
+        "Origin flows through _armDispatch → runPendingDispatch → getDispatchStatus → collector log line",
+        "Origins: 'strategy:<id>' (strategy manager), 'manual:api' (HTTP routes), 'capability' (capability registry fallback)",
+        "getDispatchStatus() now includes origin field for UI status bar visibility",
+        "Aids debugging of unexpected charge/discharge commands (e.g. stale dispatch after strategy switches to IDLE)"
+      ]
+    },
+    {
+      "version": "1.1.3",
+      "date": "2026-05-31",
+      "author": "Wolffie",
+      "changes": [
+        "Fixed dispatch (charge/discharge) not executing on inverter — single register write was silently ignored",
+        "Replaced one-shot setDispatch with continuous 2-second heartbeat loop (_armHeartbeat / _clearHeartbeat)",
+        "Added DISP_TIME register writes (0x0887/0x0888) — AlphaESS requires an active time window for dispatch to execute",
+        "Write order aligned with verified working sequence: duration → power → mode → soc → start",
+        "Session duration (durationHours) drives total session via setTimeout; hardware window kept rolling at 600s per heartbeat",
+        "stopDispatch() now clears both heartbeat interval and expiry timer cleanly"
+      ]
+    },
     {
       "version": "1.1.0",
       "date": "2026-05-12",

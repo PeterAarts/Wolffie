@@ -75,8 +75,7 @@
               "default": "internal",
               "options": [
                 { "value": "internal", "label": "modules.alphaessModbusTcp.fields.grid_power_source.options.internal" },
-                { "value": "homewizard-p1", "label": "modules.alphaessModbusTcp.fields.grid_power_source.options.homewizardP1" },
-                { "value": "none", "label": "modules.alphaessModbusTcp.fields.grid_power_source.options.none" }
+                { "value": "external", "label": "modules.alphaessModbusTcp.fields.grid_power_source.options.external" }
               ]
             }
           ]

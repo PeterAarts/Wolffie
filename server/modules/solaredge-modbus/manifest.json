@@ -1,42 +1,102 @@
 {
   "id": "solaredge-modbus",
   "name": "SolarEdge-Modbus",
-  "version": "1.2.7",
+  "version": "1.4.0",
   "description": "Local Modbus TCP integration for SolarEdge HD-Wave inverters",
   "author": "Wolffie",
   "type": "data-collector",
-
   "capabilities": {
     "dataCollection": true,
     "api": true,
     "ui": true
   },
-
   "services": [
-    { "type": "solar:read",    "priority": 15 },
-    { "type": "solar:curtail", "priority": 15 },
-    { "type": "grid:read",     "priority": 6  }
+    {
+      "type": "solar:read",
+      "priority": 15
+    },
+    {
+      "type": "solar:curtail",
+      "priority": 15
+    },
+    {
+      "type": "solar:curtail-status",
+      "priority": 15
+    },
+    {
+      "type": "grid:read",
+      "priority": 6
+    }
   ],
-
   "collector": {
     "enabled": true,
     "interval": 20000,
     "priority": 6,
     "description": "Collects real-time power data every 20 seconds via Modbus TCP"
   },
-
   "routes": {
     "enabled": true,
     "prefix": "/api/solaredge-modbus",
     "description": "SolarEdge Modbus API endpoints"
   },
-
   "config": {
-    "required": ["host"],
-    "optional": ["port", "unit_id"]
+    "required": [
+      "host"
+    ],
+    "optional": [
+      "port",
+      "unit_id"
+    ]
   },
-
   "changelog": [
+    {
+      "version": "1.4.0",
+      "date": "2026-08-29",
+      "author": "Wolffie",
+      "changes": [
+        "Solar curtailment now actually works. It never did before \u2014 the old version wrote to the wrong registers, the inverter rejected every attempt, and nothing was logged. Curtailment has been silently broken since v1.2.0.",
+        "Curtailment is now set in watts instead of a percentage, so you can compare it against what the house is using. Default is 400 W.",
+        "Never caps to zero. Below roughly 30-60 W the inverter disconnects from the grid and needs several minutes to come back, so a small amount of production is always left running.",
+        "Added a Curtail Solar card to the Manual Dispatch screen, with a Stop button that appears while curtailment is active.",
+        "If Wolffie stops responding while solar is curtailed, the inverter now restores full production by itself within about six minutes.",
+        "Every limit is read back from the inverter to confirm it was accepted. Failures are logged loudly instead of passing quietly."
+      ]
+    },
+    {
+      "version": "1.3.0",
+      "date": "2026-06-29",
+      "author": "Wolffie",
+      "changes": [
+        "Fixed: a hung Modbus TCP connection (inverter accepts the handshake but never replies) could silently stall this module forever \u2014 no error, no log line, until the whole server was restarted",
+        "Root cause: CollectorManager only arms the next poll cycle after collect() resolves, so a connectTCP()/readHoldingRegisters() call that never settles permanently freezes this module's schedule",
+        "Added abort() to api.js, collector.js, and index.js \u2014 implements CollectorManager's new optional hang-recovery contract: force-closes the stuck connection (graceful close() first, falling back to a direct socket destroy) when a cycle is judged hung",
+        "Requires collectorManager.js >=1.x with the hang-timeout guard (default 8s deadline per cycle, MAX_CONSECUTIVE_ERRORS raised to 15, failures logged via eventLogService as 'collect_paused')"
+      ]
+    },
+    {
+      "version": "1.2.9",
+      "date": "2026-05-31",
+      "author": "Wolffie",
+      "changes": [
+        "Fixed _int16() incorrectly applying uint16 sentinel guard (0xFFF0) to signed int16 scale factor registers",
+        "Valid firmware SF values -1 (0xFFFF) and -2 (0xFFFE) were silently discarded, forcing hardcoded fallback",
+        "SunSpec-correct not-implemented sentinel for int16 is only 0x8000 \u2014 guard removed accordingly",
+        "Solar power now reads correctly at all production levels including low-light conditions"
+      ]
+    },
+    {
+      "version": "1.2.8",
+      "date": "2026-05-29",
+      "author": "Wolffie",
+      "changes": [
+        "Switched to fresh-connection-per-cycle strategy \u2014 connect() \u2192 fetchAll() \u2192 disconnect() every poll",
+        "SE3000H silently drops persistent TCP connections after ~30-60s causing sentinel value returns",
+        "safeClose() now uses Promise.race with 1s timeout to prevent indefinite hang on dead socket",
+        "connect() now awaits safeClose() before opening new client \u2014 was fire-and-forget before",
+        "ECONNREFUSED at night/startup (inverter sleeping) no longer increments consecutiveErrors",
+        "Inverter sleep at dawn treated as expected state, not a recoverable fault"
+      ]
+    },
     {
       "version": "1.2.7",
       "date": "2026-05-12",
@@ -52,7 +112,7 @@
       "date": "2026-03-01",
       "author": "Wolffie",
       "changes": [
-        "Added solar:curtail capability — stops SolarEdge export during negative price slots",
+        "Added solar:curtail capability \u2014 stops SolarEdge export during negative price slots",
         "Added grid:read capability at priority 6 (fallback behind HomeWizard P1)"
       ]
     },
@@ -70,7 +130,7 @@
       "date": "2025-10-01",
       "author": "Wolffie",
       "changes": [
-        "Initial release — SolarEdge HD-Wave SE3000H Modbus TCP integration",
+        "Initial release \u2014 SolarEdge HD-Wave SE3000H Modbus TCP integration",
         "SunSpec-compliant register map (base address 40000)",
         "AC power, DC power, lifetime energy, cabinet temperature reads",
         "Collector interval 20 seconds"

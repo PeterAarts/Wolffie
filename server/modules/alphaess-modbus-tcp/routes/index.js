@@ -63,7 +63,7 @@ router.get('/metrics', async (req, res) => {
 router.post('/charge', async (req, res) => {
   try {
     const { watts, targetSOC, durationHours } = req.body;
-    await api.startCharge(watts, targetSOC, durationHours);
+    await api.startCharge(watts, targetSOC, durationHours, 'manual:api');
     res.json({ success: true, command: { mode: 'charge', watts, targetSOC, durationHours } });
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -78,7 +78,7 @@ router.post('/charge', async (req, res) => {
 router.post('/discharge', async (req, res) => {
   try {
     const { watts, minimumSOC, durationHours } = req.body;
-    await api.startDischarge(watts, minimumSOC, durationHours);
+    await api.startDischarge(watts, minimumSOC, durationHours, 'manual:api');
     res.json({ success: true, command: { mode: 'discharge', watts, minimumSOC, durationHours } });
   } catch (e) {
     res.status(500).json({ error: e.message });
