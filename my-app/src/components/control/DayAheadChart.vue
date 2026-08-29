@@ -38,7 +38,7 @@
             @change="onDateChange"
           />
           <span
-            class="flex items-center gap-1.5 px-2 py-1 text-[0.78rem] whitespace-nowrap select-none cursor-pointer bg-white transition-colors duration-[120ms]  hover:border-[color:var(--color-border-dark)] hover:bg-[color:var(--color-secondary-subtle)]"
+            class="flex items-center gap-1.5 px-2 py-1 text-[0.78rem] whitespace-nowrap select-none cursor-pointer bg-card transition-colors duration-[120ms]  hover:border-[color:var(--color-border-dark)] hover:bg-[color:var(--color-secondary-subtle)]"
             style="color: var(--color-text-primary); border-radius: var(--border-radius)"
             @click="openPicker"
           >
@@ -98,7 +98,7 @@
     <div class="relative h-[250px]">
       <canvas ref="canvasEl" class="!w-full !h-full" />
       <Transition name="dac-fade">
-        <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-white/75">
+        <div v-if="loading" class="absolute inset-0 flex items-center justify-center bg-card/75">
           <span class="dac-spinner" />
         </div>
       </Transition>

@@ -13,7 +13,7 @@
         <label :key="labelKey" class="text-xs text-secondary-500 tracking-wider ml-1">{{ r(item.label) }}</label>
         
         <!-- Simple Value -->
-        <span v-if="!item.template" class="select-none text-sm font-normal bg-white p-2 text-secondary-700 group-hover:text-secondary-900 transition-colors">
+        <span v-if="!item.template" class="select-none text-sm font-normal bg-card p-2 text-secondary-700 group-hover:text-secondary-900 transition-colors">
           {{ getValue(item) }}
         </span>
 

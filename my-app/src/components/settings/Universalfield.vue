@@ -37,7 +37,7 @@
         :placeholder="field.placeholder"
         :disabled="field.editable === false || disabled"
         rows="4"
-        class="w-full bg-white  p-2 text-secondary-900 transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-secondary-50"
+        class="w-full bg-card  p-2 text-secondary-900 transition-all focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none disabled:bg-secondary-50"
       ></textarea>
 
       <select
@@ -46,7 +46,7 @@
         :value="modelValue"
         @change="emit('update:modelValue', $event.target.value)"
         :disabled="field.editable === false || disabled"
-        class="w-full bg-white p-2 text-secondary-900 appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+        class="w-full p-2 text-secondary-900 appearance-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
       >
         <option v-if="field.placeholder" value="" disabled selected>{{ field.placeholder }}</option>
         <option v-for="opt in field.options" :key="opt.value" :value="opt.value">
@@ -69,7 +69,7 @@
 
         </div>
       </div>
-      <div v-else-if="field.component === 'color'" class="flex items-center gap-3 p-2 bg-white border border-secondary-200  shadow-sm">
+      <div v-else-if="field.component === 'color'" class="flex items-center gap-3 p-2  border border-secondary-400 ">
         <input 
           type="color" 
           :value="modelValue" 

@@ -492,21 +492,17 @@ const mergedRows = computed(() =>
 
 // ── Columns ────────────────────────────────────────────────────────────────
 const desktopColumns = computed(() => [
-  { field: '_status',   title: '',                            slotMode: true, width: '2rem'  },
-  { field: 'name',      title: t('modulesTab.col_name'),      slotMode: true },
-  { field: 'version',   title: t('modulesTab.col_version'),   slotMode: true, width: '5rem'  },
+  { field: '_status',   title: '',                            slotMode: true, width: '1rem'  },
+  { field: 'name',      title: t('modulesTab.col_name'),      slotMode: true ,width: '40rem' },
   { field: '_type',     title: t('modulesTab.col_type'),      slotMode: true, width: '8rem'  },
-  { field: '_lastRun',  title: t('collectors.lastCollected'), slotMode: true, width: '7rem'  },
-  { field: '_nextRun',  title: t('collectors.nextRun'),       slotMode: true, width: '5rem'  },
-  { field: '_interval', title: t('collectors.interval'),      slotMode: true, width: '5rem'  },
-  { field: '_errors',   title: t('collectors.errors'),        slotMode: true, width: '5rem'  },
-  { field: '_actions',  title: t('common.actions'),           slotMode: true, width: '8rem'  },
+  { field: '_lastRun',  title: t('collectors.lastCollected'), slotMode: true, width: '2rem'  },
+  { field: '_errors',   title: t('collectors.errors'),        slotMode: true  },
+  { field: '_actions',  title: t('common.actions'),           slotMode: true  },
 ]);
 
 const mobileColumns = computed(() => [
-  { field: '_status',  title: '',                       slotMode: true, width: '1rem' },
+  { field: '_status',  title: '',                       slotMode: true },
   { field: 'name',     title: t('modulesTab.col_name'), slotMode: true },
-  { field: '_lastRun', title: t('collectors.lastCollected'), slotMode: true, width: '6rem' },
   { field: '_actions', title: '',                       slotMode: true, width: '5rem' },
 ]);
 
@@ -795,8 +791,8 @@ onUnmounted(() => {
 .modules-panel            { display: flex; flex-direction: column; gap: 0.875rem; }
 /* Manager badge */
 .manager-badge            { display: inline-flex; align-items: center; gap: 0.375rem;font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.04em;text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 20px;}
-.manager-badge--ok        { background: #f0fdf4; color: #16a34a; }
-.manager-badge--err       { background: #fef2f2; color: #dc2626; }
+.manager-badge--ok        { background: var(--color-background); color: #16a34a; }
+.manager-badge--err       { background: var(--color-background); color: #dc2626; }
 .manager-dot              { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
 
 .last-refresh             { font-size: 0.75rem; color: #94a3b8; }
@@ -810,7 +806,7 @@ onUnmounted(() => {
 .dot--disabled            { background: #cbd5e1; }
 
 /* Type badge */
-.type-badge               { display: inline-block; padding: 0.125rem 0.5rem;font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;border-radius: var(--radius-sm); background: var(--color-secondary-100); color: #374151;}
+.type-badge               { display: inline-block; padding: 0.125rem 0.5rem;font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;border-radius: var(--radius-sm); background-color: var(--color-secondary-400); color: var(--color-primary);}
 /* Runtime values */
 .meta-value               { font-size: 0.8125rem; color: var(--color-secondary-300); font-weight: 500; }
 .meta-value.stale         { color: #94a3b8; }

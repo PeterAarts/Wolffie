@@ -3,6 +3,16 @@
   Alert history drawer. Triggered by a bell icon in the header.
   Two tabs: Active (unresolved) and History (resolved/dismissed).
   Uses AppDrawer for the slide-in panel.
+
+  Action button logic for the Active tab, per alert.action:
+    - 'CONFIRM_OR_DECLINE'  → Confirm/Decline pair (or a responded label once
+                              answered). Used by strategyManager's held-action
+                              alerts (load anomaly, UPS-mode). Calls
+                              POST /alerts/:id/respond — distinct from resolve,
+                              not admin-gated, answers a yes/no question rather
+                              than globally clearing the alert.
+    - any other truthy value → unchanged: single lightning-bolt button that
+                              calls resolve() (global, admin-only).
 -->
 <template>
 
@@ -59,8 +69,40 @@
           <div v-if="alert.suggestion" class="ad-item__suggestion">{{ alert.suggestion }}</div>
         </div>
         <div class="ad-item__actions">
+
+          <!-- ── Confirm/decline pair — held strategy actions ───────────────── -->
+          <template v-if="alert.action === 'CONFIRM_OR_DECLINE'">
+            <span
+              v-if="alert.user_response"
+              class="ad-responded"
+              :class="alert.user_response === 'confirmed' ? 'ad-responded--confirmed' : 'ad-responded--declined'"
+            >
+              <i class="ph-light" :class="alert.user_response === 'confirmed' ? 'ph-check' : 'ph-prohibit'"></i>
+              {{ alert.user_response === 'confirmed' ? t('alerts.confirmed') : t('alerts.declined') }}
+            </span>
+            <template v-else>
+              <button
+                class="ad-btn ad-btn--primary"
+                :disabled="responding === alert.id"
+                @click="respond(alert.id, 'confirmed')"
+                :title="t('alerts.confirmAction')"
+              >
+                <i class="ph-light" :class="responding === alert.id ? 'ph-circle-notch ph-spin' : 'ph-check'"></i>
+              </button>
+              <button
+                class="ad-btn ad-btn--ghost"
+                :disabled="responding === alert.id"
+                @click="respond(alert.id, 'declined')"
+                :title="t('alerts.declineAction')"
+              >
+                <i class="ph-light ph-prohibit"></i>
+              </button>
+            </template>
+          </template>
+
+          <!-- ── Every other alert type — unchanged from before ─────────────── -->
           <button
-            v-if="alert.action"
+            v-else-if="alert.action"
             class="ad-btn ad-btn--primary"
             :disabled="executing === alert.id"
             @click="resolve(alert.id)"
@@ -68,6 +110,7 @@
           >
             <i class="ph-light" :class="executing === alert.id ? 'ph-circle-notch ph-spin' : 'ph-lightning'"></i>
           </button>
+
           <button
             class="ad-btn ad-btn--ghost"
             @click="dismiss(alert.id)"
@@ -101,6 +144,10 @@
           <div class="ad-item__source">{{ alert.source }} · {{ formatDate(alert.created_at) }}</div>
           <div class="ad-item__message">{{ alert.message }}</div>
           <div v-if="alert.suggestion" class="ad-item__suggestion">{{ alert.suggestion }}</div>
+          <div v-if="alert.user_response" class="ad-item__resolved-at">
+            <i class="ph-light" :class="alert.user_response === 'confirmed' ? 'ph-check' : 'ph-prohibit'"></i>
+            {{ alert.user_response === 'confirmed' ? t('alerts.confirmed') : t('alerts.declined') }}
+          </div>
           <div class="ad-item__resolved-at" v-if="alert.resolved_at">
             <i class="ph-light ph-check mr-1"></i>{{ t('alerts.resolvedAt') }} {{ formatDate(alert.resolved_at) }}
           </div>
@@ -161,7 +208,8 @@ function onHistoryTab() {
 watch(open, v => { if (v && tab.value === 'history') historyLoaded.value = false; });
 
 // ── Actions ───────────────────────────────────────────────────────────────
-const executing = ref(null);
+const executing  = ref(null);
+const responding = ref(null);
 
 async function dismiss(id) {
   await alertStore.dismissAlert(id);
@@ -176,6 +224,25 @@ async function resolve(id) {
     if (tab.value === 'history') fetchHistory();
   } finally {
     executing.value = null;
+  }
+}
+
+// Confirm/decline for held strategy actions (CONFIRM_OR_DECLINE alerts).
+// Bypasses the store and calls apiClient directly — same precedent as
+// reResolve() below — since this answers a per-user question rather than
+// changing the alert's global resolved state the store tracks.
+async function respond(id, response) {
+  responding.value = id;
+  try {
+    await apiClient.post(`/alerts/${id}/respond`, { response });
+    // Optimistically reflect the response locally so the buttons swap to
+    // the "responded" label immediately, without waiting for the next poll.
+    const alert = alertStore.alerts.find(a => a.id === id);
+    if (alert) alert.user_response = response;
+  } catch (e) {
+    console.error('AlertDrawer: respond failed:', e.message);
+  } finally {
+    responding.value = null;
   }
 }
 
@@ -298,4 +365,15 @@ function formatDate(iso) {
 .ad-btn--primary:hover:not(:disabled) { opacity: 0.85; }
 .ad-btn--ghost        { background: transparent; color: var(--color-text-secondary); }
 .ad-btn--ghost:hover  { background: var(--color-secondary-200); color: var(--color-text-primary); }
+
+/* ── Responded label (confirm/decline already answered) ───────────────── */
+.ad-responded {
+  display: flex; align-items: center; gap: 0.25rem;
+  font-size: 0.7rem; font-weight: 600;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.ad-responded--confirmed { background: #dcfce7; color: #15803d; }
+.ad-responded--declined  { background: #fee2e2; color: #b91c1c; }
 </style>

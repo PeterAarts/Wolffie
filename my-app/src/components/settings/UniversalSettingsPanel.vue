@@ -11,7 +11,18 @@
     </div>
 
     <div v-else class="settings-content">
-      
+          <div class="save-bar" :class="{ 'save-bar-visible': hasChanges }">
+      <div class="save-bar-content">
+        <div class="save-bar-info"></div>
+        <div class="save-bar-actions">
+          <button class="btn" @click="resetChanges">{{ t('common.cancel') }}</button>
+          <button class="btn btn--primary" :disabled="saving" @click="saveSettings">
+            <i v-if="saving" class="ph-duotone ph-spinner-third ph-spin mr-1"></i>
+            {{ t('common.save') }}
+          </button>
+        </div>
+      </div>
+    </div>
       <div v-if="schema.groups" class="groups-container">
         <div v-for="(group, gIdx) in schema.groups" :key="gIdx" class="settings-group mb-3">
           <!-- <h3 class="text-md border-b border-secondary-200 font-medium mb-4">{{ resolve(group.title) }}</h3> -->
@@ -93,18 +104,7 @@
       </div>
     </div>
 
-    <div class="save-bar" :class="{ 'save-bar-visible': hasChanges }">
-      <div class="save-bar-content">
-        <div class="save-bar-info"></div>
-        <div class="save-bar-actions">
-          <button class="btn" @click="resetChanges">{{ t('common.cancel') }}</button>
-          <button class="btn btn--primary" :disabled="saving" @click="saveSettings">
-            <i v-if="saving" class="ph-duotone ph-spinner-third ph-spin mr-1"></i>
-            {{ t('common.save') }}
-          </button>
-        </div>
-      </div>
-    </div>
+
   </div>
 </template>
 
@@ -335,8 +335,8 @@ onMounted(loadSchema);
 /* Hier komen jouw originele 400+ regels CSS, inclusief .save-bar, .loading-container, etc. */
 .universal-settings-panel   {padding: 0rem; }
 .group-title                {border-bottom: 2px solid #eee; padding-bottom: 0.5rem; font-weight: 600; }
-.save-bar                   {position: sticky;bottom: 0;background: white;padding: 1rem 1.5rem;z-index: 100;}
-.save-bar-visible           {transform: translateY(0); }
+.save-bar                   {z-index: 100;display:none;height:50px;}
+.save-bar-visible           {transform: translateY(0);display:inherit;height:50px; }
 .save-bar-content           {display: flex; align-items: center; justify-content: space-between; max-width: 1900px; margin: 0 auto; }
 
 .universal-settings-panel   {position: relative;min-height: 400px;}

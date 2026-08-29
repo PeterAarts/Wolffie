@@ -81,6 +81,67 @@ const getRangeDates = (period) => {
   return { start, end };
 };
 
+// Collapse range rows into coarser buckets.
+// - 7-day / 30-day: bucket by calendar day (source rows are hourly averages, in Watts)
+// - year: bucket by ISO week (Mon–Sun); source rows are daily kWh totals
+//
+// Per historyController.js:getRange, every multi-day row is ONLY ever
+// { timestamp, solar, home, grid, battery_power, battery_soc } — there is no
+// per-row import/export or charge/discharge split; 'grid' and 'battery_power'
+// are already net (export−import, discharge−charge). We approximate a visual
+// import/export split by clamping the net value to +/- before summing (this
+// can under-count a day that both imported and exported). Battery is kept as
+// a single net bar per Peter's call.
+//
+// Units differ by branch: 7d/30d rows are avg Watts for that hour (pv_power_avg
+// etc.), the year's day-branch rows are already kWh. Convert hourly Watts to
+// that hour's kWh contribution by dividing by 1000 before summing.
+const RANGE_FIELDS = ['solar', 'home', 'grid_import', 'grid_export', 'battery_net'];
+
+const normalizeRow = (row, period) => {
+  const alreadyKwh = period === 'last-365-days';
+  const toKwh = (v) => alreadyKwh ? (v || 0) : (v || 0) / 1000;
+
+  const solar = toKwh(row.solar);
+  const home = toKwh(row.home);
+  const gridNet = toKwh(row.grid);            // export − import
+  const batteryNet = toKwh(row.battery_power); // discharge − charge
+
+  return {
+    solar,
+    home,
+    grid_import: Math.max(-gridNet, 0),
+    grid_export: Math.max(gridNet, 0),
+    battery_net: batteryNet,
+  };
+};
+
+const bucketKeyDay = (d) => d.toISOString().split('T')[0];
+const bucketKeyWeek = (d) => {
+  const dow = d.getDay(); // 0=Sun..6=Sat
+  const diffToMonday = (dow === 0 ? -6 : 1) - dow;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() + diffToMonday);
+  return monday.toISOString().split('T')[0];
+};
+
+const aggregateRows = (rows, keyFn, period) => {
+  const buckets = new Map();
+  for (const row of rows) {
+    const d = new Date((row.date || row.timestamp?.slice(0, 10)) + 'T00:00:00');
+    const key = keyFn(d);
+    if (!buckets.has(key)) {
+      const bucket = { date: key };
+      RANGE_FIELDS.forEach(f => { bucket[f] = 0; });
+      buckets.set(key, bucket);
+    }
+    const norm = normalizeRow(row, period);
+    const bucket = buckets.get(key);
+    RANGE_FIELDS.forEach(f => { bucket[f] += norm[f]; });
+  }
+  return Array.from(buckets.values()).sort((a, b) => a.date.localeCompare(b.date));
+};
+
 const loadData = async () => {
   loading.value = true;
   error.value = null;
@@ -104,7 +165,13 @@ const loadData = async () => {
     
     // Store stats for display
     stats.value = apiStats;
-    chartData.value = apiData;
+    if (props.period === 'last-365-days') {
+      chartData.value = aggregateRows(apiData, bucketKeyWeek, props.period);
+    } else if (props.period === 'last-7-days' || props.period === 'last-30-days') {
+      chartData.value = aggregateRows(apiData, bucketKeyDay, props.period);
+    } else {
+      chartData.value = apiData;
+    }
     
     // Emit stats to parent component
     emit('data-loaded', apiStats);
@@ -125,18 +192,27 @@ const renderChart = () => {
 
   const ctx = chartCanvas.value.getContext('2d');
   
-  // Check if this is range data (has 'date' field) or intraday data (has 'timestamp' field)
-  const isRangeData = chartData.value[0]?.date !== undefined && chartData.value[0]?.timestamp === undefined;
+  // Range mode (30d/7d/year) is determined by the requested period, not by
+  // sniffing row shape — some range API responses carry both 'date' and
+  // 'timestamp' fields, which broke detection for the 30-day view.
+  const isRangeData = ['last-7-days', 'last-30-days', 'last-365-days'].includes(props.period);
   
-  // Calculate min/max for power data to align zero lines
-  const powerValues = isRangeData ? [] : chartData.value.flatMap(d => [
+  // Calculate min/max to align zero lines.
+  // Range mode (30d / year bars) uses summed kWh fields; intraday uses instantaneous power.
+  const powerValues = isRangeData ? chartData.value.flatMap(d => [
+    d.solar || 0,
+    d.home || 0,
+    d.grid_import || 0,
+    d.grid_export || 0,
+    d.battery_net || 0
+  ]) : chartData.value.flatMap(d => [
     d.solar || 0,
     d.home || 0,
     d.grid || 0,
     d.battery_power || 0
   ]);
-  const minPower = isRangeData ? 0 : Math.min(...powerValues, 0);
-  const maxPower = isRangeData ? 100 : Math.max(...powerValues, 0);
+  const minPower = Math.min(...powerValues, 0);
+  const maxPower = Math.max(...powerValues, 0);
   
   // Calculate range for y-axis (power)
   const powerRange = Math.max(Math.abs(minPower), Math.abs(maxPower));
@@ -172,74 +248,49 @@ const renderChart = () => {
   });
 
   chartInstance.value = new Chart(ctx, {
-    type: (!isRangeData && props.mode === 'bar') ? 'bar' : 'line',
+    type: (isRangeData || props.mode === 'bar') ? 'bar' : 'line',
     data: {
       labels,
       datasets: isRangeData ? [
-        {
-          label: 'Battery Discharge (kWh)',
-          data: chartData.value.map(d => d.battery_discharge || 0),
-          borderColor: '#a78bfa',
-          backgroundColor: 'rgba(167, 139, 250, 0.1)',
-          fill: false,
-          tension: 0.4,
-          pointRadius: 3,
-          borderWidth: 2,
-          yAxisID: 'y'
-        },
+        // ── 30-day / year range mode: grouped bars, one per available metric ──
         {
           label: 'Solar (kWh)',
           data: chartData.value.map(d => d.solar || 0),
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          fill: true,
-          tension: 0.4,
-          pointRadius: 3,
-          borderWidth: 2,
+          backgroundColor: '#f59e0b',
+          borderRadius: 2,
+          borderSkipped: false,
           yAxisID: 'y'
         },
         {
           label: 'Home (kWh)',
           data: chartData.value.map(d => d.home || 0),
-          borderColor: '#3b82f6',
-          backgroundColor: 'rgba(59, 130, 246, 0.1)',
-          fill: false,
-          tension: 0.4,
-          pointRadius: 3,
-          borderWidth: 2,
+          backgroundColor: '#3b82f6',
+          borderRadius: 2,
+          borderSkipped: false,
           yAxisID: 'y'
         },
         {
           label: 'Grid Import (kWh)',
           data: chartData.value.map(d => d.grid_import || 0),
-          borderColor: '#ef4444',
-          backgroundColor: 'rgba(239, 68, 68, 0.1)',
-          fill: false,
-          tension: 0.4,
-          pointRadius: 3,
-          borderWidth: 2,
+          backgroundColor: '#ef4444',
+          borderRadius: 2,
+          borderSkipped: false,
           yAxisID: 'y'
         },
         {
           label: 'Grid Export (kWh)',
           data: chartData.value.map(d => d.grid_export || 0),
-          borderColor: '#f59e0b',
-          backgroundColor: 'rgba(245, 158, 11, 0.1)',
-          fill: false,
-          tension: 0.4,
-          pointRadius: 3,
-          borderWidth: 2,
+          backgroundColor: '#fb923c',
+          borderRadius: 2,
+          borderSkipped: false,
           yAxisID: 'y'
         },
         {
-          label: 'Battery Charge (kWh)',
-          data: chartData.value.map(d => d.battery_charge || 0),
-          borderColor: '#8b5cf6',
-          backgroundColor: 'rgba(139, 92, 246, 0.1)',
-          fill: false,
-          tension: 0.4,
-          pointRadius: 3,
-          borderWidth: 2,
+          label: 'Battery (net kWh)',
+          data: chartData.value.map(d => d.battery_net || 0),
+          backgroundColor: '#10b981',
+          borderRadius: 2,
+          borderSkipped: false,
           yAxisID: 'y'
         }
       ] : props.mode === 'bar' ? [
@@ -413,17 +464,24 @@ const renderChart = () => {
               const dt = new Date(ts);
               const dd = String(dt.getDate()).padStart(2, '0');
               const mo = String(dt.getMonth() + 1).padStart(2, '0');
-              const hh = String(dt.getHours()).padStart(2, '0');
-              const mm = String(dt.getMinutes()).padStart(2, '0');
-              title = `${dd}/${mo} ${hh}:${mm}`;
+              if (rawEntry.timestamp) {
+                const hh = String(dt.getHours()).padStart(2, '0');
+                const mm = String(dt.getMinutes()).padStart(2, '0');
+                title = `${dd}/${mo} ${hh}:${mm}`;
+              } else {
+                // Range mode: no time component (day or week-start), skip 00:00
+                title = props.period === 'last-365-days' ? `Week of ${dd}/${mo}` : `${dd}/${mo}`;
+              }
             }
             const rows = tooltip.dataPoints.map(dp => {
               const ds = dp.dataset;
               const isSoC = ds.yAxisID === 'y1';
               const value = isSoC
                 ? dp.parsed.y.toFixed(1) + '%'
-                : dp.parsed.y.toFixed(0) + ' W';
-              const color = ds.borderColor;
+                : isRangeData
+                  ? dp.parsed.y.toFixed(1) + ' kWh'
+                  : dp.parsed.y.toFixed(0) + ' W';
+              const color = ds.borderColor || ds.backgroundColor;
               const isDash = Array.isArray(ds.borderDash) && ds.borderDash.length > 0;
               const icon = isDash
                 ? `<span style="display:inline-block;width:14px;height:2px;border-top:2px dashed ${color};vertical-align:middle;flex-shrink:0;"></span>`

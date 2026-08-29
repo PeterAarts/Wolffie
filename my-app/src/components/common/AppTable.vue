@@ -1,4 +1,4 @@
-<!-- src/components/ui/AppTable.vue -->
+<!-- src/components/common/AppTable.vue -->
 <!--
   Reusable data table built on @bhplugin/vue3-datatable.
   Install once: npm install @bhplugin/vue3-datatable --save
@@ -65,7 +65,7 @@
       :sortable="true"
       :pagination="true"
       :page-size="pageSize"
-      :page-size-options="[7, 15, 25, 50]"
+      :page-size-options="[8, 10, 25, 50]"
       :show-numbers-count="5"
       :no-data-content="emptyText || t('common.noItems')"
       skin="bh-table-hover"
@@ -93,7 +93,7 @@ const props = defineProps({
   columns:    { type: Array,   default: () => [] },
   loading:    { type: Boolean, default: false },
   search:     { type: String,  default: '' },
-  pageSize:   { type: Number,  default: 7 },
+  pageSize:   { type: Number,  default: 8 },
   emptyText:  { type: String,  default: '' },
   showSearch: { type: Boolean, default: true },
 });
@@ -146,11 +146,11 @@ const slotColumns = computed(() =>
 }
 .app-table__search-input {
   padding: 0.3125rem 0.725rem 0.3125rem 1.5rem;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--color-secondary-300);
  border-radius : var(--radius-sm);
   font-size: 0.78125rem;
   color: #111827;
-  background: #fff;
+  background: var(--color-background);
   outline: none;
   width: 30px;
   transition: border-color 0.15s, width 0.2s;
@@ -179,7 +179,7 @@ const slotColumns = computed(() =>
 
 /* ── Header ───────────────────────────────────────────────────────────────── */
 .app-table__datatable thead tr {
-  border-bottom: 1px solid #e5e7eb !important;
+  border-bottom: 1px solid var(--color-secondary-300) !important;
   background: transparent !important;
 }
 .app-table__datatable th {
@@ -203,7 +203,7 @@ const slotColumns = computed(() =>
 
 /* ── Body rows ────────────────────────────────────────────────────────────── */
 .app-table__datatable tbody tr {
-  border-bottom: 1px solid #f3f4f6 !important;
+  border-bottom: 1px solid var(--color-secondary-300) !important;
   transition: background 0.1s;
 }
 .app-table__datatable tbody tr:last-child    { border-bottom: none !important; }
@@ -218,7 +218,6 @@ const slotColumns = computed(() =>
   padding: 0.75rem 0.75rem !important;
   vertical-align: middle !important;
   border: none !important;
-  color: #374151;
 }
 .bh-active {
   background: #2a2a2b !important;
@@ -272,16 +271,10 @@ const slotColumns = computed(() =>
   border-color: #9ca3af;
 }
 .app-table__datatable .bh-pagination li.active button,
-.app-table__datatable .bh-pagination li.active span {
-  background: #111827;
-  border-color: #111827;
-  color: #fff;
-}
-.app-table__datatable .bh-pagination li button:disabled {
-  opacity: 0;
-  cursor: not-allowed;
-}
-
+.app-table__datatable .bh-pagination li.active span 
+                              { background: var(--color-background);border-color: var(--color-secondary-300);color: var(--color-primary);}
+.app-table__datatable .bh-pagination li button:disabled 
+                              { opacity: 0;cursor: not-allowed;}
 /* ── Skeleton loader ──────────────────────────────────────────────────────── */
 .app-table__datatable .bh-skeleton {
   background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
@@ -296,22 +289,14 @@ const slotColumns = computed(() =>
 }
 
 /* ── Empty state ──────────────────────────────────────────────────────────── */
-.app-table__datatable .bh-no-data {
-  padding: 2.5rem 1rem;
-  text-align: center;
-  font-size: 0.875rem;
-  color: #9ca3af;
-  border: 1px dashed #d1d5db;
- border-radius : var(--radius-sm);
-}
-.bh-pagination .bh-page-item {
-    display: grid;
+.app-table__datatable .bh-no-data 
+                              { padding: 2.5rem 1rem;text-align: center;font-size: 0.875rem;color: var(--color-primary);border: 1px dashed var(--color-secondary-300)   ;border-radius : var(--radius-sm);}
+.bh-page-item:hover           { background-color: #f3f4f6!important;color:#111827!important;}
+.bh-text-black                { color: var(--color-primary)!important;}
+.bh-pagination-info .bh-pagesize 
+                              { background-color: var(--color-background)!important;color: var(--color-primary)!important;border-radius : var(--radius-sm);border: 1px solid var(--secondary-300);}                           
+.bh-pagination .bh-page-item 
+                              { background-color: var(--color-background)!important;color: var(--color-primary)!important;border-radius : var(--radius-sm);border: 1px solid var(--secondary-300);}
+.bh-pagination-info .bh-mr-2  { min-width: 200px;} 
 
-   border-radius : var(--radius-sm);
-    border: 0px solid #0e17264d;
-
-}
-.bh-page-item:hover{
-  background-color: #f3f4f6!important;color:#111827!important;
-}
 </style>

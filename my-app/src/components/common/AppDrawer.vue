@@ -1,4 +1,4 @@
-<!-- src/components/ui/AppDrawer.vue -->
+<!-- src/components/common/AppDrawer.vue -->
 <!--
   Reusable slide-in drawer (right side).
 
@@ -87,7 +87,7 @@ function close() {
 /* ── Backdrop ────────────────────────────────────────────────────────────── */
 .drawer-backdrop            { background: rgba(17, 24, 39, 0.2); }
 /* ── Drawer panel ────────────────────────────────────────────────────────── */
-.drawer                     { width: 520px; max-width: 100vw;background-color: #FFF; }
+.drawer                     { width: 520px; max-width: 100vw;background-color: var( --color-card); margin:0;height:100%}
 /* ── Header ──────────────────────────────────────────────────────────────── */
 .drawer__header             { padding: 1.125rem 1.25rem; }
 .drawer__title              { font-size: 0.9375rem; }
@@ -98,29 +98,20 @@ function close() {
 .drawer__footer             { gap: 0.5rem; padding: 0.875rem 1.25rem; }
 /* ── Transitions ─────────────────────────────────────────────────────────── */
 .drawer-fade-enter-active,
-.drawer-fade-leave-active  { transition: opacity 0.2s ease; }
+.drawer-fade-leave-active   { transition: opacity 0.2s ease; }
 .drawer-fade-enter-from,
-.drawer-fade-leave-to      { opacity: 0; }
+.drawer-fade-leave-to       { opacity: 0; }
 .drawer-slide-enter-active,
-.drawer-slide-leave-active { transition: transform 0.2s ease; }
+.drawer-slide-leave-active  { transition: transform 0.2s ease; }
 .drawer-slide-enter-from,
-.drawer-slide-leave-to     { transform: translateX(100%); }
+.drawer-slide-leave-to      { transform: translateX(100%); } 
 
 /* ── Buttons (from control.css pattern — kept self-contained) ─────────────── */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.4375rem 0.875rem;
-  background: var(--color-bg-secondary);
-  border: 1px solid var(--color-border-dark);
-  color: var(--color-text-primary);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.15s, border-color 0.15s;
-}
-.btn:hover:not(:disabled) { background: var(--color-secondary-100); border-color: var(--color-secondary-400); }
+.btn                        { display: inline-flex;align-items: center;gap: 0.375rem;padding: 0.4375rem 0.875rem;background: var(--color-bg-secondary);border: 1px solid var(--color-border-dark);color: var(--color-text-primary);font-size: 0.8125rem;font-weight: 500;cursor: pointer;white-space: nowrap;transition: background 0.15s, border-color 0.15s;}
+.btn:hover:not(:disabled)   { background: var(--color-secondary-100); border-color: var(--color-secondary-400); }
 .btn--sm { padding: 0.3125rem 0.625rem; font-size: 0.78125rem; }
+@media (max-width: 768px)   {
+  .drawer                   {margin:0.5rem;height:auto;}
+}
+
 </style>

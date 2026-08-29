@@ -1,4 +1,4 @@
-<!-- src/components/ui/AppModal.vue -->
+<!-- src/components/common/AppModal.vue -->
 <!--
   Reusable confirm/alert modal.
 

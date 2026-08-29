@@ -1,67 +1,58 @@
-/* src/assets/styles/main.css 
+/* src/assets/styles/main.css
 @import "./rubik.css";*/
 @import "./ph-light.css";
 @import "./ph-fill.css";
 @import "tailwindcss";
+@import "./themes.css";
 
-/* ── Tailwind v4 theme tokens ─────────────────────────────────────────────────
- * theme.js writes the actual values to --color-primary, --color-secondary-*
- * etc. at runtime. These @theme entries just teach Tailwind what class names
- * to generate — the color values resolve live from the CSS vars.
- * Result: bg-primary, text-primary, bg-secondary-100, hover:bg-secondary-200,
- *         text-secondary-400, bg-background, border-secondary-200, etc.
+/* ── Tailwind v4 @theme ───────────────────────────────────────────────────────
+ * @theme resolves at BUILD time and does two things:
+ *   1. tells Tailwind which utility class names to generate
+ *   2. supplies the fallback value if no theme block is active
  *
- * IMPORTANT — custom utility classes (.p-2, .p-4, .mb-4, .mt-4 etc.) must
- * NOT be defined as bare CSS rules. Either delete them (Tailwind generates
- * them) or wrap them in @layer utilities {} so Tailwind's specificity wins.
- * ─────────────────────────────────────────────────────────────────────────── */
-/* ── Tailwind v4 @theme — literal hex values only, no var() ──────────────────
- * @theme is resolved at BUILD time — var() references don't work here.
- * Use the same hex values as theme.js DEFAULTS.
- *
- * How runtime theming still works:
- * Tailwind v4 generates utility classes as e.g.:
+ * Generated utilities reference the var, e.g.
  *   .bg-secondary-100 { background-color: var(--color-secondary-100) }
- * theme.js overwrites --color-secondary-100 on :root at runtime,
- * so the correct live value is used — no rebuild needed when theme changes.
+ * so themes.css overriding that var at runtime is picked up with no rebuild.
+ *
+ * CRITICAL: a stop that is NOT listed here generates NO class. The old file
+ * stopped at 400, which silently killed ~90 usages of text-secondary-500/600/
+ * 700/900 and bg-secondary-500/900 across the app — those elements just
+ * inherited body colour and happened to look plausible on light themes.
+ * Add a stop here whenever you use a new one in markup.
+ *
+ * NOTE: --color-card is deliberately absent. `.bg-card` is hand-written below
+ * (it also carries border + radius); adding it here would generate a competing
+ * .bg-card utility.
  * ─────────────────────────────────────────────────────────────────────────── */
 @theme {
   --font-family-sans: 'Rubik', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 
-  /* Primary — matches theme.js default */
   --color-primary:   #0a0a0a;
+  --color-accent:    #5492be;
+  --color-on-accent: #ffffff;
 
-  /* Secondary scale — default (neutral gray) theme values */
   --color-secondary-50:  #f9fafb;
   --color-secondary-100: #f3f4f6;
   --color-secondary-200: #e5e7eb;
   --color-secondary-300: #d1d5db;
-  --color-secondary-400: #6b7280;
+  --color-secondary-400: #9ca3af;
+  --color-secondary-500: #6b7280;
+  --color-secondary-600: #4b5563;
+  --color-secondary-700: #374151;
+  --color-secondary-800: #1f2937;
+  --color-secondary-900: #111827;
 
-  /* Page background */
-  --color-background: #f1f5f9;
+  --color-background: #eef3f8;
 }
 
-/* ── Fallback root vars (theme.js overwrites these at runtime) ────────────────
- * Keep only what theme.js doesn't manage: spacing, typography, shadows,
- * energy/status semantic colors, PrimeVue overrides.
+/* ── Root vars NOT managed per-theme ──────────────────────────────────────────
+ * Colour tokens moved to themes.css. What stays here is theme-independent:
+ * energy/status semantics, spacing, typography, shadows, PrimeVue overrides.
  * ─────────────────────────────────────────────────────────────────────────── */
 :root {
-  /* Theme.js manages these — values here are just safe fallbacks */
-  --color-primary:           #0a0a0a;
-  --color-secondary:         #6b7280;
-  --color-secondary-subtle:  #f3f4f6;
-  --color-secondary-muted:   #e5e7eb;
-  --color-secondary-hover:   #d1d5db;
-  --color-bg-primary:        #f1f5f9;
-  --color-bg-secondary:      #f3f4f6;
-  --color-text-primary:      #0a0a0a;
-  --color-text-secondary:    #6b7280;
-  --color-text-tertiary:     #9ca3af;
-  --color-border:            #e5e7eb;
-  --color-border-dark:       #d1d5db;
-
-  /* Energy/status — fixed, never overridden by theme */
+  /* Energy/status — fixed, identical in every theme.
+     If these ever need per-theme tuning (amber on a light page is thin),
+     move them into the themes.css blocks. */
   --color-solar:    #f59e0b;
   --color-battery:  #10b981;
   --color-grid:     #f97316;
@@ -69,6 +60,10 @@
   --color-success:  #10b981;
   --color-warning:  #f59e0b;
   --color-error:    #ef4444;
+
+  /* Literal white, for the handful of places that genuinely mean white
+     regardless of theme (badge text on a saturated fill). */
+  --color-white: #ffffff;
 
   /* Spacing */
   --gap-xs: 0.25rem;
@@ -98,57 +93,49 @@
   --font-weight-bold:     700;
   --font-weight-black:    900;
 
-  /* Border radius — theme.js manages --radius-sm/md/lg/xl/2xl at runtime */
-  --radius-sm:  0px;
-  --radius-md:  0px;
-  --radius-lg:  0px;
-  --radius-xl:  1rem;
-  --radius-2xl: 0px;
-
-  /* border width */
-  --border-width: 0px;
-
   /* Shadows */
-  --shadow-sm: none ;
+  --shadow-sm: none;
   --shadow-md: none;
-  --shadow-lg: 0 ;
-  --tw-shadow-color :transparent ;
+  --shadow-lg: none;
+  --tw-shadow-color: transparent;
 
   /* PrimeVue */
   --p-card-shadow: none;
 }
 
-/* ── Base reset ───────────────────────────────────────────────────────────── 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }*/ 
-
+/* ── Base ─────────────────────────────────────────────────────────────────── */
 html                    { font-size: 16px;-webkit-font-smoothing: antialiased;-moz-osx-font-smoothing: grayscale;}
-body                    { font-family: var(--font-family);font-weight: var(--font-weight-normal);background-color: var(--color-bg-primary);color: var(--color-text-primary);line-height: 1.5;min-height: 100vh;overflow-x: hidden;overflow-y: auto;}
-#app                    { max-width: 100%;margin: 0; padding: 0;min-height: 100vh;background: var(--color-bg-primary);}
+body                    { font-family: var(--font-family);font-weight: var(--font-weight-normal);background-color: var(--color-background);color: var(--color-text-primary);line-height: 1.5;min-height: 100vh;overflow-x: hidden;overflow-y: auto;}
+#app                    { max-width: 100%;margin: 0; padding: 0;min-height: 100vh;background: var(--color-background);}
+.--color-background     { background-color: var(--color-background); }
 
 /* ── Card styles ──────────────────────────────────────────────────────────── */
 .energy-card, .p-card   { background: var(--color-bg-secondary);border: 1px solid var(--color-border);border-radius: var(--radius-xl);box-shadow: none;transition: all 0.2s ease;overflow: hidden;}
-.energy-card:hover, .p-card:hover 
+.energy-card:hover, .p-card:hover
                         { border-color: var(--color-border-dark); }
-.energy-card .p-card-content, .p-card-content 
+.energy-card .p-card-content, .p-card-content
                         { padding: var(--gap-xl); color: var(--color-text-primary); }
 .p-card-title           { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); font-size: var(--font-size-lg); margin-bottom: var(--gap-md); }
 .p-card-subtitle        { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-normal); }
+.bg-card                { background-color: var(--card-bg-color); border: 1px solid var(--color-secondary-200); border-radius: var(--radius-xl); box-shadow: none; }
 
-/* Stats cards — identical structure to EnergyFlowGraph stat cards */
+/* Stats cards */
 .stats-overview         { display: flex; gap: 16px; flex-wrap: wrap; }
-.stat-card              { background-color: var(--color-secondary-200); padding: .5rem 1rem; display: flex; flex-direction: column; gap: 8px; border-radius: var(--radius-lg); }
+.stat-card              { background-color: var(--color-secondary-100); padding: .5rem 1rem; display: flex!important; flex-direction: column; gap: 8px!important; border-radius: var(--radius-lg); }
 .stat-card .label,
 .stat-card .value small { font-size: 80%; color: var(--color-secondary-600); font-weight: 400; }
-.stat-card .value       { font-weight: 500; color: var(--color-text-primary, #111827); line-height: 1; }
+.stat-card .value       { font-weight: 500; color: var(--color-text-primary); line-height: 1; }
 
-.card-dark              { background: var(--color-text-primary); color: #fff; border: none; }
+/* Inverted card. Was `background: var(--color-text-primary); color: #fff`,
+   which on dark themes put white text on a near-white fill. */
+.card-dark              { background: var(--color-primary); color: var(--color-on-accent); border: none; }
 .card-dark .stat-card-value,
 .card-dark .power-value,
-.card-dark .percentage-display 
-                        { color: #fff; }
+.card-dark .percentage-display
+                        { color: var(--color-on-accent); }
 .card-dark .stat-card-label,
-.card-dark .percentage-label   
-                        { color: var(--color-text-tertiary); }
+.card-dark .percentage-label
+                        { color: color-mix(in srgb, var(--color-on-accent) 65%, transparent); }
 
 /* ── Power / data display ─────────────────────────────────────────────────── */
 .power-value            { font-size: var(--font-size-5xl); font-weight: var(--font-weight-black); line-height: 1; margin: var(--gap-md) 0; color: var(--color-text-primary); letter-spacing: -0.03em; }
@@ -160,14 +147,20 @@ body                    { font-family: var(--font-family);font-weight: var(--fon
 .chart-container        { position: relative; height: 300px; padding: var(--gap-lg);background: var(--color-bg-secondary);border-radius: var(--radius-xl);border: 1px solid var(--color-border);}
 .energy-flow            { padding: var(--gap-xl);background: var(--color-bg-secondary);border-radius: var(--radius-xl);border: 1px solid var(--color-border);}
 
+/* Shared tooltip surface for the Chart.js HTML tooltips. */
+.chart-html-tooltip     { position: absolute;pointer-events: none;background: var(--color-tooltip-bg);border: 1px solid var(--color-tooltip-border);color: var(--color-text-primary);border-radius: var(--radius-md);padding: 10px 14px;box-shadow: 0 4px 16px rgba(0,0,0,.24);min-width: 170px;z-index: 100;}
+
 /* ── Grid ─────────────────────────────────────────────────────────────────── */
 .grid                   { display: grid; gap: var(--gap-lg); }
 .grid-cols-1            { grid-template-columns: repeat(1, 1fr); }
 .grid-cols-2            { grid-template-columns: repeat(2, 1fr); }
 .grid-cols-3            { grid-template-columns: repeat(3, 1fr); }
 .grid-cols-4            { grid-template-columns: repeat(4, 1fr); }
-input , select          { width: 100%;padding: 0.4375rem 0.75rem;border-bottom: 1px solid var(--color-secondary-200);border-radius: var(--radius-sm, 4px);font-size: 0.8125rem;color: var(--color-primary);background: var(--color-secondary-50);outline: none;box-sizing: border-box;transition: border-color 0.15s;}
-input:focus             { border-color: var(--color-secondary-400); }
+
+input , select          { width: 100%;padding: 0.4375rem 0.75rem;border:1px solid var(--color-border);border-radius: var(--radius-sm);font-size: 0.8125rem;color: var(--color-text-primary);background: var(--color-secondary-100);outline: none;box-sizing: border-box;transition: border-color 0.15s;}
+input:focus             { border-color: var(--color-secondary-500); }
+input::placeholder      { color: var(--color-text-tertiary); }
+
 @media (max-width: 1024px) {
   .grid-cols-4, .grid-cols-3 { grid-template-columns: repeat(2, 1fr); }
 }
@@ -186,7 +179,7 @@ input:focus             { border-color: var(--color-secondary-400); }
 }
 
 /* ── Loading screen ───────────────────────────────────────────────────────── */
-.loading-screen         { position: fixed; inset: 0;background: var(--color-bg-primary);display: flex; align-items: center; justify-content: center;z-index: 9999;}
+.loading-screen         { position: fixed; inset: 0;background: var(--color-background);display: flex; align-items: center; justify-content: center;z-index: 9999;}
 .loading-content        { text-align: center; }
 .loading-content i      { font-size: 3rem; color: var(--color-text-primary); margin-bottom: var(--gap-lg); }
 .loading-content p      { font-size: var(--font-size-lg); font-weight: var(--font-weight-medium); color: var(--color-text-primary); }
@@ -208,23 +201,22 @@ input:focus             { border-color: var(--color-secondary-400); }
 img[src*="stat"], img[src*="icon"], .status-icon, .summary-item-icon {
   display: none !important;
 }
-/* ── Range slider ─────────────────────────────────────────────────────────── */
-.range                  {width: 100%;-webkit-appearance: none;appearance: none;height: 3px;border-radius: var(--radius-md)!important;background: var(--color-secondary-50)!important;outline: none;cursor: pointer;}
-.range::-webkit-slider-thumb 
-                        { -webkit-appearance: none;appearance: none;width: 14px; height: 14px;border-radius: 50%;background: var(--color-primary);border: 2px solid var(--color-secondary-100);box-shadow: 0 0 0 1px var(--color-secondary-300);cursor: pointer;}
-.range::-moz-range-thumb 
-                        { width: 14px; height: 14px;border-radius: 50%;background: var(--color-primary);border: 2px solid var(--color-bg-secondary);box-shadow: 0 0 0 1px var(--color-secondary-300);cursor: pointer;}
-.card, .status-card, .chart-container 
-                        { background-color: var(--card-bg-color);border-radius: var(--border-radius);box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
 
-/* ── Scrollbar styling ────────────────────────────────────────────────────── */
-/* Webkit (Chrome, Edge, Safari) */
+/* ── Range slider ─────────────────────────────────────────────────────────── */
+.range                  {width: 100%;-webkit-appearance: none;appearance: none;height: 3px;border : 1px solid var(--color-secondary-200);border-radius: var(--radius-md)!important;background: var(--color-secondary-200)!important;outline: none;cursor: pointer;}
+.range::-webkit-slider-thumb
+                        { -webkit-appearance: none;appearance: none;width: 14px; height: 14px;border-radius: 50%;background: var(--color-primary);border: 2px solid var(--card-bg-color);box-shadow: 0 0 0 1px var(--color-secondary-300);cursor: pointer;}
+.range::-moz-range-thumb
+                        { width: 14px; height: 14px;border-radius: 50%;background: var(--color-primary);border: 2px solid var(--card-bg-color);box-shadow: 0 0 0 1px var(--color-secondary-300);cursor: pointer;}
+
+.card, .status-card     { background-color: var(--card-bg-color);border-radius: var(--border-radius);box-shadow: none; }
+.logo                   { background-color: var(--color-primary);mask: url('/assets/wolffie.svg') center / contain no-repeat;}
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar               { width: 6px; height: 6px; }
-::-webkit-scrollbar-track         { background: white; border-radius: var(--radius-md, 3px); }
-::-webkit-scrollbar-thumb         { background: var(--color-secondary-300); border-radius: var(--radius-md, 3px); transition: background 0.15s; }
+::-webkit-scrollbar-track         { background: var(--color-scrollbar-track); border-radius: var(--radius-sm); }
+::-webkit-scrollbar-thumb         { background: var(--color-secondary-300); border-radius: var(--radius-sm); transition: background 0.15s; }
 ::-webkit-scrollbar-thumb:hover   { background: var(--color-secondary-400); }
 ::-webkit-scrollbar-corner        { background: var(--color-secondary-100); }
 ::-webkit-scrollbar-buttons       { display:none; }
- 
-/* Firefox */
+
 * { scrollbar-width: thin; scrollbar-color: var(--color-secondary-300) var(--color-secondary-100); }

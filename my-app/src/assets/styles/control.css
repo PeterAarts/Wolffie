@@ -1,80 +1,83 @@
 /* src/assets/control.css
  *
- * Shared design tokens for the Control panel and any page
- * that uses the same visual language (buttons, form fields,
- * range sliders, toggle switches, drawer sections, badges).
+ * Shared design tokens for the Control panel and any page that uses the
+ * same visual language (buttons, form fields, range sliders, toggle
+ * switches, drawer sections, badges).
  *
- * Import once in the feature entry component:
- *   import '@/assets/control.css'
- * or add to your global stylesheet.
+ * All colours come from the active theme block in themes.css.
  */
 
 /* ── Buttons ──────────────────────────────────────────────────────────────── */
-.btn                      { display: inline-flex;align-items: center;gap: 0.375rem;padding: 0.4375rem 0.875rem;background: var(--color-secondary-50);border: 1px solid var(--color-secondary-200);border-radius: var(--radius-sm, 0px);color: var(--color-primary);font-size: 0.8125rem;font-weight: 500;cursor: pointer;white-space: nowrap;transition: background 0.15s, border-color 0.15s;}
-.btn:hover:not(:disabled) { background: var(--color-secondary-200); color: var(--color-secondary-900);border-color: var(--color-secondary-200); }
+.btn                      { display: inline-flex;align-items: center;gap: 0.375rem;padding: 0.4375rem 0.875rem;background: var(--color-secondary-100);border: 1px solid var(--color-secondary-300);border-radius: var(--radius-sm);color: var(--color-text-primary);font-size: 0.8125rem;font-weight: 500;cursor: pointer;white-space: nowrap;transition: background 0.15s, border-color 0.15s;}
+.btn:hover:not(:disabled) { background: var(--color-secondary-200); color: var(--color-secondary-900);border-color: var(--color-secondary-400); }
 .btn:disabled             { opacity: 0.5; cursor: not-allowed; }
 
 .btn--sm                  { padding: 0.3125rem 0.625rem; font-size: 0.78125rem; }
 .btn--full                { width: 100%; justify-content: center; }
 .btn--busy                { opacity: 0.6; pointer-events: none; }
-.btn--primary             { background: var(--color-primary);border-color: var(--color-primary);color: #fff;}
-.btn--primary:hover:not(:disabled) 
-                          { background: var(--color-secondary-200); color: var(--color-secondary-900); }
 
-.btn--destructive         {color: #991b1b;border-color: #fca5a5;background: #fef2f2;}
-.btn--destructive:hover:not(:disabled) 
-                          { background: #fee2e2; border-color: #f87171; }
+/* --color-on-accent, not #fff: on dark themes --color-primary is a LIGHT
+   ink colour, so white-on-primary was white-on-white. */
+.btn--primary             { background: var(--color-primary);border-color: var(--color-primary);color: var(--color-on-accent);}
+.btn--primary:hover:not(:disabled)
+                          { background: var(--color-secondary-800); border-color: var(--color-secondary-800); }
+
+.btn--destructive         { color: var(--color-danger-text);border-color: var(--color-danger-border);background: var(--color-danger-bg);}
+.btn--destructive:hover:not(:disabled)
+                          { background: color-mix(in srgb, var(--color-error) 24%, var(--card-bg-color)); border-color: var(--color-error); }
 
 /* ── Icon buttons (table row actions, drawer close) ───────────────────────── */
-.icon-btn                 { width: 26px; height: 26px;display: inline-flex;align-items: center;justify-content: center;color: transparent;cursor: pointer;border: none;background: transparent;border-radius: 0px;transition: color 0.15s, background 0.15s;}
-.bh-table-responsive table.bh-table-hover tbody tr:hover .icon-btn 
+.icon-btn                 { width: 26px; height: 26px;display: inline-flex;align-items: center;justify-content: center;color: transparent;cursor: pointer;border: none;background: transparent;border-radius: var(--radius-sm);transition: color 0.15s, background 0.15s;}
+.bh-table-responsive table.bh-table-hover tbody tr:hover .icon-btn
                           { color: var(--color-text-tertiary); }
 .bh-table-responsive table.bh-table-hover tbody tr:hover .icon-btn:hover
                           { color: var(--color-primary)!important;font-size:130%;}
 
-.icon-btn--danger:hover { color: #991b1b !important; }
+.icon-btn--danger:hover   { color: var(--color-error) !important; }
 
 /* Show row action icons on row hover */
-.table tbody tr:hover .icon-btn 
+.table tbody tr:hover .icon-btn
                         { color: var(--color-text-tertiary); }
 
 .row-actions            { display: flex; gap: 0.25rem; }
+
 /* ── Form fields ──────────────────────────────────────────────────────────── */
 .form-field             { display: flex; flex-direction: column; gap: 0.375rem; }
 .form-field--flex       { flex: 1; }
 .form-field--port       { width: 80px; flex-shrink: 0; }
 .form-row               { display: flex; gap: 0.75rem; align-items: flex-start; }
 .form-label             { font-size: 0.8rem; font-weight: 500; color: var(--color-text-primary); }
-.req                    { color: #ef4444; }
-
-
+.req                    { color: var(--color-error); }
 
 /* ── Field label + value row (used with range sliders) ────────────────────── */
 .field__label-row       { display: flex;justify-content: space-between;align-items: center;}
 .field__label           { font-size: 0.8rem;font-weight: 500;color: var(--color-text-primary);}
-.field__value           { font-size: 0.78rem;font-weight: 600;color: var(--color-text-primary);background: var(--color-secondary-200);padding: 0.1rem 0.5rem;border-radius: var(--radius-sm, 3px);font-variant-numeric: tabular-nums;min-width: 54px;text-align: center;}
+.field__value           { font-size: 0.78rem;font-weight: 600;color: var(--color-text-primary);background: var(--color-secondary-200);padding: 0.1rem 0.5rem;border-radius: var(--radius-sm);font-variant-numeric: tabular-nums;min-width: 54px;text-align: center;}
 .field__hints           { display: flex;justify-content: space-between;font-size: 0.7rem;color: var(--color-text-tertiary);}
 
 /* ── Toggle switch ────────────────────────────────────────────────────────── */
 .toggle-row             { display: flex;  align-items: center;  justify-content: space-between;  gap: 0.75rem;position: relative;}
 .toggle-hint            { font-size: 0.75rem;  color: var(--color-text-tertiary);  margin: 0.2rem 0 0;}
-.toggle                 { width: 40px; height: 22px;  flex-shrink: 0;  border-radius: var(--radius-lg);  border: none;  background: var(--color-secondary-200);  cursor: pointer;  position: relative;  transition: background 0.2s;}
+.toggle                 { width: 40px; height: 22px;  flex-shrink: 0;  border-radius: 999px;  border: none;  background: var(--color-secondary-300);  cursor: pointer;  position: relative;  transition: background 0.2s;}
 .toggle--on             { background: var(--color-primary); }
-.toggle__knob           { position: absolute;  top: 2px; left: 2px;  width: 18px; height: 18px;  border-radius:var(--radius-lg);  background: #fff;  transition: left 0.2s;  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);}
-.toggle--on .toggle__knob { left: 20px; }
+/* The knob must contrast with BOTH the off-track and the on-track, so it
+   gets its own token rather than reusing --color-on-accent. */
+.toggle__knob           { position: absolute;  top: 2px; left: 2px;  width: 18px; height: 18px;  border-radius: 999px;  background: var(--color-toggle-knob);  transition: left 0.2s;  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);}
+.toggle--on .toggle__knob { left: 20px; background: var(--color-on-accent); }
 
 /* ── Drawer section headings & dividers ───────────────────────────────────── */
 .drawer-section         { display: flex; flex-direction: column; gap: 0.875rem; }
-
 .drawer-section__title  { font-size: 0.7rem;font-weight: 700;text-transform: uppercase;letter-spacing: 0.07em;color: var(--color-text-tertiary);display: flex;align-items: center;gap: 0.5rem;}
-.drawer-section__note   { font-size: 0.68rem;font-weight: 400;text-transform: none;letter-spacing: 0;color: var(--color-secondary-300);}
-.drawer-divider         { height: 1px; background: var(--color-secondary-200); }
+.drawer-section__note   { font-size: 0.68rem;font-weight: 400;text-transform: none;letter-spacing: 0;color: var(--color-text-tertiary);}
+.drawer-divider         { height: 1px; background: var(--color-secondary-300); }
 
 /* ── Toolbar helpers ──────────────────────────────────────────────────────── */
-.toolbar__count         {font-size: 0.8rem; color: var(--color-text-secondary); font-weight: 500; }
-.toolbar__badge         {font-size: 0.7rem;font-weight: 600;background: var(--color-secondary-200);color: var(--color-text-primary);padding: 0.125rem 0.5rem;border-radius: 20px;}
+.toolbar__count         { font-size: 0.8rem; color: var(--color-text-secondary); font-weight: 500; }
+.toolbar__badge         { font-size: 0.7rem;font-weight: 600;background: var(--color-secondary-200);color: var(--color-text-primary);padding: 0.125rem 0.5rem;border-radius: 20px;}
+
 /* ── Cell helpers ─────────────────────────────────────────────────────────── */
 .cell-primary           { font-size: 0.8125rem; font-weight: 600; color: var(--color-text-primary); }
 .cell-secondary         { font-size: 0.725rem;  color: var(--color-text-tertiary); margin-top: 0.1rem; }
-aside nav button        { border-radius: var(--radius-sm);}
-aside                   { width:13rem;}
+
+aside nav button        { border-radius: var(--radius-sm); }
+aside                   { width: 13rem; }

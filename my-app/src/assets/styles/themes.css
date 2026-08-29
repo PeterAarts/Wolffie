@@ -1,0 +1,319 @@
+/* src/assets/styles/themes.css
+ *
+ * Static per-preset design tokens. Selected by `data-theme` on <html>,
+ * which src/stores/theme.js sets.
+ *
+ * WHY STATIC: the previous approach derived a 50–900 ramp from one
+ * secondary hex by shifting HSL lightness upward for low stops. That
+ * assumes "lighter = more subtle", which is only true on a light page.
+ * On a dark page the ramp must run the other way, and no single set of
+ * offsets can do both. These blocks are hand-tuned instead.
+ *
+ * SCALE CONTRACT — the ramp is SEMANTIC, not "always lighter to darker".
+ * The same stop means the same thing in every theme:
+ *
+ *   50   deepest / flattest surface        (page-adjacent fills)
+ *   100  subtle surface                    (panels, drawers, hover rows)
+ *   200  raised surface                    (chips, buttons, hover states)
+ *   300  borders and dividers
+ *   400  muted text                        (>= 4.5:1 on the page bg)
+ *   500  secondary text
+ *   600  body text
+ *   700  strong text
+ *   800  stronger text
+ *   900  highest-contrast text
+ *
+ * In LIGHT themes 50 is near-white and 900 is near-black.
+ * In DARK themes that inverts: 50 is near-black, 900 is near-white.
+ * Components never need to know which — `text-secondary-400` is always
+ * muted text, `bg-secondary-100` is always a subtle surface.
+ *
+ * ADDING A PRESET: copy a block, retune, then add a matching entry to
+ * THEME_PRESETS in src/stores/theme.js so it appears in the picker.
+ * ─────────────────────────────────────────────────────────────────── */
+
+/* ══════════════════════════════════════════════════════════════════════
+   DEFAULT — light, neutral grey
+   ══════════════════════════════════════════════════════════════════ */
+html[data-theme='default'] {
+  color-scheme: light;
+
+  --color-primary:        #0a0a0a;
+  --color-on-accent:      #ffffff;
+  --color-toggle-knob:    #ffffff;
+
+  --color-secondary-50:   #f9fafb;
+  --color-secondary-100:  #f3f4f6;
+  --color-secondary-200:  #e5e7eb;
+  --color-secondary-300:  #d1d5db;
+  --color-secondary-400:  #9ca3af;
+  --color-secondary-500:  #6b7280;
+  --color-secondary-600:  #4b5563;
+  --color-secondary-700:  #374151;
+  --color-secondary-800:  #1f2937;
+  --color-secondary-900:  #111827;
+
+  --color-background:     #eef3f8;
+  --card-bg-color:        #ffffff;
+
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-2xl: 24px;
+  --border-radius: 0.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   OLIVE — light, warm brown-grey
+   ══════════════════════════════════════════════════════════════════ */
+html[data-theme='olive'] {
+  color-scheme: light;
+
+  --color-primary:        #3d3028;
+  --color-on-accent:      #ffffff;
+  --color-toggle-knob:    #ffffff;
+
+  --color-secondary-50:   #faf9f7;
+  --color-secondary-100:  #f4f2ef;
+  --color-secondary-200:  #e8e4de;
+  --color-secondary-300:  #d5cec4;
+  --color-secondary-400:  #a1968a;
+  --color-secondary-500:  #857a6d;
+  --color-secondary-600:  #6b6156;
+  --color-secondary-700:  #544c43;
+  --color-secondary-800:  #3d3830;
+  --color-secondary-900:  #2a2620;
+
+  --color-background:     #f5f3f0;
+  --card-bg-color:        #ffffff;
+
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-2xl: 24px;
+  --border-radius: 0.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   OCEAN — light, cool blue
+   NOTE: the old preset had cardBackgroundColor (#e2e8f0) DARKER than
+   backgroundColor (#f1f5f9), so cards sank into the page instead of
+   lifting off it — and every hardcoded #fff surface broke the effect
+   anyway. Normalised: tinted page, white card.
+   ══════════════════════════════════════════════════════════════════ */
+html[data-theme='ocean'] {
+  color-scheme: light;
+
+  --color-primary:        #183e5f;
+  --color-on-accent:      #ffffff;
+  --color-toggle-knob:    #ffffff;
+
+  --color-secondary-50:   #f4f8fb;
+  --color-secondary-100:  #e7f0f7;
+  --color-secondary-200:  #d2e2ee;
+  --color-secondary-300:  #b0cbe0;
+  --color-secondary-400:  #7ba3c2;
+  --color-secondary-500:  #5586a9;
+  --color-secondary-600:  #416a88;
+  --color-secondary-700:  #33536b;
+  --color-secondary-800:  #264055;
+  --color-secondary-900:  #16293a;
+
+  --color-background:     #e9f0f7;
+  --card-bg-color:        #ffffff;
+
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-2xl: 24px;
+  --border-radius: 0.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   SOLAR FLARE — light, navy on near-white, generous radius
+   NOTE: the old preset set secondaryColor to amber #f59e0b and fed it
+   into the ramp. The ramp drives BODY TEXT and BORDERS, so amber text
+   on white was the result — unreadable. The ramp is neutral slate here;
+   amber lives in --color-accent, and --color-solar (main.css) already
+   carries it for energy charts.
+   ══════════════════════════════════════════════════════════════════ */
+html[data-theme='solar'] {
+  color-scheme: light;
+
+  --color-primary:        #0f172a;
+  --color-accent:         #f59e0b;
+  --color-on-accent:      #ffffff;
+  --color-toggle-knob:    #ffffff;
+
+  --color-secondary-50:   #f8fafc;
+  --color-secondary-100:  #f1f5f9;
+  --color-secondary-200:  #e2e8f0;
+  --color-secondary-300:  #cbd5e1;
+  --color-secondary-400:  #8d9cb0;
+  --color-secondary-500:  #64748b;
+  --color-secondary-600:  #475569;
+  --color-secondary-700:  #334155;
+  --color-secondary-800:  #1e293b;
+  --color-secondary-900:  #0f172a;
+
+  --color-background:     #eef2f7;
+  --card-bg-color:        #ffffff;
+
+  --radius-sm:  8px;
+  --radius-md:  16px;
+  --radius-lg:  24px;
+  --radius-xl:  32px;
+  --radius-2xl: 48px;
+  --border-radius: 1rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CARBON FOREST — DARK, green-tinted charcoal
+   ══════════════════════════════════════════════════════════════════ */
+html[data-theme='carbon'] {
+  color-scheme: dark;
+
+  --color-primary:        #e8ede8;   /* ink is LIGHT in dark themes */
+  --color-accent:         #7a9782;
+  --color-on-accent:      #10140f;   /* dark text sits on the light ink */
+  --color-toggle-knob:    #e8ede8;
+
+  --color-secondary-50:   #1b1f1b;
+  --color-secondary-100:  #232823;
+  --color-secondary-200:  #2e352e;
+  --color-secondary-300:  #3d463d;
+  --color-secondary-400:  #7d8c7f;
+  --color-secondary-500:  #95a597;
+  --color-secondary-600:  #aebcaf;
+  --color-secondary-700:  #c6d1c7;
+  --color-secondary-800:  #dbe3db;
+  --color-secondary-900:  #eef2ee;
+
+  --color-background:     #161816;
+  --card-bg-color:        #22271f;
+
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-2xl: 24px;
+  --border-radius: 0.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MIDNIGHT ROSE — DARK, near-OLED black with a rose accent
+   ══════════════════════════════════════════════════════════════════ */
+html[data-theme='midnight'] {
+  color-scheme: dark;
+
+  --color-primary:        #f4eff1;
+  --color-accent:         #fb7185;
+  --color-on-accent:      #1a0f12;
+  --color-toggle-knob:    #f4eff1;
+
+  --color-secondary-50:   #141419;
+  --color-secondary-100:  #1b1b21;
+  --color-secondary-200:  #26262e;
+  --color-secondary-300:  #35353f;
+  --color-secondary-400:  #83838f;
+  --color-secondary-500:  #9a9aa6;
+  --color-secondary-600:  #b1b1bc;
+  --color-secondary-700:  #c9c9d2;
+  --color-secondary-800:  #dedee5;
+  --color-secondary-900:  #f2f2f6;
+
+  --color-background:     #0f0f12;
+  --card-bg-color:        #17171c;
+
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-2xl: 24px;
+  --border-radius: 0.5rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   WOLFFIE — DARK, deep teal-navy (house theme)
+   ══════════════════════════════════════════════════════════════════ */
+html[data-theme='wolffie'] {
+  color-scheme: dark;
+
+  --color-primary:        #E9E9ED  ;
+  --color-accent:         #9184d9;
+  --color-on-accent:      #08222c;
+  --color-toggle-knob:    #ebeeeb;
+
+   --color-secondary-50:  #1d1a2c; /* Diepste achtergrond / donkerste tint */
+  --color-secondary-100: #27233a; /* Subtiele oppervlakken / kaarten */
+  --color-secondary-200: #3a3454; /* Randen / opgediepte elementen */
+  --color-secondary-300: #524b75; /* Inactieve of secundaire UI-elementen */
+  --color-secondary-400: #8c82be; /* Voldoet aan WCAG AA contrast op hele donkere ondergronden */
+  --color-secondary-500: #C8C4E8; /* Basis secundaire kleur */
+  --color-secondary-600: #d5d1ed; /* Lichte hover states */
+  --color-secondary-700: #e0dcf2; /* Hoge helderheid voor voorgrond */
+  --color-secondary-800: #ebe8f7; /* Zeer lichte tekst/iconen */
+  --color-secondary-900: #f5f4fb; /* Helderste accent/tekst */
+
+  --color-background:     #1E2030;
+  --card-bg-color:        #2B2E42;
+
+  --radius-sm:  6px;
+  --radius-md:  12px;
+  --radius-lg:  18px;
+  --radius-xl:  24px;
+  --radius-2xl: 36px;
+  --border-radius: 0.75rem;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DERIVED ALIASES — identical in every theme, so written once.
+   These map the numbered ramp onto the role names that main.css,
+   control.css and the components already consume. Because they use
+   var() against the ramp, they follow whichever block is active.
+   ══════════════════════════════════════════════════════════════════ */
+html[data-theme] {
+  --color-secondary:         var(--color-secondary-500);
+  --color-secondary-subtle:  var(--color-secondary-50);
+  --color-secondary-muted:   var(--color-secondary-200);
+  --color-secondary-hover:   var(--color-secondary-300);
+
+  --color-text-primary:      var(--color-primary);
+  --color-text-secondary:    var(--color-secondary-600);
+  --color-text-tertiary:     var(--color-secondary-400);
+
+  --color-border:            var(--color-secondary-300);
+  --color-border-dark:       var(--color-secondary-400);
+
+  --color-bg-primary:        var(--color-background);
+  --color-bg-secondary:      var(--color-secondary-100);
+
+  /* Alias for the one component that reads --color-card
+     (energyGauge.vue) rather than --card-bg-color. */
+  --color-card:              var(--card-bg-color);
+
+  /* Surfaces that were hardcoded #fff. Chart.js reads these via
+     getComputedStyle, so they must be real values, not classes. */
+  --color-surface:           var(--card-bg-color);
+  --color-tooltip-bg:        var(--card-bg-color);
+  --color-tooltip-border:    var(--color-secondary-300);
+  --color-scrollbar-track:   var(--color-secondary-100);
+
+  /* Destructive — the old hardcoded #fef2f2 / #991b1b pair is
+     invisible on a dark page. */
+  --color-danger-bg:         color-mix(in srgb, var(--color-error) 12%, var(--card-bg-color));
+  --color-danger-border:     color-mix(in srgb, var(--color-error) 45%, var(--card-bg-color));
+  --color-danger-text:       var(--color-error);
+}
+
+/* Dark themes need a stronger danger fill to stay legible. */
+html[data-theme='carbon'],
+html[data-theme='midnight'],
+html[data-theme='wolffie'] {
+  --color-danger-bg:     color-mix(in srgb, var(--color-error) 20%, var(--card-bg-color));
+  --color-danger-border: color-mix(in srgb, var(--color-error) 55%, var(--card-bg-color));
+  --color-danger-text:   #fca5a5;
+}

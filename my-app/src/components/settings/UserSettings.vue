@@ -322,7 +322,7 @@ onUnmounted(() => {
 .users-panel            { display: flex; flex-direction: column; gap: 0.875rem; }
 /* ── Role badges ─────────────────────────────────────────────────────────── */
 .role-badge             { display: inline-block;padding: 0.125rem 0.5rem;font-size: 14px;font-weight: 400;letter-spacing: 0.05em;border-radius:var(--radius-sm);background: var(--color-secondary-100);color: var(--color-text-secondary);}
-.role-badge--admin      { background: var(--color-primary); color: #fff; }
+.role-badge--admin      { background: var(--color-secondary-500); color: var(--color-secondary-100); }
 .role-badge--user       { background: var(--color-secondary-100); color: var(--color-secondary-700); }
 .role-badge--viewer     { background: var(--color-secondary-100); color: var(--color-secondary-500); }
 

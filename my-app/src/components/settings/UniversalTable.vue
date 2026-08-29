@@ -8,7 +8,7 @@
           :key="action.label"
           @click="executeGlobalAction(action)"
           :disabled="actionLoading[action.id]"
-          class="flex items-center gap-2 p-4 bg-white border border-secondary-200  text-sm font-semibold text-secondary-700 hover:bg-secondary-50 hover:border-blue-300 transition-all shadow-sm disabled:opacity-50"
+          class="flex items-center gap-2 p-4 bg-card border border-secondary-200  text-sm font-semibold text-secondary-700 hover:bg-secondary-50 hover:border-blue-300 transition-all shadow-sm disabled:opacity-50"
         >
           <i v-if="actionLoading[action.id]" class="ph-light ph-spinner-third ph-spin text-slate-500"></i>
           <i v-else :class="['ph-light', mapIcon(action.icon), 'text-blue-700']"></i>
@@ -22,7 +22,7 @@
           :key="filter.field"
           v-model="filterValues[filter.field]"
           @change="applyFilters"
-          class="bg-white border border-secondary-200 p-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
+          class="bg-card border border-secondary-200 p-4 text-sm focus:ring-2 focus:ring-blue-500/20 outline-none"
         >
           <option value="">{{ filter.placeholder || 'Filter...' }}</option>
           <option v-for="opt in filter.options" :key="opt.value" :value="opt.value">
