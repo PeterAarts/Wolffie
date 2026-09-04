@@ -1,4 +1,4 @@
-# WattsOn Authentication & Authorization System
+# Wolffie Authentication & Authorization System
 
 ## 🔐 Core Security Architecture
 
